@@ -127,11 +127,12 @@ func run() error {
 			Client: dbClient,
 			GCS:    clients.NewGCSClient(gcsClient, vulnBucket),
 		}),
-		Relations:  db.NewRelationsStore(dbClient),
-		SourceRepo: db.NewSourceRepositoryStore(dbClient),
-		VulnSearch: db.NewVulnerabilitySearchStore(dbClient, redisClient),
-		Linter:     gcs.NewLinterStore(gcsClient.Bucket(linterBucket), "linter-result/"),
-		Triage:     gcs.NewTriageStore(gcsClient),
+		Relations:      db.NewRelationsStore(dbClient),
+		SourceRepo:     db.NewSourceRepositoryStore(dbClient),
+		VulnSearch:     db.NewVulnerabilitySearchStore(dbClient, redisClient),
+		Linter:         gcs.NewLinterStore(gcsClient.Bucket(linterBucket), "linter-result/"),
+		ImportFindings: db.NewImportFindingsStore(dbClient, nil, "", ""),
+		Triage:         gcs.NewTriageStore(gcsClient),
 	}
 
 	apiURL := os.Getenv("OSV_API_URL")
@@ -176,6 +177,12 @@ func run() error {
 		logger.ErrorContext(ctx, "Failed to create website server", slog.Any("error", err))
 
 		return fmt.Errorf("failed to create website server: %w", err)
+	}
+
+	// Only warm the linter index in non-production environments, since production osv.dev
+	// redirects all /linter* traffic to test.osv.dev.
+	if project != "oss-vdb" && !strings.EqualFold(apiURL, "api.osv.dev") {
+		go srv.StartLinterRefresh(ctx)
 	}
 
 	httpServer := &http.Server{

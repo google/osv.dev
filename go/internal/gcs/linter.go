@@ -67,6 +67,53 @@ func (s *LinterStore) ListSources(ctx context.Context) ([]string, error) {
 	return sources, nil
 }
 
+// ParseLinterResultObjectName extracts the source name from an object path matching
+// "<prefix><source>/result.json". It returns ("", false) for non-matching paths
+// (such as root-level files or nested subdirectories).
+func ParseLinterResultObjectName(prefix, objName string) (string, bool) {
+	if !strings.HasPrefix(objName, prefix) {
+		return "", false
+	}
+	rel := strings.TrimPrefix(objName, prefix)
+	source, file, ok := strings.Cut(rel, "/")
+	if !ok || file != "result.json" || source == "" || source == "." || source == ".." {
+		return "", false
+	}
+
+	return source, true
+}
+
+// ListSourceInfos lists all source result.json objects under the prefix along with their GCS metadata.
+func (s *LinterStore) ListSourceInfos(ctx context.Context) ([]models.LinterSourceInfo, error) {
+	it := s.bucket.Objects(ctx, &storage.Query{
+		Prefix: s.prefix,
+	})
+
+	var infos []models.LinterSourceInfo
+	for {
+		attrs, err := it.Next()
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("failed to list linter source infos: %w", err)
+		}
+		if src, ok := ParseLinterResultObjectName(s.prefix, attrs.Name); ok {
+			infos = append(infos, models.LinterSourceInfo{
+				Source:     src,
+				Updated:    attrs.Updated,
+				Generation: attrs.Generation,
+			})
+		}
+	}
+
+	slices.SortFunc(infos, func(a, b models.LinterSourceInfo) int {
+		return strings.Compare(a.Source, b.Source)
+	})
+
+	return infos, nil
+}
+
 // GetFindings downloads the result.json findings file for the specified source.
 func (s *LinterStore) GetFindings(ctx context.Context, source string) ([]byte, error) {
 	if source == "" || source == "." || strings.Contains(source, "/") || strings.Contains(source, "..") {

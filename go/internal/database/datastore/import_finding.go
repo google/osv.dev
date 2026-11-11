@@ -178,14 +178,42 @@ func (s *ImportFindingsStore) ListAllFromSource(ctx context.Context, source stri
 }
 
 func (s *ImportFindingsStore) ListAll(ctx context.Context) ([]*models.ImportFinding, error) {
-	query := datastore.NewQuery("ImportFinding")
-	var entities []*ImportFinding
-	if _, err := s.dsClient.GetAll(ctx, query, &entities); err != nil {
-		return nil, fmt.Errorf("failed to fetch all import findings: %w", err)
-	}
-	findings := make([]*models.ImportFinding, len(entities))
-	for i, entity := range entities {
-		findings[i] = entity.toModel()
+	const pageSize = 5000
+	var findings []*models.ImportFinding
+	var cursor *datastore.Cursor
+
+	for {
+		q := datastore.NewQuery("ImportFinding").Limit(pageSize)
+		if cursor != nil {
+			q = q.Start(*cursor)
+		}
+
+		it := s.dsClient.Run(ctx, q)
+		count := 0
+		for {
+			var entity ImportFinding
+			key, err := it.Next(&entity)
+			if errors.Is(err, iterator.Done) {
+				break
+			}
+			if err != nil {
+				return nil, fmt.Errorf("failed to fetch all import findings: %w", err)
+			}
+			if entity.BugID == "" && key != nil {
+				entity.BugID = key.Name
+			}
+			findings = append(findings, entity.toModel())
+			count++
+		}
+
+		if count < pageSize {
+			break
+		}
+		nextCursor, err := it.Cursor()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get datastore cursor for import findings: %w", err)
+		}
+		cursor = &nextCursor
 	}
 
 	return findings, nil

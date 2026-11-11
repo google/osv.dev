@@ -82,12 +82,13 @@ func run() error {
 	}
 
 	stores := website.Stores{
-		Vuln:       devStore,
-		Relations:  devStore,
-		SourceRepo: devStore,
-		VulnSearch: devStore,
-		Linter:     devStore,
-		Triage:     devStore,
+		Vuln:           devStore,
+		Relations:      devStore,
+		SourceRepo:     devStore,
+		VulnSearch:     devStore,
+		Linter:         devStore,
+		ImportFindings: devStore,
+		Triage:         devStore,
 	}
 
 	srv, err := website.NewServer(website.Config{

@@ -36,3 +36,30 @@ func TestGetFindings_InvalidSource(t *testing.T) {
 		}
 	}
 }
+
+func TestParseLinterResultObjectName(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		prefix string
+		name   string
+		want   string
+		wantOK bool
+	}{
+		{"linter-result/", "linter-result/ghsa/result.json", "ghsa", true},
+		{"linter-result/", "linter-result/cve-osv/result.json", "cve-osv", true},
+		{"linter-result/", "linter-result/result.json", "", false},
+		{"linter-result/", "linter-result/ghsa/sub/result.json", "", false},
+		{"linter-result/", "linter-result/ghsa/other.json", "", false},
+		{"linter-result/", "other-prefix/ghsa/result.json", "", false},
+		{"linter-result/", "linter-result/../result.json", "", false},
+	}
+
+	for _, tc := range tests {
+		got, ok := gcs.ParseLinterResultObjectName(tc.prefix, tc.name)
+		if ok != tc.wantOK || got != tc.want {
+			t.Errorf("ParseLinterResultObjectName(%q, %q) = (%q, %v), want (%q, %v)",
+				tc.prefix, tc.name, got, ok, tc.want, tc.wantOK)
+		}
+	}
+}

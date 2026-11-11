@@ -37,12 +37,13 @@ type Config struct {
 }
 
 type Stores struct {
-	Vuln       models.VulnerabilityStore
-	Relations  models.RelationsStore
-	SourceRepo models.SourceRepositoryStore
-	VulnSearch models.VulnerabilitySearchStore
-	Linter     models.LinterStore
-	Triage     models.TriageStore
+	Vuln           models.VulnerabilityStore
+	Relations      models.RelationsStore
+	SourceRepo     models.SourceRepositoryStore
+	VulnSearch     models.VulnerabilitySearchStore
+	Linter         models.LinterStore
+	ImportFindings models.ImportFindingsStore
+	Triage         models.TriageStore
 }
 
 // Server handles website routing and HTTP requests.
@@ -51,6 +52,7 @@ type Server struct {
 	mux       *http.ServeMux
 	handler   http.Handler
 	stores    Stores
+	linterIdx *linterIndex
 	secretKey []byte
 }
 
@@ -126,6 +128,7 @@ func NewServer(cfg Config) (*Server, error) {
 		config:    cfg,
 		mux:       http.NewServeMux(),
 		stores:    cfg.Stores,
+		linterIdx: newLinterIndex(cfg.Stores.Linter, cfg.Stores.SourceRepo, cfg.Stores.ImportFindings),
 		secretKey: secretKey,
 	}
 	s.registerRoutes()
@@ -233,6 +236,9 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("GET /linter/", s.handleLinterPage)
 	s.mux.HandleFunc("GET /linter-findings", s.handleLinterSources)
 	s.mux.HandleFunc("GET /linter-findings/", s.handleLinterSources)
+	s.mux.HandleFunc("GET /linter-findings/query", s.handleLinterQuery)
+	s.mux.HandleFunc("GET /linter-findings/bug/{bug_id}", s.handleLinterBug)
+	s.mux.HandleFunc("GET /linter-findings/vuln/{bug_id}", s.handleLinterVuln)
 	s.mux.HandleFunc("GET /linter-findings/{source}", s.handleLinterFindings)
 
 	// Triage workflow (protected by Google OAuth account authentication)

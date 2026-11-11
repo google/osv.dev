@@ -64,3 +64,48 @@ type ImportFindingsStore interface {
 	// ListAll lists all import findings across all sources.
 	ListAll(ctx context.Context) ([]*ImportFinding, error)
 }
+
+// UnimplementedImportFindingsStore provides a default unimplemented stub for ImportFindingsStore.
+type UnimplementedImportFindingsStore struct{}
+
+var _ ImportFindingsStore = UnimplementedImportFindingsStore{}
+
+func (UnimplementedImportFindingsStore) Clear(_ context.Context, _ string) error {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) ListIDs(_ context.Context) ([]string, error) {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) GetMulti(_ context.Context, _ []string) ([]*ImportFinding, error) {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) PutMulti(_ context.Context, _ []*ImportFinding) error {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) DeleteMulti(_ context.Context, _ []string) error {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) UploadResult(_ context.Context, _ string, _ []byte) error {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) ListResultSources(_ context.Context) ([]string, error) {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) DeleteResult(_ context.Context, _ string) error {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) ListAllFromSource(_ context.Context, _ string) ([]*ImportFinding, error) {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) ListAll(_ context.Context) ([]*ImportFinding, error) {
+	panic("not implemented")
+}

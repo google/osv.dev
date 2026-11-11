@@ -1,14 +1,44 @@
 package website
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
+	"google.golang.org/protobuf/encoding/protojson"
 )
+
+// StartLinterRefresh warms the in-memory linter index immediately and refreshes it
+// periodically until ctx is cancelled.
+func (s *Server) StartLinterRefresh(ctx context.Context) {
+	if s.linterIdx == nil {
+		return
+	}
+	if _, err := s.linterIdx.getSnapshot(ctx); err != nil {
+		logger.WarnContext(ctx, "initial linter index warmup failed", "error", err)
+	}
+
+	ticker := time.NewTicker(linterBackgroundRefresh)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if _, err := s.linterIdx.refresh(ctx); err != nil && ctx.Err() == nil {
+				logger.WarnContext(ctx, "periodic linter index refresh failed", "error", err)
+			}
+		}
+	}
+}
 
 func (s *Server) redirectLinterToTest(w http.ResponseWriter, r *http.Request) bool {
 	host := strings.ToLower(r.Host)
@@ -39,10 +69,129 @@ func (s *Server) handleLinterPage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := LinterPageData{
+		Title:         "Vulnerability Linter Report - OSV",
 		ActiveSection: "linter",
+		APIURL:        s.config.APIURL,
 	}
 
 	s.renderStandalone(w, r, "linter.html", http.StatusOK, data)
+}
+
+// handleLinterQuery handles paginated server-side querying of cached linter findings.
+func (s *Server) handleLinterQuery(w http.ResponseWriter, r *http.Request) {
+	if s.redirectLinterToTest(w, r) {
+		return
+	}
+
+	snap, err := s.linterIdx.getSnapshot(r.Context())
+	if err != nil {
+		logger.ErrorContext(r.Context(), "failed to load linter index snapshot", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
+		return
+	}
+
+	q := r.URL.Query()
+	source := q.Get("source")
+	if source == "" {
+		source = q.Get("homedb")
+	}
+
+	code := q.Get("code")
+	if code == "" {
+		code = q.Get("finding")
+	}
+
+	page, _ := strconv.Atoi(q.Get("page"))
+	pageSize, _ := strconv.Atoi(q.Get("page_size"))
+
+	resp := snap.query(LinterQueryParams{
+		Source:   source,
+		Code:     code,
+		Query:    q.Get("q"),
+		Order:    q.Get("order"),
+		Page:     page,
+		PageSize: pageSize,
+	})
+
+	s.renderJSON(w, r, http.StatusOK, resp)
+}
+
+// handleLinterBug handles O(1) lookup of linter findings for a single vulnerability ID.
+func (s *Server) handleLinterBug(w http.ResponseWriter, r *http.Request) {
+	if s.redirectLinterToTest(w, r) {
+		return
+	}
+
+	bugID := r.PathValue("bug_id")
+	if unescaped, err := url.PathUnescape(bugID); err == nil {
+		bugID = unescaped
+	}
+	if bugID == "" || !vulnIDRegex.MatchString(bugID) {
+		http.NotFound(w, r)
+
+		return
+	}
+
+	snap, err := s.linterIdx.getSnapshot(r.Context())
+	if err != nil {
+		logger.ErrorContext(r.Context(), "failed to load linter snapshot for bug", "bug_id", bugID, "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
+		return
+	}
+
+	summary, ok := snap.getBug(bugID)
+	if !ok {
+		http.NotFound(w, r)
+
+		return
+	}
+
+	s.renderJSON(w, r, http.StatusOK, summary)
+}
+
+// handleLinterVuln serves the full vulnerability JSON record from VulnerabilityStore for the linter inspector.
+func (s *Server) handleLinterVuln(w http.ResponseWriter, r *http.Request) {
+	if s.redirectLinterToTest(w, r) {
+		return
+	}
+
+	bugID := r.PathValue("bug_id")
+	if unescaped, err := url.PathUnescape(bugID); err == nil {
+		bugID = unescaped
+	}
+	if bugID == "" || !vulnIDRegex.MatchString(bugID) {
+		http.NotFound(w, r)
+
+		return
+	}
+
+	vuln, err := s.stores.Vuln.GetFull(r.Context(), bugID)
+	if errors.Is(err, models.ErrNotFound) {
+		http.NotFound(w, r)
+
+		return
+	}
+	if err != nil {
+		logger.ErrorContext(r.Context(), "failed to get vulnerability for linter", "bug_id", bugID, "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
+		return
+	}
+
+	data, err := (protojson.MarshalOptions{UseProtoNames: true}).Marshal(vuln)
+	if err != nil {
+		logger.ErrorContext(r.Context(), "failed to marshal vulnerability JSON for linter", "bug_id", bugID, "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if _, err := w.Write(data); err != nil {
+		logger.ErrorContext(r.Context(), "failed to write vulnerability JSON for linter", "bug_id", bugID, "error", err)
+	}
 }
 
 // handleLinterSources handles listing sources that have linter findings from GCS.

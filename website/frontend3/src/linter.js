@@ -4,16 +4,16 @@ import "@github/clipboard-copy-element";
 
 
 document.addEventListener("DOMContentLoaded", function () {
-  let allIssues = [];
-  let issuesByHomeDb = {};
-  let filteredIssues = [];
+  const apiUrl = (document.body.dataset.apiUrl || "api.test.osv.dev").replace(/^https?:\/\//, "");
   let findingDetails = {};
   let activeVulnData = {};
   let activeVulnValueMaps = {};
   const issuesPerPage = 15;
   let currentPage = 1;
+  let totalIssues = 0;
   let sortDirection = "desc";
-  let dataLoadingComplete = false;
+  let activeQueryController = null;
+  let searchDebounceTimer = null;
 
   const globalLoader = document.getElementById("global-loader");
   const searchInput = document.getElementById("search-input");
@@ -40,7 +40,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   let selectedHomeDb = "";
   let selectedFinding = "";
-  let urlHomeDbApplied = false;
 
   function applyFiltersFromURL() {
     const params = new URLSearchParams(window.location.search);
@@ -70,109 +69,74 @@ document.addEventListener("DOMContentLoaded", function () {
 
   applyFiltersFromURL();
 
-  async function loadData() {
+  async function fetchIssues() {
+    if (activeQueryController) {
+      activeQueryController.abort();
+    }
+    const controller = new AbortController();
+    activeQueryController = controller;
     globalLoader.classList.add("visible");
 
-    // Get source names from github source_test.yaml file
-    const response = await fetch(
-      "https://raw.githubusercontent.com/google/osv.dev/master/source_test.yaml"
-    );
-    const yamlText = await response.text();
-    const sources = jsyaml.load(yamlText);
-    const sourceNames = sources.map((s) => s.name);
+    const params = new URLSearchParams();
+    if (selectedHomeDb) params.set("source", selectedHomeDb);
+    if (selectedFinding) params.set("code", selectedFinding);
+    if (searchInput.value.trim()) params.set("q", searchInput.value.trim());
+    params.set("order", sortDirection);
+    params.set("page", String(currentPage));
+    params.set("page_size", String(issuesPerPage));
 
-    // Check if the home database from the URL is not in the source yaml list.
-    // If the queried home database is not in the source list, remove the invalid parameter from the URL.
-    if (selectedHomeDb && !sourceNames.includes(selectedHomeDb)) {
-      selectedHomeDb = "";
-      urlHomeDbApplied = true; // Prevent further checks
-      updateURL("", true);
-    }
+    try {
+      const res = await fetch(`/linter-findings/query?${params.toString()}`, {
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        throw new Error(`Request failed (${res.status})`);
+      }
+      const data = await res.json();
+      if (controller.signal.aborted) return;
 
-    processAndDisplayData();
-
-    const allPromises = [];
-
-    // Get the detailed linter results from GCS bucket
-    const linterPromise = (async () => {
-      try {
-        const rootRes = await fetch("/linter-findings/");
-        if (rootRes.ok) {
-          const activeSources = await rootRes.json();
-          const sourcesToFetch = sourceNames.filter((name) => activeSources.includes(name));
-          const linterPromises = sourcesToFetch.map((sourceName) => {
-            const url = `/linter-findings/${sourceName}`;
-            return fetch(url)
-              .then((res) => (res.ok ? res.json() : {}))
-              .catch((e) => {
-                  console.warn(`Failed to fetch linter source: ${sourceName}`, e);
-                  return {};
-              });
-          });
-          const linterResults = await Promise.all(linterPromises);
-          linterResults.forEach((data) => {
-            for (const path in data) {
-              const bugId = path.split("/").pop().replace(".json", "");
-              if (!findingDetails[bugId]) findingDetails[bugId] = [];
-              findingDetails[bugId].push(...data[path]);
-            }
-          });
+      // Populate findingDetails before rendering rows so clicking immediately never races.
+      (data.issues || []).forEach((issue) => {
+        if (issue.details) {
+          findingDetails[issue.bug_id] = issue.details;
         }
-      } catch (e) {
-        console.error("Failed to fetch active linter sources", e);
+      });
+
+      totalIssues = data.total || 0;
+      currentPage = data.page || 1;
+      updateDynamicFilterCounts(data.facets || {});
+      displayIssues(data.issues || []);
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      console.error("Failed loading linter findings:", err);
+      const tableBody = document
+        .getElementById("issues-table")
+        .getElementsByTagName("tbody")[0];
+      tableBody.innerHTML = '<tr><td colspan="3">Failed to load issues.</td></tr>';
+    } finally {
+      if (activeQueryController === controller) {
+        globalLoader.classList.remove("visible");
       }
-    })();
-    allPromises.push(linterPromise);
-
-    // Get the import finding code from the API
-    const issuePromises = sourceNames.map((sourceName) => {
-      const url = `https://api.test.osv.dev/v1experimental/importfindings/${sourceName}`;
-      return fetch(url)
-        .then((res) => (res.ok ? res.json() : { invalid_records: [] }))
-        .then((data) => {
-          const records = data.invalid_records || [];
-          allIssues.push(...records);
-          records.forEach((issue) => {
-            if (!issuesByHomeDb[issue.source]) {
-              issuesByHomeDb[issue.source] = [];
-            }
-            issuesByHomeDb[issue.source].push(issue);
-          });
-
-          if (selectedHomeDb && !urlHomeDbApplied && issuesByHomeDb[selectedHomeDb]) {
-            urlHomeDbApplied = true;
-          }
-
-          applyFilters();
-        })
-        .catch((error) =>
-          console.error("Error loading data from " + url, error)
-        );
-    });
-    allPromises.push(...issuePromises);
-
-    // Wait for all data fetching to complete
-    Promise.allSettled(allPromises).then(() => {
-      dataLoadingComplete = true;
-      globalLoader.classList.remove("visible");
-      if (selectedHomeDb && !urlHomeDbApplied) {
-        selectedHomeDb = "";
-        updateURL("", true);
-      }
-      applyFilters(); // Final render
-    });
+    }
   }
 
   function processAndDisplayData() {
-    applyFilters();
+    fetchIssues();
 
-    searchInput.addEventListener("input", applyFilters);
+    searchInput.addEventListener("input", () => {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        currentPage = 1;
+        fetchIssues();
+      }, 200);
+    });
     modifiedHeader.addEventListener("click", () => {
       sortDirection = sortDirection === "asc" ? "desc" : "asc";
       const icon = modifiedHeader.querySelector(".material-icons");
       icon.textContent =
         sortDirection === "asc" ? "expand_less" : "expand_more";
-      applyFilters();
+      currentPage = 1;
+      fetchIssues();
     });
     tabBarContainer.addEventListener("click", handleTabClick);
 
@@ -202,139 +166,77 @@ document.addEventListener("DOMContentLoaded", function () {
 
     homeDbFilterOptions.addEventListener("click", (e) => {
       if (e.target.classList.contains("filter-option")) {
-        const { value, count } = e.target.dataset;
-        selectedHomeDb = value;
-        homeDbFilterSelected.textContent = `${value} (${count} issues)`;
-        urlHomeDbApplied = true;
+        selectedHomeDb = e.target.dataset.value || "";
         updateURL(selectedHomeDb);
-        applyFilters();
+        currentPage = 1;
+        fetchIssues();
       }
     });
 
     findingsFilterOptions.addEventListener("click", (e) => {
       if (e.target.classList.contains("filter-option")) {
-        const { value, name, count } = e.target.dataset;
-        selectedFinding = value;
-        findingsFilterSelected.textContent = `${name} (${count} issues)`;
-        applyFilters();
+        selectedFinding = e.target.dataset.value || "";
+        currentPage = 1;
+        fetchIssues();
       }
     });
   }
 
-  function applyFilters() {
-    const searchTerm = searchInput.value.toLowerCase();
+  function updateDynamicFilterCounts(facets) {
+    const rules = facets.rules || [];
+    const totalForRules = facets.total_for_rules || 0;
 
-    filteredIssues = allIssues.filter((issue) => {
-      const bugIdMatch = issue.bug_id.toLowerCase().includes(searchTerm);
-      const homeDbMatch =
-        !selectedHomeDb || issue.source === selectedHomeDb;
-      const findingMatch =
-        !selectedFinding || issue.findings.includes(selectedFinding);
-      return bugIdMatch && homeDbMatch && findingMatch;
-    });
-
-    currentPage = 1;
-    sortIssues();
-    updateDynamicFilterCounts();
-    displayIssues();
-  }
-
-  function updateDynamicFilterCounts() {
-    const searchTerm = searchInput.value.toLowerCase();
-
-    // Update Findings counts
-    const issuesForFindingsCount = allIssues.filter(
-      (issue) =>
-        (!selectedHomeDb || issue.source === selectedHomeDb) &&
-        issue.bug_id.toLowerCase().includes(searchTerm)
-    );
-    const findingsCount = issuesForFindingsCount.reduce((acc, issue) => {
-      issue.findings.forEach((finding) => {
-        acc[finding] = (acc[finding] || 0) + 1;
-      });
-      return acc;
-    }, {});
-
-    findingsFilterOptions.innerHTML = `<div class="filter-option" data-value="">All (${issuesForFindingsCount.length})</div>`;
-    for (const [finding, count] of Object.entries(findingsCount).sort((a, b) =>
-      a[0].localeCompare(b[0])
-    )) {
-      const name = finding.replace("IMPORT_FINDING_TYPE_", "");
+    findingsFilterOptions.innerHTML = `<div class="filter-option" data-value="" data-name="All" data-count="${totalForRules}">All (${totalForRules})</div>`;
+    rules.forEach((rule) => {
       const option = document.createElement("div");
       option.className = "filter-option";
-      option.dataset.value = finding;
-      option.dataset.name = name;
-      option.dataset.count = count;
-      option.textContent = `${name} (${count})`;
+      option.dataset.value = rule.code;
+      option.dataset.name = rule.code;
+      option.dataset.count = String(rule.count);
+      option.textContent = `${rule.code} — ${rule.label} (${rule.count})`;
       findingsFilterOptions.appendChild(option);
-    }
-    if (!selectedFinding) {
-      findingsFilterSelected.textContent = `All (${issuesForFindingsCount.length} issues)`;
+    });
+    if (selectedFinding) {
+      const match = rules.find((r) => r.code === selectedFinding);
+      findingsFilterSelected.textContent = `${selectedFinding} (${match ? match.count : 0} issues)`;
+    } else {
+      findingsFilterSelected.textContent = `All (${totalForRules} issues)`;
     }
 
-    // Update Home Database counts
-    const issuesForHomeDbCount = allIssues.filter(
-      (issue) =>
-        (!selectedFinding || issue.findings.includes(selectedFinding)) &&
-        issue.bug_id.toLowerCase().includes(searchTerm)
-    );
-    const homeDbCount = issuesForHomeDbCount.reduce((acc, issue) => {
-      acc[issue.source] = (acc[issue.source] || 0) + 1;
-      return acc;
-    }, {});
+    const sources = facets.sources || [];
+    const totalForSources = facets.total_for_sources || 0;
 
-    homeDbFilterOptions.innerHTML = `<div class="filter-option" data-value="">All (${issuesForHomeDbCount.length})</div>`;
-    for (const homeDb of Object.keys(issuesByHomeDb).sort()) {
-      const count = homeDbCount[homeDb] || 0;
+    homeDbFilterOptions.innerHTML = `<div class="filter-option" data-value="" data-count="${totalForSources}">All (${totalForSources})</div>`;
+    sources.forEach((src) => {
       const option = document.createElement("div");
       option.className = "filter-option";
-      option.dataset.value = homeDb;
-      option.dataset.count = count;
-      option.textContent = `${homeDb} (${count})`;
+      option.dataset.value = src.name;
+      option.dataset.count = String(src.count);
+      option.textContent = `${src.name} (${src.count})`;
       homeDbFilterOptions.appendChild(option);
-    }
-    if (selectedHomeDb) {
-      const selectedOption = homeDbFilterOptions.querySelector(
-        `[data-value="${selectedHomeDb}"]`
-      );
-      if (selectedOption) {
-        const { value, count } = selectedOption.dataset;
-        homeDbFilterSelected.textContent = `${value} (${count} issues)`;
-      }
-    } else {
-      homeDbFilterSelected.textContent = `All (${issuesForHomeDbCount.length} issues)`;
-    }
-  }
-
-  function sortIssues() {
-    filteredIssues.sort((a, b) => {
-      const dateA = new Date(a.last_attempt);
-      const dateB = new Date(b.last_attempt);
-      if (sortDirection === "asc") {
-        return dateA - dateB;
-      } else {
-        return dateB - dateA;
-      }
     });
+    if (selectedHomeDb) {
+      const match = sources.find((s) => s.name === selectedHomeDb);
+      if (!match) {
+        selectedHomeDb = "";
+        updateURL("", true);
+        fetchIssues();
+        return;
+      }
+      homeDbFilterSelected.textContent = `${selectedHomeDb} (${match.count} issues)`;
+    } else {
+      homeDbFilterSelected.textContent = `All (${totalForSources} issues)`;
+    }
   }
 
-  function displayIssues() {
+  function displayIssues(paginatedIssues) {
     const tableBody = document
       .getElementById("issues-table")
       .getElementsByTagName("tbody")[0];
     tableBody.innerHTML = "";
 
-    const startIndex = (currentPage - 1) * issuesPerPage;
-    const endIndex = startIndex + issuesPerPage;
-    const paginatedIssues = filteredIssues.slice(startIndex, endIndex);
-
     if (paginatedIssues.length === 0) {
-      if (dataLoadingComplete) {
-        tableBody.innerHTML = '<tr><td colspan="3">No issues found.</td></tr>';
-      } else {
-        tableBody.innerHTML =
-          '<tr><td colspan="3">Loading data...</td></tr>';
-      }
+      tableBody.innerHTML = '<tr><td colspan="3">No issues found.</td></tr>';
     } else {
       paginatedIssues.forEach((issue) => {
         let row = tableBody.insertRow();
@@ -348,7 +250,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let cell3 = row.insertCell();
 
         const bugLink = document.createElement("a");
-        bugLink.href = `https://api.test.osv.dev/v1/vulns/${issue.bug_id}`;
+        bugLink.href = `https://${apiUrl}/v1/vulns/${encodeURIComponent(issue.bug_id)}`;
         bugLink.textContent = issue.bug_id;
         bugLink.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -358,15 +260,17 @@ document.addEventListener("DOMContentLoaded", function () {
         cell1.appendChild(bugLink);
 
         const findingsContainer = document.createElement("div");
-        issue.findings.forEach((finding) => {
+        (issue.codes || []).forEach((code) => {
           const findingSpan = document.createElement("span");
-          findingSpan.textContent = finding.replace("IMPORT_FINDING_TYPE_", "");
+          findingSpan.textContent = code;
           findingSpan.className = "finding-tag";
           findingsContainer.appendChild(findingSpan);
         });
         cell2.appendChild(findingsContainer);
 
-        cell3.textContent = new Date(issue.last_attempt).toLocaleString();
+        cell3.textContent = issue.last_attempt
+          ? new Date(issue.last_attempt).toLocaleString()
+          : "—";
       });
     }
     setupPagination();
@@ -375,7 +279,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function setupPagination() {
     const paginationControls = document.getElementById("pagination-controls");
     paginationControls.innerHTML = "";
-    const pageCount = Math.ceil(filteredIssues.length / issuesPerPage);
+    const pageCount = Math.ceil(totalIssues / issuesPerPage);
 
     if (pageCount <= 1) return;
 
@@ -385,7 +289,7 @@ document.addEventListener("DOMContentLoaded", function () {
     prevButton.addEventListener("click", () => {
       if (currentPage > 1) {
         currentPage--;
-        displayIssues();
+        fetchIssues();
       }
     });
     paginationControls.appendChild(prevButton);
@@ -401,7 +305,7 @@ document.addEventListener("DOMContentLoaded", function () {
     nextButton.addEventListener("click", () => {
       if (currentPage < pageCount) {
         currentPage++;
-        displayIssues();
+        fetchIssues();
       }
     });
     paginationControls.appendChild(nextButton);
@@ -482,8 +386,12 @@ document.addEventListener("DOMContentLoaded", function () {
     tabsContent.appendChild(tabContent);
     setActiveTab(tabId);
 
-    // Fetch vuln data with the original bugId
-    fetch(`https://api.test.osv.dev/v1/vulns/${bugId}`)
+    // Fetch vuln data with the original bugId via same-origin proxy (falling back to API URL)
+    const encodedId = encodeURIComponent(bugId);
+    fetch(`/linter-findings/vuln/${encodedId}`)
+      .then((res) =>
+        res.ok ? res : fetch(`https://${apiUrl}/v1/vulns/${encodedId}`)
+      )
       .then((res) =>
         res.ok ? res.json() : { error: `Failed to load: ${res.status}` }
       )
@@ -535,15 +443,29 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
 
-    // Display finding data
+    // Display finding data (cached from page query, or fetched on demand for deep-links)
     const details = findingDetails[bugId];
     const findingsEl = document.getElementById(findingsJsonId);
-    if (details?.length) {
-      findingsEl.textContent = ''; // Clear "Loading..."
-      findingsEl.appendChild(formatFindings(details, bugId));
+    const renderFindingsPane = (items) => {
+      if (!findingsEl) return;
+      if (items?.length) {
+        findingsEl.textContent = ''; // Clear "Loading..."
+        findingsEl.appendChild(formatFindings(items, bugId));
+      } else {
+        findingsEl.textContent =
+            "No linter findings available for this vulnerability.";
+      }
+    };
+    if (details !== undefined) {
+      renderFindingsPane(details);
     } else {
-      findingsEl.textContent =
-          "No linter findings available for this vulnerability.";
+      fetch(`/linter-findings/bug/${encodeURIComponent(bugId)}`)
+        .then((res) => (res.ok ? res.json() : { details: [] }))
+        .then((data) => {
+          findingDetails[bugId] = data.details || [];
+          renderFindingsPane(findingDetails[bugId]);
+        })
+        .catch(() => renderFindingsPane([]));
     }
   }
 
@@ -911,5 +833,5 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  loadData();
+  processAndDisplayData();
 });

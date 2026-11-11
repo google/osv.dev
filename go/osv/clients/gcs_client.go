@@ -208,7 +208,13 @@ func (c *GCSClient) Close() error {
 
 func (c *GCSClient) Objects(ctx context.Context, prefix string) iter.Seq2[*Object, error] {
 	return func(yield func(*Object, error) bool) {
-		it := c.bucket.Objects(ctx, &storage.Query{Prefix: prefix})
+		query := &storage.Query{Prefix: prefix}
+		// Only fetch the attributes we return, which makes large listings much cheaper.
+		if err := query.SetAttrSelection([]string{"Name", "Generation", "Size", "CustomTime", "CRC32C", "Updated"}); err != nil {
+			yield(nil, err)
+			return
+		}
+		it := c.bucket.Objects(ctx, query)
 		for {
 			attrs, err := it.Next()
 			if err != nil {

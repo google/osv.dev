@@ -122,6 +122,7 @@ func findStale(ctx context.Context, b clients.CloudStorage, eco string) ([]*clie
 		return nil, 0, nil
 	}
 
+	start := time.Now()
 	var stale []*clients.Object
 	total := 0
 	for obj, err := range b.Objects(ctx, prefix) {
@@ -140,6 +141,8 @@ func findStale(ctx context.Context, b clients.CloudStorage, eco string) ([]*clie
 			stale = append(stale, obj)
 		}
 	}
+	logger.InfoContext(ctx, "scanned ecosystem", slog.String("ecosystem", eco),
+		slog.Int("files", total), slog.Int("stale", len(stale)), slog.Duration("took", time.Since(start)))
 
 	return stale, total, nil
 }

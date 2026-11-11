@@ -2711,6 +2711,75 @@
       ]
     },
     {
+      "id": "CURL-CVE-2026-86410",
+      "summary": "redirect to SFTP or SCP bypasses host verification",
+      "details": "A flaw in the curl command line tool's logic makes it only set SSH host\nverification options when interacting directly using SFTP or SCP, and not as a\nresult of following a redirect.",
+      "aliases": ["CVE-2026-86410"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-10-14T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.81.0"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.23.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "18270893abdb19f0ca170c118f8a2847dbd304be"
+                },
+                {
+                  "fixed": "6ae9befb2fb6bdfdb5fc11fdf76bbe519fe1f52c"
+                }
+              ]
+            }
+          ],
+          "versions": 87,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
       "id": "CURL-CVE-2026-86414",
       "summary": "leaking host credentials to HTTP proxy",
       "details": "An HTTP proxy can trick libcurl into sending the origin's credentials (Basic\npassword, or a Negotiate/Kerberos ticket) to the proxy itself, by answering\nthe `CONNECT` tunnel request with 401 `WWW-Authenticate:` instead of the\nexpected 407 `Proxy-Authenticate:`.",
@@ -7600,7 +7669,6 @@
       "id": "GHSA-5w6v-399v-w3cc",
       "summary": "Nokogiri updates packaged libxml2 to v2.13.8 to resolve CVE-2025-32414 and CVE-2025-32415",
       "details": "## Summary\n\nNokogiri v1.18.8 upgrades its dependency libxml2 to [v2.13.8](https://gitlab.gnome.org/GNOME/libxml2/-/releases/v2.13.8).\n\nlibxml2 v2.13.8 addresses:\n\n- CVE-2025-32414\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/889\n- CVE-2025-32415\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/890\n\n## Impact\n\n### CVE-2025-32414: No impact\n\nIn libxml2 before 2.13.8 and 2.14.x before 2.14.2, out-of-bounds memory access can occur in the Python API (Python bindings) because of an incorrect return value. This occurs in xmlPythonFileRead and xmlPythonFileReadRaw because of a difference between bytes and characters.\n\n**There is no impact** from this CVE for Nokogiri users.\n\n\n### CVE-2025-32415: Low impact\n\nIn libxml2 before 2.13.8 and 2.14.x before 2.14.2, xmlSchemaIDCFillNodeTables in xmlschemas.c has a heap-based buffer under-read. To exploit this, a crafted XML document must be validated against an XML schema with certain identity constraints, or a crafted XML schema must be used.\n\nIn the upstream issue, further context is provided by the maintainer:\n\n\u003e The bug affects validation against untrusted XML Schemas (.xsd) and validation of untrusted\n\u003e documents against trusted Schemas if they make use of xsd:keyref in combination with recursively\n\u003e defined types that have additional identity constraints.\n\nMITRE has published a severity score of 2.9 LOW (CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L) for this CVE.",
-      "aliases": ["CVE-2025-71346"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-04-21T21:55:56Z",
       "database_specific": "<Any value>",
@@ -7814,7 +7882,6 @@
       "id": "GHSA-mrxw-mxhj-p664",
       "summary": "Nokogiri updates packaged libxslt to v1.1.43 to resolve multiple CVEs",
       "details": "## Summary\n\nNokogiri v1.18.4 upgrades its dependency libxslt to [v1.1.43](https://gitlab.gnome.org/GNOME/libxslt/-/releases/v1.1.43).\n\nlibxslt v1.1.43 resolves:\n\n- CVE-2025-24855: Fix use-after-free of XPath context node\n- CVE-2024-55549: Fix UAF related to excluded namespaces\n\n## Impact\n\n### CVE-2025-24855\n\n- \"Use-after-free due to xsltEvalXPathStringNs leaking xpathCtxt-\u003enode\"\n- MITRE has rated this 7.8 High CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:N/I:H/A:H\n- Upstream report: https://gitlab.gnome.org/GNOME/libxslt/-/issues/128\n- NVD entry: https://nvd.nist.gov/vuln/detail/CVE-2025-24855\n\n### CVE-2024-55549\n\n- \"Use-after-free related to excluded result prefixes\"\n- MITRE has rated this 7.8 High CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:N/I:H/A:H\n- Upstream report: https://gitlab.gnome.org/GNOME/libxslt/-/issues/127\n- NVD entry: https://nvd.nist.gov/vuln/detail/CVE-2024-55549",
-      "aliases": ["CVE-2025-71406"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-03-14T18:51:37Z",
       "database_specific": "<Any value>",
@@ -8038,7 +8105,6 @@
       "id": "GHSA-vvfq-8hwr-qm4m",
       "summary": "Nokogiri updates packaged libxml2 to 2.13.6 to resolve CVE-2025-24928 and CVE-2024-56171",
       "details": "## Summary\n\nNokogiri v1.18.3 upgrades its dependency libxml2 to [v2.13.6](https://gitlab.gnome.org/GNOME/libxml2/-/releases/v2.13.6).\n\nlibxml2 v2.13.6 addresses:\n\n- CVE-2025-24928\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/847\n- CVE-2024-56171\n   - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/828\n\n## Impact\n\n### CVE-2025-24928\n\nStack-buffer overflow is possible when reporting DTD validation errors if the input contains a long (~3kb) QName prefix.\n\n### CVE-2024-56171\n\nUse-after-free is possible during validation against untrusted XML Schemas (.xsd) and, potentially, validation of untrusted documents against trusted Schemas if they make use of `xsd:keyref` in combination with recursively defined types that have additional identity constraints.",
-      "aliases": ["CVE-2025-71407"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-02-18T22:36:03Z",
       "database_specific": "<Any value>",

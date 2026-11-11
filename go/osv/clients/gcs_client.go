@@ -235,6 +235,29 @@ func (c *GCSClient) Objects(ctx context.Context, prefix string) iter.Seq2[*Objec
 	}
 }
 
+func (c *GCSClient) DeleteObject(ctx context.Context, path string, opts *DeleteOptions) error {
+	obj := c.bucket.Object(path)
+	if opts != nil && opts.IfGenerationMatches != nil {
+		// Generation-conditioned deletes are idempotent, so the storage library
+		// retries them on transient errors by default.
+		obj = obj.If(storage.Conditions{GenerationMatch: *opts.IfGenerationMatches})
+	}
+
+	err := obj.Delete(ctx)
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, storage.ErrObjectNotExist) {
+		return ErrNotFound
+	}
+	var apiErr *googleapi.Error
+	if errors.As(err, &apiErr) && apiErr.Code == 412 {
+		return ErrPreconditionFailed
+	}
+
+	return err
+}
+
 func (c *GCSClient) Bucket() *storage.BucketHandle {
 	return c.bucket
 }

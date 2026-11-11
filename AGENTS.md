@@ -266,30 +266,35 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
    - Generates a root `all.zip` file containing all records.
    - Generates ecosystem-specific `all.zip` files (e.g., `PyPI/all.zip`).
    - Outputs individual vulnerability JSON files in their respective ecosystem folders (e.g., `PyPI/GHSA-abcd-efgh.json`).
+   - Stale objects are cleaned up separately by `exporter-deleter`.
 
-8. **`relations`**:
+8. **`exporter-deleter`**:
+   - Run as a cron job (twice a day).
+   - For each ecosystem in the root `ecosystems.txt`, deletes `<ECOSYSTEM>/<ID>.json` files not listed in that ecosystem's `modified_id.csv` and last updated more than `--min-age` ago. All other folders (e.g. `all/` protos) are ignored. See [`go/cmd/exporter-deleter/README.md`](go/cmd/exporter-deleter/README.md).
+
+9. **`relations`**:
    - Populates relationships between vulnerabilities in the database.
    - Calculates transitive and reflective `aliases`, reflective `related` vulnerabilities, and transitive `upstream` fields.
 
-9. **`gitter`**:
+10. **`gitter`**:
    - Git client daemon/utility to precompute and cache git operations required by other services.
    - Performs intensive Git tasks like computing commit graphs and generating patch IDs.
 
-10. **`recoverer`**:
+11. **`recoverer`**:
    - Daemon that subscribes to failed task recovery Pub/Sub messages.
    - Repairs and retries failed GCS writes, reimports missing vulnerability records from sources (via Gitter, GCS bucket, or REST), and handles GCS generation mismatches.
 
-11. **`custommetrics`**:
+12. **`custommetrics`**:
    - Long-running metrics collector daemon (`go/cmd/custommetrics/`) that periodically reads batch/dataset state from Datastore (`JobData`, `SourceRepository`, `ImportFindings`) and GCS (`all.zip`, `modified_id.csv`) and exposes dataset, drift, reconciler, deleter, and linter state metrics on `:9090/metrics` for GMP/Grafana.
 
-12. **`vanir_signatures`**:
+13. **`vanir_signatures`**:
    - Cron job orchestrated in Go (`go/cmd/vanir_signatures/` and `go/internal/vanir/`) that queries modified vulnerabilities, shells out to a minimal Python helper script (`generate_signatures.py`) to run Vanir signature generation, and writes enriched signatures back to the database.
 
-13. **`ubuntubinarymapper`**:
+14. **`ubuntubinarymapper`**:
    - Run as a cron job (`go/cmd/ubuntubinarymapper/`).
    - Reads `Ubuntu/modified_id.csv` from the exported GCS bucket (`gs://osv-vulnerabilities`) with a 1-hour lookback window, downloads modified Ubuntu vulnerability records (via `Ubuntu/all.zip` or individual `Ubuntu/<id>.json` files), extracts binary-to-source package name mappings from `ecosystem_specific`, and persists them to Datastore (`UbuntuPackageMapping`) alongside a `JobData` execution checkpoint (or to a local JSON file via `-output-json`).
 
-14. **`tools/` (`reimport-tui`, `repo-allowlist-sync`)**:
+15. **`tools/` (`reimport-tui`, `repo-allowlist-sync`)**:
    - Developer and operator CLI/TUI utilities under `go/cmd/tools/` that share the main `go/go.mod` module.
    - `reimport-tui`: Interactive TUI tool to trigger reimports for selected `SourceRepository` entities in Datastore.
    - `repo-allowlist-sync`: CLI tool to synchronize repository allowlist YAML files (`repo_allowlist.yaml`) to `RepoAllowList` entities in Datastore.

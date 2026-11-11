@@ -27,13 +27,15 @@ const goVanityMetadata = `<meta name="go-import" content="osv.dev git https://gi
 
 // Config holds configuration options for the website server.
 type Config struct {
-	StaticFS       fs.FS
-	DocsFS         fs.FS
-	TemplateDir    string
-	Stores         Stores
-	APIURL         string
-	Auth           AuthConfig
-	RequestTimeout time.Duration
+	StaticFS             fs.FS
+	DocsFS               fs.FS
+	TemplateDir          string
+	Stores               Stores
+	APIURL               string
+	Auth                 AuthConfig
+	RequestTimeout       time.Duration
+	RedirectLinterToTest bool
+	LinterCacheTTL       time.Duration
 }
 
 type Stores struct {
@@ -124,11 +126,16 @@ func NewServer(cfg Config) (*Server, error) {
 		}
 	}
 
+	var linterIdx *linterIndex
+	if !cfg.RedirectLinterToTest {
+		linterIdx = newLinterIndex(cfg.Stores.Linter, cfg.Stores.SourceRepo, cfg.Stores.ImportFindings, cfg.LinterCacheTTL)
+	}
+
 	s := &Server{
 		config:    cfg,
 		mux:       http.NewServeMux(),
 		stores:    cfg.Stores,
-		linterIdx: newLinterIndex(cfg.Stores.Linter, cfg.Stores.SourceRepo, cfg.Stores.ImportFindings),
+		linterIdx: linterIdx,
 		secretKey: secretKey,
 	}
 	s.registerRoutes()
@@ -232,14 +239,13 @@ func (s *Server) registerRoutes() {
 	s.mux.HandleFunc("GET /api/search_suggestions", s.handleSearchSuggestions)
 
 	// Linter findings (matching strict_slashes=False)
-	s.mux.HandleFunc("GET /linter", s.handleLinterPage)
-	s.mux.HandleFunc("GET /linter/", s.handleLinterPage)
-	s.mux.HandleFunc("GET /linter-findings", s.handleLinterSources)
-	s.mux.HandleFunc("GET /linter-findings/", s.handleLinterSources)
-	s.mux.HandleFunc("GET /linter-findings/query", s.handleLinterQuery)
-	s.mux.HandleFunc("GET /linter-findings/bug/{bug_id}", s.handleLinterBug)
-	s.mux.HandleFunc("GET /linter-findings/vuln/{bug_id}", s.handleLinterVuln)
-	s.mux.HandleFunc("GET /linter-findings/{source}", s.handleLinterFindings)
+	s.mux.HandleFunc("GET /linter", s.redirectProdLinter(s.handleLinterPage))
+	s.mux.HandleFunc("GET /linter/", s.redirectProdLinter(s.handleLinterPage))
+	s.mux.HandleFunc("GET /linter-findings", s.redirectProdLinter(s.handleLinterSources))
+	s.mux.HandleFunc("GET /linter-findings/", s.redirectProdLinter(s.handleLinterSources))
+	s.mux.HandleFunc("GET /linter-findings/query", s.redirectProdLinter(s.handleLinterQuery))
+	s.mux.HandleFunc("GET /linter-findings/vuln/{bug_id}", s.redirectProdLinter(s.handleLinterVuln))
+	s.mux.HandleFunc("GET /linter-findings/{source}", s.redirectProdLinter(s.handleLinterFindings))
 
 	// Triage workflow (protected by Google OAuth account authentication)
 	s.mux.HandleFunc("GET /triage", s.requireGoogleAccount(s.handleTriagePage))

@@ -140,7 +140,18 @@ func run() error {
 		apiURL = os.Getenv("API_URL")
 	}
 	if apiURL == "" {
-		apiURL = "api.osv.dev"
+		if project == "oss-vdb-test" {
+			apiURL = "api.test.osv.dev"
+		} else {
+			apiURL = "api.osv.dev"
+		}
+	}
+
+	// Production osv.dev redirects all /linter* traffic to test.osv.dev rather than
+	// loading or serving the in-memory linter index.
+	redirectLinterToTest := project == "oss-vdb" || strings.EqualFold(apiURL, "api.osv.dev")
+	if redirectLinterToTest {
+		stores.ImportFindings = nil
 	}
 
 	secretKey := os.Getenv("SESSION_SECRET_KEY")
@@ -161,11 +172,12 @@ func run() error {
 	)
 
 	srv, err := website.NewServer(website.Config{
-		StaticFS:       staticFiles,
-		DocsFS:         docsFiles,
-		Stores:         stores,
-		APIURL:         apiURL,
-		RequestTimeout: requestTimeout,
+		StaticFS:             staticFiles,
+		DocsFS:               docsFiles,
+		Stores:               stores,
+		APIURL:               apiURL,
+		RequestTimeout:       requestTimeout,
+		RedirectLinterToTest: redirectLinterToTest,
 		Auth: website.AuthConfig{
 			ClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
 			ClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
@@ -179,9 +191,7 @@ func run() error {
 		return fmt.Errorf("failed to create website server: %w", err)
 	}
 
-	// Only warm the linter index in non-production environments, since production osv.dev
-	// redirects all /linter* traffic to test.osv.dev.
-	if project != "oss-vdb" && !strings.EqualFold(apiURL, "api.osv.dev") {
+	if !redirectLinterToTest {
 		go srv.StartLinterRefresh(ctx)
 	}
 

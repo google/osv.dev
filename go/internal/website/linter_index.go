@@ -1,6 +1,7 @@
 package website
 
 import (
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -21,17 +22,16 @@ import (
 )
 
 const (
-	linterCacheTTL           = 2 * time.Minute
-	linterDevCacheTTL        = 2 * time.Second
-	linterUnenrichedCacheTTL = 15 * time.Second
-	linterBackgroundRefresh  = 10 * time.Minute
-	linterTimestampRefresh   = 30 * time.Minute
-	linterColdGraceWait      = 150 * time.Millisecond
-	linterRefreshTimeout     = 30 * time.Second
-	linterEnrichTimeout      = 10 * time.Minute
-	linterFetchConcurrency   = 16
-	defaultLinterPageSize    = 15
-	maxLinterPageSize        = 100
+	defaultLinterCacheTTL   = 2 * time.Minute
+	linterDevCacheTTL       = 2 * time.Second
+	linterBackgroundRefresh = 90 * time.Second
+	linterRefreshTimeout    = 2 * time.Minute
+	linterTimestampRefresh  = 30 * time.Minute
+	linterColdGraceWait     = 150 * time.Millisecond
+	linterEnrichTimeout     = 10 * time.Minute
+	linterFetchConcurrency  = 16
+	defaultLinterPageSize   = 15
+	maxLinterPageSize       = 100
 )
 
 var knownRuleLabels = map[string]string{
@@ -51,21 +51,6 @@ var knownRuleLabels = map[string]string{
 	"DEL:001":    "Deleted Record",
 }
 
-var legacyFindingToCodes = map[string][]string{
-	"INVALID_JSON":     {"SCH:001"},
-	"INVALID_RECORD":   {"REC:001"},
-	"INVALID_ALIASES":  {"REC:002"},
-	"INVALID_UPSTREAM": {"REC:003"},
-	"INVALID_RELATED":  {"REC:004"},
-	"INVALID_RANGE":    {"RNG:001", "RNG:002"},
-	"INVALID_PACKAGE":  {"PKG:001"},
-	"INVALID_VERSION":  {"PKG:002"},
-	"INVALID_PURL":     {"PKG:003"},
-	"INVALID_COMMIT":   {"COMMIT:001"},
-	"BAD_ALIASED_CVE":  {"CVE:001"},
-	"DELETED":          {"DEL:001"},
-}
-
 // LinterFindingDetail represents an individual linter rule violation on a vulnerability record.
 type LinterFindingDetail struct {
 	Code    string `json:"Code"`
@@ -74,13 +59,11 @@ type LinterFindingDetail struct {
 
 // LinterIssueSummary represents a single vulnerability row in paginated linter query results.
 type LinterIssueSummary struct {
-	BugID        string                `json:"bug_id"`
-	Source       string                `json:"source"`
-	Codes        []string              `json:"codes"`
-	FindingCount int                   `json:"finding_count"`
-	FirstSeen    string                `json:"first_seen,omitempty"`
-	LastAttempt  string                `json:"last_attempt,omitempty"`
-	Details      []LinterFindingDetail `json:"details"`
+	BugID       string                `json:"bug_id"`
+	Source      string                `json:"source"`
+	Codes       []string              `json:"codes"`
+	LastAttempt string                `json:"last_attempt,omitempty"`
+	Details     []LinterFindingDetail `json:"details"`
 }
 
 // LinterSourceFacet holds the dynamic issue count for a Home Database source.
@@ -106,16 +89,14 @@ type LinterFacets struct {
 
 // LinterQueryResponse is the JSON payload returned by GET /linter-findings/query.
 type LinterQueryResponse struct {
-	Issues          []LinterIssueSummary `json:"issues"`
-	Total           int                  `json:"total"`
-	Page            int                  `json:"page"`
-	PageSize        int                  `json:"page_size"`
-	TimestampsReady bool                 `json:"timestamps_ready"`
-	Facets          LinterFacets         `json:"facets"`
+	Issues   []LinterIssueSummary `json:"issues"`
+	Total    int                  `json:"total"`
+	Page     int                  `json:"page"`
+	PageSize int                  `json:"page_size"`
+	Facets   LinterFacets         `json:"facets"`
 }
 
-// LinterQueryParams specifies filtering, sorting, and pagination options.
-type LinterQueryParams struct {
+type linterQueryParams struct {
 	Source   string
 	Code     string
 	Query    string
@@ -129,7 +110,6 @@ type linterIssue struct {
 	bugIDLower  string
 	source      string
 	codes       []string
-	firstSeen   int64
 	lastAttempt int64
 	findings    []LinterFindingDetail
 }
@@ -141,35 +121,27 @@ type linterSnapshot struct {
 	sources         []string
 	rules           []string
 	issues          []linterIssue // Pre-sorted by (lastAttempt DESC, bugID ASC)
-	byBugID         map[string]int
 }
 
 type cachedSourceFindings struct {
-	source     string
 	updated    time.Time
 	generation int64
 	bugs       map[string][]LinterFindingDetail
-}
-
-type bugTimestamps struct {
-	firstSeen   int64
-	lastAttempt int64
 }
 
 type linterIndex struct {
 	linterStore         models.LinterStore
 	sourceRepoStore     models.SourceRepositoryStore
 	importFindingsStore models.ImportFindingsStore
+	cacheTTL            time.Duration
 
 	snapshot atomic.Pointer[linterSnapshot]
 	sf       singleflight.Group
 
 	mu                sync.Mutex
-	stateSeq          uint64
-	publishedSeq      uint64
 	sourceCache       map[string]cachedSourceFindings
 	knownSources      []string
-	timestamps        map[string]bugTimestamps
+	timestamps        map[string]int64
 	timestampsReady   bool
 	timestampsUpdated time.Time
 	enriching         bool
@@ -180,11 +152,17 @@ func newLinterIndex(
 	linterStore models.LinterStore,
 	sourceRepoStore models.SourceRepositoryStore,
 	importFindingsStore models.ImportFindingsStore,
+	cacheTTL time.Duration,
 ) *linterIndex {
+	if cacheTTL <= 0 {
+		cacheTTL = defaultLinterCacheTTL
+	}
+
 	return &linterIndex{
 		linterStore:         linterStore,
 		sourceRepoStore:     sourceRepoStore,
 		importFindingsStore: importFindingsStore,
+		cacheTTL:            cacheTTL,
 		sourceCache:         make(map[string]cachedSourceFindings),
 		timestampsReady:     importFindingsStore == nil,
 	}
@@ -202,25 +180,28 @@ func ruleLabel(code string) string {
 	return code
 }
 
-func (idx *linterIndex) publishSnapshot(seq uint64, snap *linterSnapshot) *linterSnapshot {
-	idx.mu.Lock()
-	defer idx.mu.Unlock()
-	if seq >= idx.publishedSeq {
-		idx.publishedSeq = seq
-		idx.snapshot.Store(snap)
+func (idx *linterIndex) rebuildLocked() *linterSnapshot {
+	snap := buildLinterSnapshot(idx.knownSources, idx.sourceCache, idx.timestamps, idx.timestampsReady)
+	idx.snapshot.Store(snap)
 
-		return snap
-	}
+	return snap
+}
 
-	return idx.snapshot.Load()
+func (idx *linterIndex) triggerRefresh(baseCtx context.Context) <-chan singleflight.Result {
+	return idx.sf.DoChan("refresh", func() (any, error) {
+		refreshCtx, cancel := context.WithTimeout(context.WithoutCancel(baseCtx), linterRefreshTimeout)
+		defer cancel()
+
+		return idx.refresh(refreshCtx)
+	})
 }
 
 func (idx *linterIndex) getSnapshot(ctx context.Context) (*linterSnapshot, error) {
 	snap := idx.snapshot.Load()
 	if snap != nil {
-		ttl := linterCacheTTL
+		ttl := idx.cacheTTL
 		if !snap.hasGenerations {
-			ttl = linterDevCacheTTL
+			ttl = min(ttl, linterDevCacheTTL)
 		}
 		if !snap.timestampsReady {
 			idx.mu.Lock()
@@ -235,24 +216,27 @@ func (idx *linterIndex) getSnapshot(ctx context.Context) (*linterSnapshot, error
 		}
 	}
 
-	val, err, _ := idx.sf.Do("refresh", func() (any, error) {
-		refreshCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), linterRefreshTimeout)
-		defer cancel()
-
-		return idx.refresh(refreshCtx)
-	})
-	if err != nil {
+	ch := idx.triggerRefresh(ctx)
+	select {
+	case <-ctx.Done():
 		if snap != nil {
-			logger.WarnContext(ctx, "serving stale linter snapshot after refresh error", slog.Any("error", err))
 			return snap, nil
 		}
 
-		return nil, err
+		return nil, ctx.Err()
+	case res := <-ch:
+		if res.Err != nil {
+			if snap != nil {
+				logger.WarnContext(ctx, "serving stale linter snapshot after refresh error", slog.Any("error", res.Err))
+				return snap, nil
+			}
+
+			return nil, res.Err
+		}
+		snapOut, _ := res.Val.(*linterSnapshot)
+
+		return snapOut, nil
 	}
-
-	snapOut, _ := val.(*linterSnapshot)
-
-	return snapOut, nil
 }
 
 func parseSourceResultJSON(data []byte) (map[string][]LinterFindingDetail, error) {
@@ -271,18 +255,22 @@ func parseSourceResultJSON(data []byte) (map[string][]LinterFindingDetail, error
 		if bugID == "" {
 			continue
 		}
-		interned := make([]LinterFindingDetail, len(list))
 		for i, f := range list {
 			code := f.Code
 			if code == "" {
 				code = "UNKNOWN"
 			}
-			interned[i] = LinterFindingDetail{
+			list[i] = LinterFindingDetail{
 				Code:    internStr(code),
 				Message: internStr(f.Message),
 			}
 		}
-		byBug[bugID] = append(byBug[bugID], interned...)
+		id := strings.Clone(bugID)
+		if existing, ok := byBug[id]; ok {
+			byBug[id] = append(existing, list...)
+		} else {
+			byBug[id] = list
+		}
 	}
 
 	return byBug, nil
@@ -298,10 +286,16 @@ func (idx *linterIndex) refresh(ctx context.Context) (*linterSnapshot, error) {
 	for _, info := range infos {
 		sourceSet[info.Source] = struct{}{}
 	}
+	repoIterFailed := false
 	if idx.sourceRepoStore != nil {
 		for repo, repoErr := range idx.sourceRepoStore.All(ctx) {
 			if repoErr != nil {
+				if ctx.Err() != nil {
+					return nil, ctx.Err()
+				}
 				logger.WarnContext(ctx, "linter index: failed iterating SourceRepository", slog.Any("error", repoErr))
+				repoIterFailed = true
+
 				break
 			}
 			if repo != nil && repo.Name != "" {
@@ -311,6 +305,11 @@ func (idx *linterIndex) refresh(ctx context.Context) (*linterSnapshot, error) {
 	}
 
 	idx.mu.Lock()
+	if repoIterFailed {
+		for _, s := range idx.knownSources {
+			sourceSet[s] = struct{}{}
+		}
+	}
 	prevCache := maps.Clone(idx.sourceCache)
 	idx.mu.Unlock()
 
@@ -340,6 +339,9 @@ func (idx *linterIndex) refresh(ctx context.Context) (*linterSnapshot, error) {
 					return nil
 				}
 				if getErr != nil {
+					if gCtx.Err() != nil {
+						return gCtx.Err()
+					}
 					logger.WarnContext(gCtx, "linter index: failed fetching source findings",
 						slog.String("source", info.Source), slog.Any("error", getErr))
 					if prev, ok := prevCache[info.Source]; ok {
@@ -354,12 +356,16 @@ func (idx *linterIndex) refresh(ctx context.Context) (*linterSnapshot, error) {
 				if parseErr != nil {
 					logger.WarnContext(gCtx, "linter index: failed parsing source findings JSON",
 						slog.String("source", info.Source), slog.Any("error", parseErr))
+					if prev, ok := prevCache[info.Source]; ok {
+						fetchMu.Lock()
+						nextCache[info.Source] = prev
+						fetchMu.Unlock()
+					}
 
 					return nil
 				}
 				fetchMu.Lock()
 				nextCache[info.Source] = cachedSourceFindings{
-					source:     internStr(info.Source),
 					updated:    info.Updated,
 					generation: info.Generation,
 					bugs:       bugs,
@@ -373,13 +379,16 @@ func (idx *linterIndex) refresh(ctx context.Context) (*linterSnapshot, error) {
 			return nil, waitErr
 		}
 	}
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
 
 	knownSources := slices.Sorted(maps.Keys(sourceSet))
 
 	idx.mu.Lock()
+	sourcesChanged := !slices.Equal(knownSources, idx.knownSources)
 	idx.sourceCache = nextCache
 	idx.knownSources = knownSources
-	idx.stateSeq++
 	tsReady := idx.timestampsReady
 	var waitCh chan struct{}
 	if idx.importFindingsStore != nil && (!tsReady || anyChanged || time.Since(idx.timestampsUpdated) > linterTimestampRefresh) {
@@ -400,16 +409,17 @@ func (idx *linterIndex) refresh(ctx context.Context) (*linterSnapshot, error) {
 	}
 
 	idx.mu.Lock()
-	seq := idx.stateSeq
-	tsMap := idx.timestamps
-	tsReady = idx.timestampsReady
-	currentCache := maps.Clone(idx.sourceCache)
-	sourcesCopy := slices.Clone(idx.knownSources)
-	idx.mu.Unlock()
+	defer idx.mu.Unlock()
 
-	snap := buildLinterSnapshot(sourcesCopy, currentCache, tsMap, tsReady)
+	if prev := idx.snapshot.Load(); prev != nil && !anyChanged && !sourcesChanged && prev.timestampsReady == idx.timestampsReady {
+		updated := *prev
+		updated.loadedAt = time.Now()
+		idx.snapshot.Store(&updated)
 
-	return idx.publishSnapshot(seq, snap), nil
+		return &updated, nil
+	}
+
+	return idx.rebuildLocked(), nil
 }
 
 func (idx *linterIndex) startTimestampEnrichmentLocked(ctx context.Context) chan struct{} {
@@ -438,33 +448,20 @@ func (idx *linterIndex) startTimestampEnrichmentLocked(ctx context.Context) chan
 			return
 		}
 
-		newTS := make(map[string]bugTimestamps, len(allFindings))
+		newTS := make(map[string]int64, len(allFindings))
 		for _, f := range allFindings {
-			if f == nil || f.BugID == "" {
+			if f == nil || f.BugID == "" || f.LastAttempt.IsZero() {
 				continue
 			}
-			var fsUnix, laUnix int64
-			if !f.FirstSeen.IsZero() {
-				fsUnix = f.FirstSeen.Unix()
-			}
-			if !f.LastAttempt.IsZero() {
-				laUnix = f.LastAttempt.Unix()
-			}
-			newTS[f.BugID] = bugTimestamps{firstSeen: fsUnix, lastAttempt: laUnix}
+			newTS[f.BugID] = f.LastAttempt.Unix()
 		}
 
 		idx.mu.Lock()
 		idx.timestamps = newTS
 		idx.timestampsReady = true
 		idx.timestampsUpdated = time.Now()
-		idx.stateSeq++
-		seq := idx.stateSeq
-		cacheCopy := maps.Clone(idx.sourceCache)
-		sourcesCopy := slices.Clone(idx.knownSources)
+		idx.rebuildLocked()
 		idx.mu.Unlock()
-
-		snap := buildLinterSnapshot(sourcesCopy, cacheCopy, newTS, true)
-		idx.publishSnapshot(seq, snap)
 	}()
 
 	return done
@@ -473,7 +470,7 @@ func (idx *linterIndex) startTimestampEnrichmentLocked(ctx context.Context) chan
 func buildLinterSnapshot(
 	knownSources []string,
 	sourceCache map[string]cachedSourceFindings,
-	timestamps map[string]bugTimestamps,
+	timestamps map[string]int64,
 	timestampsReady bool,
 ) *linterSnapshot {
 	sourceSet := make(map[string]struct{}, len(knownSources)+len(sourceCache))
@@ -523,10 +520,7 @@ func buildLinterSnapshot(
 			}
 			slices.Sort(seenCodes)
 
-			var fsUnix, laUnix int64
-			if ts, ok := timestamps[bugID]; ok {
-				fsUnix, laUnix = ts.firstSeen, ts.lastAttempt
-			}
+			laUnix := timestamps[bugID]
 			if laUnix == 0 {
 				laUnix = fallbackUnix
 			}
@@ -536,7 +530,6 @@ func buildLinterSnapshot(
 				bugIDLower:  strings.ToLower(bugID),
 				source:      internedSrc,
 				codes:       seenCodes,
-				firstSeen:   fsUnix,
 				lastAttempt: laUnix,
 				findings:    list,
 			})
@@ -544,23 +537,11 @@ func buildLinterSnapshot(
 	}
 
 	slices.SortFunc(issues, func(a, b linterIssue) int {
-		if a.lastAttempt != b.lastAttempt {
-			if a.lastAttempt > b.lastAttempt {
-				return -1
-			}
-
-			return 1
-		}
-
-		return strings.Compare(a.bugID, b.bugID)
+		return cmp.Or(
+			cmp.Compare(b.lastAttempt, a.lastAttempt),
+			cmp.Compare(a.bugID, b.bugID),
+		)
 	})
-
-	byBugID := make(map[string]int, len(issues))
-	for i, issue := range issues {
-		if _, exists := byBugID[issue.bugID]; !exists {
-			byBugID[issue.bugID] = i
-		}
-	}
 
 	return &linterSnapshot{
 		loadedAt:        time.Now(),
@@ -569,7 +550,6 @@ func buildLinterSnapshot(
 		sources:         sources,
 		rules:           rules,
 		issues:          issues,
-		byBugID:         byBugID,
 	}
 }
 
@@ -583,38 +563,15 @@ func formatUnixRFC3339(sec int64) string {
 
 func issueToSummary(issue linterIssue) LinterIssueSummary {
 	return LinterIssueSummary{
-		BugID:        issue.bugID,
-		Source:       issue.source,
-		Codes:        issue.codes,
-		FindingCount: len(issue.findings),
-		FirstSeen:    formatUnixRFC3339(issue.firstSeen),
-		LastAttempt:  formatUnixRFC3339(issue.lastAttempt),
-		Details:      issue.findings,
+		BugID:       issue.bugID,
+		Source:      issue.source,
+		Codes:       issue.codes,
+		LastAttempt: formatUnixRFC3339(issue.lastAttempt),
+		Details:     issue.findings,
 	}
 }
 
-func (snap *linterSnapshot) getBug(bugID string) (LinterIssueSummary, bool) {
-	i, ok := snap.byBugID[bugID]
-	if !ok {
-		return LinterIssueSummary{}, false
-	}
-
-	return issueToSummary(snap.issues[i]), true
-}
-
-func resolveFilterCodes(raw string) []string {
-	norm := strings.ToUpper(strings.TrimSpace(raw))
-	if norm == "" {
-		return nil
-	}
-	if mapped, ok := legacyFindingToCodes[strings.TrimPrefix(norm, "IMPORT_FINDING_TYPE_")]; ok {
-		return mapped
-	}
-
-	return []string{norm}
-}
-
-func (snap *linterSnapshot) query(params LinterQueryParams) LinterQueryResponse {
+func (snap *linterSnapshot) query(params linterQueryParams) LinterQueryResponse {
 	pageSize := min(max(params.PageSize, 0), maxLinterPageSize)
 	if pageSize == 0 {
 		pageSize = defaultLinterPageSize
@@ -622,7 +579,7 @@ func (snap *linterSnapshot) query(params LinterQueryParams) LinterQueryResponse 
 	page := max(params.Page, 1)
 
 	targetSource := strings.TrimSpace(params.Source)
-	targetCodes := resolveFilterCodes(params.Code)
+	targetCode := strings.ToUpper(strings.TrimSpace(params.Code))
 	qLower := strings.ToLower(strings.TrimSpace(params.Query))
 
 	sourceCounts := make(map[string]int, len(snap.sources))
@@ -637,9 +594,7 @@ func (snap *linterSnapshot) query(params LinterQueryParams) LinterQueryResponse 
 		}
 
 		srcMatch := targetSource == "" || issue.source == targetSource
-		ruleMatch := len(targetCodes) == 0 || slices.ContainsFunc(issue.codes, func(c string) bool {
-			return slices.Contains(targetCodes, c)
-		})
+		ruleMatch := targetCode == "" || slices.Contains(issue.codes, targetCode)
 
 		if ruleMatch {
 			sourceCounts[issue.source]++
@@ -659,15 +614,10 @@ func (snap *linterSnapshot) query(params LinterQueryParams) LinterQueryResponse 
 	if strings.EqualFold(params.Order, "asc") {
 		slices.SortFunc(matched, func(ia, ib int) int {
 			a, b := snap.issues[ia], snap.issues[ib]
-			if a.lastAttempt != b.lastAttempt {
-				if a.lastAttempt < b.lastAttempt {
-					return -1
-				}
-
-				return 1
-			}
-
-			return strings.Compare(a.bugID, b.bugID)
+			return cmp.Or(
+				cmp.Compare(a.lastAttempt, b.lastAttempt),
+				cmp.Compare(a.bugID, b.bugID),
+			)
 		})
 	}
 
@@ -691,11 +641,10 @@ func (snap *linterSnapshot) query(params LinterQueryParams) LinterQueryResponse 
 	}
 
 	return LinterQueryResponse{
-		Issues:          pageIssues,
-		Total:           total,
-		Page:            page,
-		PageSize:        pageSize,
-		TimestampsReady: snap.timestampsReady,
+		Issues:   pageIssues,
+		Total:    total,
+		Page:     page,
+		PageSize: pageSize,
 		Facets: LinterFacets{
 			TotalForSources: totalForSources,
 			Sources:         sourceFacets,

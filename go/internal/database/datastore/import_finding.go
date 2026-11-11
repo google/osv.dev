@@ -178,7 +178,10 @@ func (s *ImportFindingsStore) ListAllFromSource(ctx context.Context, source stri
 }
 
 func (s *ImportFindingsStore) ListAll(ctx context.Context) ([]*models.ImportFinding, error) {
-	const pageSize = 5000
+	return s.listAll(ctx, 5000)
+}
+
+func (s *ImportFindingsStore) listAll(ctx context.Context, pageSize int) ([]*models.ImportFinding, error) {
 	var findings []*models.ImportFinding
 	var cursor *datastore.Cursor
 

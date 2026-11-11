@@ -5,7 +5,6 @@ import "@github/clipboard-copy-element";
 
 document.addEventListener("DOMContentLoaded", function () {
   const apiUrl = (document.body.dataset.apiUrl || "api.test.osv.dev").replace(/^https?:\/\//, "");
-  let findingDetails = {};
   let activeVulnData = {};
   let activeVulnValueMaps = {};
   const issuesPerPage = 15;
@@ -94,13 +93,6 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       const data = await res.json();
       if (controller.signal.aborted) return;
-
-      // Populate findingDetails before rendering rows so clicking immediately never races.
-      (data.issues || []).forEach((issue) => {
-        if (issue.details) {
-          findingDetails[issue.bug_id] = issue.details;
-        }
-      });
 
       totalIssues = data.total || 0;
       currentPage = data.page || 1;
@@ -242,7 +234,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let row = tableBody.insertRow();
         row.classList.add("clickable");
         row.addEventListener("click", () => {
-          openCombinedView(issue.bug_id);
+          openCombinedView(issue.bug_id, issue.details || []);
         });
 
         let cell1 = row.insertCell();
@@ -254,7 +246,7 @@ document.addEventListener("DOMContentLoaded", function () {
         bugLink.textContent = issue.bug_id;
         bugLink.addEventListener("click", (e) => {
           e.stopPropagation();
-          openCombinedView(issue.bug_id);
+          openCombinedView(issue.bug_id, issue.details || []);
           e.preventDefault();
         });
         cell1.appendChild(bugLink);
@@ -323,10 +315,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   /**
    * Opens a detailed tab view split into Vulnerability JSON and Linter Findings columns.
-   * Fetches full vulnerability record JSON from the API and renders the interactive JSON tree.
+   * Fetches full vulnerability record JSON from the same-origin endpoint and renders the interactive JSON tree.
    * @param {string} bugId - Vulnerability identifier.
+   * @param {Array<Object>} [details=[]] - Inline linter finding objects for the vulnerability.
    */
-  function openCombinedView(bugId) {
+  function openCombinedView(bugId, details = []) {
     const safeBugId = sanitiseBugId(bugId);
 
     const tabId = `details-${safeBugId}`;
@@ -381,17 +374,11 @@ document.addEventListener("DOMContentLoaded", function () {
       </div>
                 `;
 
-
-
     tabsContent.appendChild(tabContent);
     setActiveTab(tabId);
 
-    // Fetch vuln data with the original bugId via same-origin proxy (falling back to API URL)
     const encodedId = encodeURIComponent(bugId);
     fetch(`/linter-findings/vuln/${encodedId}`)
-      .then((res) =>
-        res.ok ? res : fetch(`https://${apiUrl}/v1/vulns/${encodedId}`)
-      )
       .then((res) =>
         res.ok ? res.json() : { error: `Failed to load: ${res.status}` }
       )
@@ -442,30 +429,15 @@ document.addEventListener("DOMContentLoaded", function () {
         ).textContent = `Error: ${err.message}`;
       });
 
-
-    // Display finding data (cached from page query, or fetched on demand for deep-links)
-    const details = findingDetails[bugId];
     const findingsEl = document.getElementById(findingsJsonId);
-    const renderFindingsPane = (items) => {
-      if (!findingsEl) return;
-      if (items?.length) {
-        findingsEl.textContent = ''; // Clear "Loading..."
-        findingsEl.appendChild(formatFindings(items, bugId));
+    if (findingsEl) {
+      if (details.length > 0) {
+        findingsEl.textContent = "";
+        findingsEl.appendChild(formatFindings(details, bugId));
       } else {
         findingsEl.textContent =
-            "No linter findings available for this vulnerability.";
+          "No linter findings available for this vulnerability.";
       }
-    };
-    if (details !== undefined) {
-      renderFindingsPane(details);
-    } else {
-      fetch(`/linter-findings/bug/${encodeURIComponent(bugId)}`)
-        .then((res) => (res.ok ? res.json() : { details: [] }))
-        .then((data) => {
-          findingDetails[bugId] = data.details || [];
-          renderFindingsPane(findingDetails[bugId]);
-        })
-        .catch(() => renderFindingsPane([]));
     }
   }
 

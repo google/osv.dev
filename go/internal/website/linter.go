@@ -33,41 +33,40 @@ func (s *Server) StartLinterRefresh(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if _, err := s.linterIdx.refresh(ctx); err != nil && ctx.Err() == nil {
-				logger.WarnContext(ctx, "periodic linter index refresh failed", "error", err)
+			res := <-s.linterIdx.triggerRefresh(ctx)
+			if res.Err != nil && ctx.Err() == nil {
+				logger.WarnContext(ctx, "periodic linter index refresh failed", "error", res.Err)
 			}
 		}
 	}
 }
 
-func (s *Server) redirectLinterToTest(w http.ResponseWriter, r *http.Request) bool {
-	host := strings.ToLower(r.Host)
-	if colonIdx := strings.IndexByte(host, ':'); colonIdx != -1 {
-		host = host[:colonIdx]
+func (s *Server) redirectProdLinter(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		host := strings.ToLower(r.Host)
+		if colonIdx := strings.IndexByte(host, ':'); colonIdx != -1 {
+			host = host[:colonIdx]
+		}
+
+		if host == "api.osv.dev" {
+			//nolint:gosec // G710: Hardcoded redirect target
+			http.Redirect(w, r, "https://api.test.osv.dev"+r.URL.RequestURI(), http.StatusFound)
+
+			return
+		}
+		if s.config.RedirectLinterToTest || host == "osv.dev" {
+			//nolint:gosec // G710: Hardcoded redirect target
+			http.Redirect(w, r, "https://test.osv.dev"+r.URL.RequestURI(), http.StatusFound)
+
+			return
+		}
+
+		next(w, r)
 	}
-
-	if host == "osv.dev" {
-		//nolint:gosec // G710: Hardcoded redirect target
-		http.Redirect(w, r, "https://test.osv.dev"+r.URL.RequestURI(), http.StatusFound)
-
-		return true
-	}
-	if host == "api.osv.dev" {
-		//nolint:gosec // G710: Hardcoded redirect target
-		http.Redirect(w, r, "https://api.test.osv.dev"+r.URL.RequestURI(), http.StatusFound)
-
-		return true
-	}
-
-	return false
 }
 
 // handleLinterPage handles serving the linter findings UI page.
 func (s *Server) handleLinterPage(w http.ResponseWriter, r *http.Request) {
-	if s.redirectLinterToTest(w, r) {
-		return
-	}
-
 	data := LinterPageData{
 		Title:         "Vulnerability Linter Report - OSV",
 		ActiveSection: "linter",
@@ -79,10 +78,6 @@ func (s *Server) handleLinterPage(w http.ResponseWriter, r *http.Request) {
 
 // handleLinterQuery handles paginated server-side querying of cached linter findings.
 func (s *Server) handleLinterQuery(w http.ResponseWriter, r *http.Request) {
-	if s.redirectLinterToTest(w, r) {
-		return
-	}
-
 	snap, err := s.linterIdx.getSnapshot(r.Context())
 	if err != nil {
 		logger.ErrorContext(r.Context(), "failed to load linter index snapshot", "error", err)
@@ -92,22 +87,12 @@ func (s *Server) handleLinterQuery(w http.ResponseWriter, r *http.Request) {
 	}
 
 	q := r.URL.Query()
-	source := q.Get("source")
-	if source == "" {
-		source = q.Get("homedb")
-	}
-
-	code := q.Get("code")
-	if code == "" {
-		code = q.Get("finding")
-	}
-
 	page, _ := strconv.Atoi(q.Get("page"))
 	pageSize, _ := strconv.Atoi(q.Get("page_size"))
 
-	resp := snap.query(LinterQueryParams{
-		Source:   source,
-		Code:     code,
+	resp := snap.query(linterQueryParams{
+		Source:   q.Get("source"),
+		Code:     q.Get("code"),
 		Query:    q.Get("q"),
 		Order:    q.Get("order"),
 		Page:     page,
@@ -117,46 +102,8 @@ func (s *Server) handleLinterQuery(w http.ResponseWriter, r *http.Request) {
 	s.renderJSON(w, r, http.StatusOK, resp)
 }
 
-// handleLinterBug handles O(1) lookup of linter findings for a single vulnerability ID.
-func (s *Server) handleLinterBug(w http.ResponseWriter, r *http.Request) {
-	if s.redirectLinterToTest(w, r) {
-		return
-	}
-
-	bugID := r.PathValue("bug_id")
-	if unescaped, err := url.PathUnescape(bugID); err == nil {
-		bugID = unescaped
-	}
-	if bugID == "" || !vulnIDRegex.MatchString(bugID) {
-		http.NotFound(w, r)
-
-		return
-	}
-
-	snap, err := s.linterIdx.getSnapshot(r.Context())
-	if err != nil {
-		logger.ErrorContext(r.Context(), "failed to load linter snapshot for bug", "bug_id", bugID, "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-
-		return
-	}
-
-	summary, ok := snap.getBug(bugID)
-	if !ok {
-		http.NotFound(w, r)
-
-		return
-	}
-
-	s.renderJSON(w, r, http.StatusOK, summary)
-}
-
 // handleLinterVuln serves the full vulnerability JSON record from VulnerabilityStore for the linter inspector.
 func (s *Server) handleLinterVuln(w http.ResponseWriter, r *http.Request) {
-	if s.redirectLinterToTest(w, r) {
-		return
-	}
-
 	bugID := r.PathValue("bug_id")
 	if unescaped, err := url.PathUnescape(bugID); err == nil {
 		bugID = unescaped
@@ -196,10 +143,6 @@ func (s *Server) handleLinterVuln(w http.ResponseWriter, r *http.Request) {
 
 // handleLinterSources handles listing sources that have linter findings from GCS.
 func (s *Server) handleLinterSources(w http.ResponseWriter, r *http.Request) {
-	if s.redirectLinterToTest(w, r) {
-		return
-	}
-
 	sources, err := s.stores.Linter.ListSources(r.Context())
 	if err != nil {
 		logger.ErrorContext(r.Context(), "failed to list linter sources", "error", err)
@@ -220,10 +163,6 @@ func (s *Server) handleLinterSources(w http.ResponseWriter, r *http.Request) {
 
 // handleLinterFindings handles fetching linter findings JSON for a specific source from GCS.
 func (s *Server) handleLinterFindings(w http.ResponseWriter, r *http.Request) {
-	if s.redirectLinterToTest(w, r) {
-		return
-	}
-
 	source := r.PathValue("source")
 	if source == "" {
 		http.NotFound(w, r)

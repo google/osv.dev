@@ -136,19 +136,10 @@ func run() error {
 
 	apiURL := os.Getenv("OSV_API_URL")
 	if apiURL == "" {
-		apiURL = os.Getenv("API_URL")
-	}
-	if apiURL == "" {
 		apiURL = "api.osv.dev"
 	}
 
 	secretKey := os.Getenv("SESSION_SECRET_KEY")
-	if secretKey == "" {
-		secretKey = os.Getenv("FLASK_SECRET_KEY")
-	}
-	if secretKey == "" {
-		secretKey = os.Getenv("SECRET_KEY")
-	}
 	if secretKey == "" && !bypassOAuth {
 		logger.WarnContext(ctx, "SESSION_SECRET_KEY environment variable is not set, authentication will not work")
 	}

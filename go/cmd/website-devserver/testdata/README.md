@@ -63,11 +63,11 @@ Source repository definitions are loaded from `sources.yaml` in this directory (
 ```yaml
 - name: 'cve-osv'
   link: 'https://storage.googleapis.com/cve-osv-conversion/osv-output/'
-  human_link: 'https://cve.org/CVERecord?id={{ BUG_ID }}'
+  human_link: 'https://cve.org/CVERecord?id={{ .ID }}'
 
 - name: 'ubuntu'
   link: 'https://git.launchpad.net/ubuntu-cve-tracker/tree/'
-  human_link: 'https://ubuntu.com/security/{{ BUG_ID }}'
+  human_link: 'https://ubuntu.com/security/{{ .ID }}'
 ```
 
 ---

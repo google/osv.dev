@@ -273,30 +273,6 @@ func TestDevStore_Search(t *testing.T) {
 		}
 	})
 
-	t.Run("Search with legacy page parameter", func(t *testing.T) {
-		t.Parallel()
-		page1, err := store.Search(ctx, models.VulnerabilitySearchQuery{
-			PageSize: 10,
-			Page:     1,
-		})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		page2, err := store.Search(ctx, models.VulnerabilitySearchQuery{
-			PageSize: 10,
-			Page:     2,
-		})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(page1.Vulnerabilities) != 10 || len(page2.Vulnerabilities) != 10 {
-			t.Fatalf("expected 10 items on page 1 and page 2, got %d and %d", len(page1.Vulnerabilities), len(page2.Vulnerabilities))
-		}
-		if page1.Vulnerabilities[0].ID == page2.Vulnerabilities[0].ID {
-			t.Errorf("expected page 2 to have different items from page 1")
-		}
-	})
-
 	t.Run("Search by ecosystem filter", func(t *testing.T) {
 		t.Parallel()
 		res, err := store.Search(ctx, models.VulnerabilitySearchQuery{

@@ -127,6 +127,12 @@ run-api-server-test:
 run-grafana-local: ## Run local Grafana for testing
 	./tools/run_grafana_local.sh $(ARGS)
 
+run-cloud-sql-proxy: ## Run Cloud SQL Auth Proxy against prod (override via INSTANCE=project:region:instance)
+	cloud-sql-proxy "$${INSTANCE:-oss-vdb:us-central1:osv-db}" --auto-iam-authn
+
+run-cloud-sql-proxy-staging: ## Run Cloud SQL Auth Proxy against staging (oss-vdb-test)
+	cloud-sql-proxy "oss-vdb-test:us-central1:osv-db" --auto-iam-authn
+
 # TODO: API integration tests.
 all-tests: lib-tests vulnfeed-tests bindings-tests go-tests ## Run all tests
 

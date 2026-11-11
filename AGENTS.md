@@ -89,6 +89,11 @@ The project uses `poetry` for Python dependency management, `pnpm` for website f
   ```bash
   make build-protos
   ```
+- **PostgreSQL Codegen (`sqlc`)**:
+  If you modify [`go/internal/database/postgres/queries.sql`](go/internal/database/postgres/queries.sql) or [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/), regenerate the Go query code (`go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest` if not installed):
+  ```bash
+  cd go/internal/database/postgres && sqlc generate
+  ```
 
 ---
 
@@ -301,7 +306,7 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
     - *Design Pattern*: Models here **mirror** the Datastore models defined in the Python library ([`osv/models.py`](osv/models.py)).
     - *Consistency Testing*: To prevent synchronization drift between Go and Python database models, a database validation test is maintained under [`go/internal/database/datastore/internal/validate/`](go/internal/database/datastore/internal/validate/) (run via `run_validate.sh`).
     - *Schema Quirks (Crucial for Agents)*: In the Datastore database, the legacy term `bug` was used for vulnerabilities. Consequently, many Datastore fields still use names like `bug_id` or `bug_ids`. In the Go codebase, these are mapped to Go struct fields like `VulnID` or `VulnIDs` (e.g., `AffectedCommits` has `VulnID string datastore:"bug_id"`). Pay close attention to the `datastore:` tag when writing queries or defining new fields!
-  - **`postgres/`**: PostgreSQL implementation of the domain interfaces using `sqlc` and `pgx/v5` ([`go/internal/database/postgres/`](go/internal/database/postgres/)).
+  - **`postgres/`**: PostgreSQL implementation of the domain interfaces using `sqlc` and `pgx/v5` ([`go/internal/database/postgres/`](go/internal/database/postgres/)). Schema migrations are managed with `goose` under [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/) and applied automatically in CI/CD via `gcr.io/oss-vdb/goose` ([`docker/goose/`](docker/goose/)).
   - **`dualread/`**: Shadow dual-reader wrapper ([`go/internal/database/dualread/`](go/internal/database/dualread/)) that serves primary reads from Datastore/GCS while probabilistically shadowing queries (`POSTGRES_SHADOW_RATE`) to PostgreSQL in the background for latency comparison.
 - **`gitter/`**: Client logic to interface with the Gitter caching service.
 

@@ -11,7 +11,7 @@ import (
 )
 
 const getVulnerabilityModified = `-- name: GetVulnerabilityModified :many
-SELECT id, (data->>'modified')::timestamptz AS modified
+SELECT id, modified
 FROM vulnerabilities
 WHERE id = ANY($1::text[])
 `

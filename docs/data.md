@@ -69,7 +69,8 @@ The following ecosystems have vulnerabilities encoded in this format:
 -   [BellSoft](https://github.com/bell-sw/osv-database)
     ([MIT](https://github.com/bell-sw/osv-database/blob/master/LICENSE))
 -   [Chainguard / Wolfi](https://github.com/chainguard-dev/vulnerability-scanner-support/blob/main/docs/osv_v3_feed.md)
-    ([CC-BY-NC-ND 4.0](https://github.com/chainguard-dev/vulnerability-scanner-support/blob/main/docs/foundational_concepts.md#security-feeds))
+    ([CC-BY-NC-ND 4.0](https://github.com/chainguard-dev/vulnerability-scanner-support/blob/main/docs/foundational_concepts.md#security-feeds) / 
+    [Chainguard License for Commercial Scanners](https://www.chainguard.dev/legal/chainguard-license-for-commercial-scanners))
 -   [CleanStart](https://github.com/cleanstart-dev/cleanstart-security-advisories)
     ([Apache 2.0](https://github.com/cleanstart-dev/cleanstart-security-advisories/blob/main/LICENSE))
 -   [Curl](https://curl.se/docs/security.html)

@@ -69,6 +69,8 @@ You must install:
 1.  [Go](https://go.dev/doc/install) >= 1.26
 1.  `protobuf-compiler` (e.g. `protoc` command, install via `sudo apt install protobuf-compiler` on Debian/Ubuntu)
 1.  `protoc-gen-go` and `protoc-gen-go-grpc` (Go proto plugins, install via `go install google.golang.org/protobuf/cmd/protoc-gen-go@latest` and `go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest`. Ensure your Go bin directory, e.g. `~/go/bin`, is in your `PATH`)
+1.  [sqlc](https://docs.sqlc.dev/en/latest/overview/install.html) (optional, only if modifying PostgreSQL queries/schema; install via `go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`)
+1.  `cloud-sql-proxy` (optional, maintainers only for connecting to Cloud SQL; install via `gcloud components install cloud-sql-proxy`, `go install github.com/GoogleCloudPlatform/cloud-sql-proxy/v2@latest`, or the [standalone binary](https://cloud.google.com/sql/docs/postgres/connect-instance-auth-proxy#install))
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Poetry dependencies.

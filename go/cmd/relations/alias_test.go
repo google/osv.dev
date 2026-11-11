@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"cloud.google.com/go/datastore"
+	osvdatastore "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/google/osv.dev/go/osv/models"
 	"github.com/google/osv.dev/go/testutils"
@@ -984,5 +985,150 @@ func TestAliasGroupReachesLimit(t *testing.T) {
 	}
 	if len(groups) != 0 {
 		t.Errorf("expected 0 alias groups, got %d", len(groups))
+	}
+}
+
+func TestWithdrawnMemberInAliasGroup(t *testing.T) {
+	ctx := context.Background()
+	dsClient := testutils.MustNewDatastoreClientForTesting(t)
+	gcsClient := testutils.NewMockStorage()
+	publisher := &testutils.MockPublisher{}
+	defer gcsClient.Close()
+	defer dsClient.Close()
+
+	// Group 1 (2 members): CVE-2026-105398 (now withdrawn) + CVE-2026-106571 (live)
+	group1 := &models.AliasGroup{
+		VulnIDs:  []string{"CVE-2026-105398", "CVE-2026-106571"},
+		Modified: time.Now().UTC(),
+	}
+	if _, err := dsClient.Put(ctx, datastore.IncompleteKey("AliasGroup", nil), group1); err != nil {
+		t.Fatalf("failed to put group1: %v", err)
+	}
+
+	// Group 2 (4 members): CVE-2026-56395 (now withdrawn, first lexicographically) + 3 live vulns
+	group2 := &models.AliasGroup{
+		VulnIDs:  []string{"CVE-2026-56395", "CVE-2026-56397", "GHSA-v3mg-9v85-fcm7", "GO-2026-4720"},
+		Modified: time.Now().UTC(),
+	}
+	if _, err := dsClient.Put(ctx, datastore.IncompleteKey("AliasGroup", nil), group2); err != nil {
+		t.Fatalf("failed to put group2: %v", err)
+	}
+
+	vulns := []*models.Vulnerability{
+		{
+			IsWithdrawn: true,
+			AliasRaw:    []string{"CVE-2026-106571"},
+			Modified:    time.Now().UTC(),
+		},
+		{
+			IsWithdrawn: false,
+			AliasRaw:    nil,
+			Modified:    time.Now().UTC(),
+		},
+		{
+			IsWithdrawn: true,
+			AliasRaw:    []string{"GHSA-v3mg-9v85-fcm7"},
+			Modified:    time.Now().UTC(),
+		},
+		{
+			IsWithdrawn: false,
+			AliasRaw:    []string{"GHSA-v3mg-9v85-fcm7"},
+			Modified:    time.Now().UTC(),
+		},
+		{
+			IsWithdrawn: false,
+			AliasRaw:    []string{"CVE-2026-56397"},
+			Modified:    time.Now().UTC(),
+		},
+		{
+			IsWithdrawn: false,
+			AliasRaw:    []string{"CVE-2026-56397", "GHSA-v3mg-9v85-fcm7"},
+			Modified:    time.Now().UTC(),
+		},
+	}
+	keys := []*datastore.Key{
+		datastore.NameKey("Vulnerability", "CVE-2026-105398", nil),
+		datastore.NameKey("Vulnerability", "CVE-2026-106571", nil),
+		datastore.NameKey("Vulnerability", "CVE-2026-56395", nil),
+		datastore.NameKey("Vulnerability", "CVE-2026-56397", nil),
+		datastore.NameKey("Vulnerability", "GHSA-v3mg-9v85-fcm7", nil),
+		datastore.NameKey("Vulnerability", "GO-2026-4720", nil),
+	}
+	if _, err := dsClient.PutMulti(ctx, keys, vulns); err != nil {
+		t.Fatalf("failed to put vulns: %v", err)
+	}
+
+	// Seed a stale ListedVulnerability for CVE-2026-56395 to ensure relations cleans it up too.
+	staleListed := osvdatastore.NewListedVulnerabilityFromProto(&osvschema.Vulnerability{Id: "CVE-2026-56395"})
+	if _, err := dsClient.Put(ctx, datastore.NameKey("ListedVulnerability", "CVE-2026-56395", nil), staleListed); err != nil {
+		t.Fatalf("failed to seed stale listed vuln: %v", err)
+	}
+
+	now := timestamppb.Now()
+	gcsRecords := []*osvschema.Vulnerability{
+		{Id: "CVE-2026-105398", Modified: now, Withdrawn: now, Aliases: []string{"CVE-2026-106571"}},
+		{Id: "CVE-2026-106571", Modified: now, Aliases: []string{"CVE-2026-105398"}},
+		{Id: "CVE-2026-56395", Modified: now, Withdrawn: now, Aliases: []string{"CVE-2026-56397", "GHSA-v3mg-9v85-fcm7", "GO-2026-4720"}},
+		{Id: "CVE-2026-56397", Modified: now, Aliases: []string{"CVE-2026-56395", "GHSA-v3mg-9v85-fcm7", "GO-2026-4720"}},
+		{Id: "GHSA-v3mg-9v85-fcm7", Modified: now, Aliases: []string{"CVE-2026-56395", "CVE-2026-56397", "GO-2026-4720"}},
+		{Id: "GO-2026-4720", Modified: now, Aliases: []string{"CVE-2026-56395", "CVE-2026-56397", "GHSA-v3mg-9v85-fcm7"}},
+	}
+	for _, rec := range gcsRecords {
+		b, err := proto.Marshal(rec)
+		if err != nil {
+			t.Fatalf("failed to marshal %s: %v", rec.GetId(), err)
+		}
+		if err := gcsClient.WriteObject(ctx, fmt.Sprintf("all/pb/%s.pb", rec.GetId()), b, nil); err != nil {
+			t.Fatalf("failed to write %s: %v", rec.GetId(), err)
+		}
+	}
+
+	updater := NewUpdater(ctx, dsClient, gcsClient, publisher)
+	if err := ComputeAliasGroups(ctx, dsClient, updater.Ch, nil); err != nil {
+		t.Fatalf("ComputeAliasGroups failed: %v", err)
+	}
+	updater.Finish()
+
+	readAliases := func(id string) []string {
+		t.Helper()
+		b, err := gcsClient.ReadObject(ctx, fmt.Sprintf("all/pb/%s.pb", id))
+		if err != nil {
+			t.Fatalf("failed to read %s: %v", id, err)
+		}
+		var v osvschema.Vulnerability
+		if err := proto.Unmarshal(b, &v); err != nil {
+			t.Fatalf("failed to unmarshal %s: %v", id, err)
+		}
+
+		return v.GetAliases()
+	}
+
+	if got := readAliases("CVE-2026-105398"); len(got) != 0 {
+		t.Errorf("expected CVE-2026-105398 aliases to be cleared, got %v", got)
+	}
+	if got := readAliases("CVE-2026-106571"); len(got) != 0 {
+		t.Errorf("expected surviving CVE-2026-106571 stale alias to be cleared, got %v", got)
+	}
+	if got := readAliases("CVE-2026-56395"); len(got) != 0 {
+		t.Errorf("expected CVE-2026-56395 aliases to be cleared, got %v", got)
+	}
+	wantRemaining := []string{"GHSA-v3mg-9v85-fcm7", "GO-2026-4720"}
+	if got := readAliases("CVE-2026-56397"); !slices.Equal(got, wantRemaining) {
+		t.Errorf("expected CVE-2026-56397 aliases %v, got %v", wantRemaining, got)
+	}
+
+	// Ensure ListedVulnerability does NOT exist for withdrawn CVEs, and DOES exist for updated live CVEs.
+	for _, withdrawnID := range []string{"CVE-2026-105398", "CVE-2026-56395"} {
+		var lv osvdatastore.ListedVulnerability
+		err := dsClient.Get(ctx, datastore.NameKey("ListedVulnerability", withdrawnID, nil), &lv)
+		if !errors.Is(err, datastore.ErrNoSuchEntity) {
+			t.Errorf("expected ListedVulnerability for withdrawn %s to not exist, got err: %v", withdrawnID, err)
+		}
+	}
+	for _, liveID := range []string{"CVE-2026-106571", "CVE-2026-56397"} {
+		var lv osvdatastore.ListedVulnerability
+		if err := dsClient.Get(ctx, datastore.NameKey("ListedVulnerability", liveID, nil), &lv); err != nil {
+			t.Errorf("expected ListedVulnerability for live %s to exist, got err: %v", liveID, err)
+		}
 	}
 }

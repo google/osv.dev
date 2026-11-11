@@ -27,9 +27,9 @@ spec:
         - name: OSV_NORMALIZE_MATCH_NAMES
           value: "true"
         - name: POSTGRES_SHADOW_RATE
-          value: "1.0"
+          value: "0.0"
         - name: POSTGRES_HOST
-          value: "172.24.0.3"
+          value: "172.24.1.6"
         - name: POSTGRES_PORT
           value: "6432"
         - name: POSTGRES_USER
@@ -41,7 +41,7 @@ spec:
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: postgres-readonly-password
+              name: osv-db-readonly-password
               key: latest
         resources:
           limits:

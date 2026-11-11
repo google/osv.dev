@@ -280,6 +280,27 @@ func FuzzRPMMonotonicity(f *testing.F) {
 	})
 }
 
+func FuzzLinuxMonotonicity(f *testing.F) {
+	seeds := []string{
+		"0",
+		"2.6.12", "2.6.39", "2.6.39.2",
+		"5.12-rc1", "v5.12-rc1-dontuse", "5.12-rc2", "5.12",
+		"6.1", "6.1.0", "v6.1", "6.1.100", "6.1.120",
+	}
+	for i, v1 := range seeds {
+		for j := i; j < len(seeds); j++ {
+			f.Add(v1, seeds[j])
+		}
+	}
+	f.Fuzz(func(t *testing.T, v1Str, v2Str string) {
+		e, ok := DefaultProvider.Get("Linux")
+		if !ok {
+			t.Fatal("Linux not found")
+		}
+		checkCoarseMonotonicityRaw(t, e, v1Str, v2Str)
+	})
+}
+
 func FuzzAPKMonotonicity(f *testing.F) {
 	f.Skip("Skipping Alpine fuzz test due to known transitivity violations")
 	seeds := []string{

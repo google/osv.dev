@@ -58,6 +58,7 @@ var ecosystems = map[osvconstants.Ecosystem]ecosystemFactory{
 	osvconstants.EcosystemHackage:                    func(p *Provider, _ string) Ecosystem { return hackageEcosystem{p: p} },
 	osvconstants.EcosystemHex:                        func(p *Provider, _ string) Ecosystem { return hexEcosystem{p: p} },
 	osvconstants.EcosystemJulia:                      statelessFactory[semverEcosystem],
+	osvconstants.EcosystemLinux:                      statelessFactory[linuxEcosystem],
 	osvconstants.EcosystemMageia:                     statelessFactory[rpmEcosystem],
 	osvconstants.EcosystemMaven:                      func(p *Provider, _ string) Ecosystem { return mavenEcosystem{p: p} },
 	osvconstants.EcosystemMinimOS:                    statelessFactory[apkEcosystem],

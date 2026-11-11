@@ -142,7 +142,7 @@ func findStale(ctx context.Context, b clients.CloudStorage, eco string) ([]*clie
 		}
 	}
 	logger.InfoContext(ctx, "scanned ecosystem", slog.String("ecosystem", eco),
-		slog.Int("files", total), slog.Int("stale", len(stale)), slog.Duration("took", time.Since(start)))
+		slog.Int("files", total), slog.Int("stale", len(stale)), slog.String("took", time.Since(start).String()))
 
 	return stale, total, nil
 }

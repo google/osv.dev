@@ -50,9 +50,9 @@ RUN go mod download && go mod verify
 FROM builder AS importer-build
 RUN CGO_ENABLED=0 go build -o /app/importer ./cmd/importer/
 
-FROM alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a AS importer
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS importer
 # Need to install the full tar package, to not use the busybox version, which doesn't have --zstd support.
-RUN apk add --no-cache git zstd tar
+RUN apk add --no-cache "git>=2.54.1" zstd tar
 COPY --from=importer-build /app/importer /
 ENTRYPOINT ["/importer"]
 
@@ -132,9 +132,9 @@ ENTRYPOINT ["/custommetrics"]
 FROM builder AS gitter-build
 RUN CGO_ENABLED=0 go build -o /app/gitter ./cmd/gitter/
 
-FROM alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a AS gitter
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS gitter
 # Need to install the full tar package, to not use the busybox version, which doesn't have --zstd support.
-RUN apk add --no-cache bash git zstd tar
+RUN apk add --no-cache bash "git>=2.54.1" zstd tar
 # Set maintenance.autoDetach to false so git's automatic maintenance will not detach and run in the background
 RUN git config --system maintenance.autoDetach false
 COPY --from=gitter-build /app/gitter /
@@ -146,7 +146,7 @@ ENTRYPOINT ["/gitter"]
 FROM builder AS first_package_finder-build
 RUN CGO_ENABLED=0 go build -o /app/first_package_finder ./cmd/first_package_finder/
 
-FROM alpine:3.24@sha256:be2656061b536c1883c4034790e21d0a09c5aaaf51968b89368a3c0371ea2c9a AS first_package_finder
+FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS first_package_finder
 COPY --from=first_package_finder-build /app/first_package_finder /
 ENTRYPOINT ["/first_package_finder"]
 

@@ -54,3 +54,14 @@ variable "postgres_read_pool_node_count" {
   description = "Number of nodes in the Cloud SQL read pool."
   default     = 1
 }
+
+variable "frontend_service_account_email" {
+  type        = string
+  description = "Email of the dedicated Cloud Run frontend service account granted backend invoker and read-only DB secret access."
+}
+
+variable "service_account_email" {
+  type        = string
+  description = "Optional service account email to attach to the API Cloud Run services."
+  default     = null
+}

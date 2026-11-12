@@ -11,10 +11,6 @@ data "google_compute_network" "default" {
   name    = "default"
 }
 
-data "google_compute_default_service_account" "default" {
-  project = var.project_id
-}
-
 resource "google_sql_database_instance" "read_pool" {
   project              = var.project_id
   name                 = var.postgres_read_pool_name
@@ -97,9 +93,9 @@ resource "google_secret_manager_secret" "postgres_readonly_password" {
   depends_on = [google_project_service.secretmanager]
 }
 
-resource "google_secret_manager_secret_iam_member" "cloud_run_readonly_secret_access" {
+resource "google_secret_manager_secret_iam_member" "frontend_readonly_secret_access" {
   project   = var.project_id
   secret_id = google_secret_manager_secret.postgres_readonly_password.secret_id
   role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+  member    = "serviceAccount:${var.frontend_service_account_email}"
 }

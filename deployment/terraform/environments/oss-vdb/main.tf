@@ -49,8 +49,11 @@ module "osv_pipeline" {
 module "osv" {
   source = "../../modules/osv"
 
-  project_id                   = "oss-vdb"
-  worker_service_account_email = module.osv_pipeline.worker_service_account_email
+  project_id                    = "oss-vdb"
+  worker_service_account_email  = module.osv_pipeline.worker_service_account_email
+  vulnerabilities_export_bucket = module.osv_pipeline.vulnerabilities_export_bucket_name
+  failed_tasks_topic_name       = module.osv_pipeline.failed_tasks_topic_name
+  datastore_database_id         = module.osv_pipeline.datastore_database_id
 
   public_import_logs_bucket     = "osv-public-import-logs"
   cve_osv_conversion_bucket     = "cve-osv-conversion"
@@ -69,10 +72,11 @@ module "osv" {
 module "osv_api" {
   source = "../../modules/osv_api"
 
-  project_id  = "oss-vdb"
-  api_url     = "api.osv.dev"
-  esp_version = "2.57.1"
-  gcs_log_dir = "gs://oss-vdb-tf/apply-logs"
+  project_id                     = "oss-vdb"
+  api_url                        = "api.osv.dev"
+  esp_version                    = "2.57.1"
+  gcs_log_dir                    = "gs://oss-vdb-tf/apply-logs"
+  frontend_service_account_email = module.osv.frontend_service_account_email
 
   postgres_primary_instance_name = module.osv_pipeline.postgres_instance_name
   postgres_region                = module.osv_pipeline.postgres_region
@@ -87,6 +91,49 @@ module "oss_fuzz" {
   failed_tasks_topic_id        = module.osv_pipeline.failed_tasks_topic_id
   pubsub_service_account_email = module.osv_pipeline.pubsub_service_account_email
   subnetwork                   = module.osv_pipeline.oss_fuzz_subnet_self_link
+}
+
+# Production CI/CD deployment service account
+resource "google_service_account" "deployment_service" {
+  project      = "oss-vdb"
+  account_id   = "deployment"
+  display_name = "deployment"
+}
+
+resource "google_project_iam_member" "deployment_service" {
+  project = "oss-vdb"
+  role    = "roles/editor"
+  member  = "serviceAccount:${google_service_account.deployment_service.email}"
+}
+
+# Legacy Default Compute SA bindings (to be removed once prod Cloud Run and OSS-Fuzz migrate off Default Compute SA)
+data "google_compute_default_service_account" "default" {
+  project = "oss-vdb"
+}
+
+resource "google_project_iam_member" "compute_service" {
+  project = "oss-vdb"
+  role    = "roles/editor"
+  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
+resource "google_project_iam_member" "compute_service_datastore" {
+  project = "oss-vdb"
+  role    = "roles/datastore.importExportAdmin"
+  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
+resource "google_project_iam_member" "website_secret_accessor" {
+  project = "oss-vdb"
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "legacy_compute_readonly_secret_access" {
+  project   = "oss-vdb"
+  secret_id = "osv-db-readonly-password"
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${data.google_compute_default_service_account.default.email}"
 }
 
 # Cloud Router and NAT in us-central1 for private OSS-Fuzz workers cluster

@@ -10,6 +10,7 @@ spec:
         run.googleapis.com/network-interfaces: '[{"network":"default","subnetwork":"default"}]'
         run.googleapis.com/vpc-access-egress: private-ranges-only
     spec:
+      serviceAccountName: osv-frontend@oss-vdb-test.iam.gserviceaccount.com
       containers:
       - image: osv-server
         ports:

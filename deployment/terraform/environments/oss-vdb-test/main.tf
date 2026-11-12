@@ -49,8 +49,12 @@ module "osv_pipeline" {
 module "osv_test" {
   source = "../../modules/osv"
 
-  project_id                   = "oss-vdb-test"
-  worker_service_account_email = module.osv_pipeline.worker_service_account_email
+  project_id                    = "oss-vdb-test"
+  worker_service_account_email  = module.osv_pipeline.worker_service_account_email
+  vulnerabilities_export_bucket = module.osv_pipeline.vulnerabilities_export_bucket_name
+  failed_tasks_topic_name       = module.osv_pipeline.failed_tasks_topic_name
+  datastore_database_id         = module.osv_pipeline.datastore_database_id
+  website_ingress               = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 
   public_import_logs_bucket     = "osv-test-public-import-logs"
   logs_bucket                   = "osv-test-logs"
@@ -69,10 +73,12 @@ module "osv_test" {
 module "osv_api" {
   source = "../../modules/osv_api"
 
-  project_id  = "oss-vdb-test"
-  api_url     = "api.test.osv.dev"
-  esp_version = "2.57.1"
-  gcs_log_dir = "gs://oss-vdb-tf/apply-logs"
+  project_id                     = "oss-vdb-test"
+  api_url                        = "api.test.osv.dev"
+  esp_version                    = "2.57.1"
+  gcs_log_dir                    = "gs://oss-vdb-tf/apply-logs"
+  frontend_service_account_email = module.osv_test.frontend_service_account_email
+  service_account_email          = module.osv_test.frontend_service_account_email
 
   postgres_primary_instance_name = module.osv_pipeline.postgres_instance_name
   postgres_region                = module.osv_pipeline.postgres_region
@@ -109,6 +115,11 @@ import {
 import {
   to = module.osv_pipeline.google_service_networking_connection.private_vpc_connection
   id = "projects/oss-vdb-test/global/networks/default:servicenetworking.googleapis.com"
+}
+
+import {
+  to = module.osv_test.google_service_account.frontend_sa
+  id = "projects/oss-vdb-test/serviceAccounts/osv-frontend@oss-vdb-test.iam.gserviceaccount.com"
 }
 
 output "website_dns_records" {

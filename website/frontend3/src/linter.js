@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       totalIssues = data.total || 0;
       currentPage = data.page || 1;
-      updateDynamicFilterCounts(data.facets || {});
+      if (!updateDynamicFilterCounts(data.facets || {})) return;
       displayIssues(data.issues || []);
     } catch (err) {
       if (err.name === "AbortError") return;
@@ -105,6 +105,8 @@ document.addEventListener("DOMContentLoaded", function () {
         .getElementById("issues-table")
         .getElementsByTagName("tbody")[0];
       tableBody.innerHTML = '<tr><td colspan="3">Failed to load issues.</td></tr>';
+      totalIssues = 0;
+      setupPagination();
     } finally {
       if (activeQueryController === controller) {
         globalLoader.classList.remove("visible");
@@ -174,51 +176,54 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  function renderFilterDropdown(optionsEl, selectedEl, total, items, selectedValue) {
+    optionsEl.replaceChildren();
+    for (const { value, label } of [{ value: "", label: `All (${total})` }, ...items]) {
+      const option = document.createElement("div");
+      option.className = "filter-option";
+      option.dataset.value = value;
+      option.textContent = label;
+      optionsEl.appendChild(option);
+    }
+    const match = selectedValue && items.find((item) => item.value === selectedValue);
+    selectedEl.textContent = selectedValue
+      ? `${selectedValue} (${match ? match.count : 0} issues)`
+      : `All (${total} issues)`;
+  }
+
   function updateDynamicFilterCounts(facets) {
-    const rules = facets.rules || [];
-    const totalForRules = facets.total_for_rules || 0;
+    const rules = (facets.rules || []).map((rule) => ({
+      value: rule.code,
+      label: `${rule.code} — ${rule.label} (${rule.count})`,
+      count: rule.count,
+    }));
+    renderFilterDropdown(
+      findingsFilterOptions,
+      findingsFilterSelected,
+      facets.total_for_rules || 0,
+      rules,
+      selectedFinding
+    );
 
-    findingsFilterOptions.innerHTML = `<div class="filter-option" data-value="" data-name="All" data-count="${totalForRules}">All (${totalForRules})</div>`;
-    rules.forEach((rule) => {
-      const option = document.createElement("div");
-      option.className = "filter-option";
-      option.dataset.value = rule.code;
-      option.dataset.name = rule.code;
-      option.dataset.count = String(rule.count);
-      option.textContent = `${rule.code} — ${rule.label} (${rule.count})`;
-      findingsFilterOptions.appendChild(option);
-    });
-    if (selectedFinding) {
-      const match = rules.find((r) => r.code === selectedFinding);
-      findingsFilterSelected.textContent = `${selectedFinding} (${match ? match.count : 0} issues)`;
-    } else {
-      findingsFilterSelected.textContent = `All (${totalForRules} issues)`;
+    const sources = (facets.sources || []).map((src) => ({
+      value: src.name,
+      label: `${src.name} (${src.count})`,
+      count: src.count,
+    }));
+    if (selectedHomeDb && !sources.some((s) => s.value === selectedHomeDb)) {
+      selectedHomeDb = "";
+      updateURL("", true);
+      fetchIssues();
+      return false;
     }
-
-    const sources = facets.sources || [];
-    const totalForSources = facets.total_for_sources || 0;
-
-    homeDbFilterOptions.innerHTML = `<div class="filter-option" data-value="" data-count="${totalForSources}">All (${totalForSources})</div>`;
-    sources.forEach((src) => {
-      const option = document.createElement("div");
-      option.className = "filter-option";
-      option.dataset.value = src.name;
-      option.dataset.count = String(src.count);
-      option.textContent = `${src.name} (${src.count})`;
-      homeDbFilterOptions.appendChild(option);
-    });
-    if (selectedHomeDb) {
-      const match = sources.find((s) => s.name === selectedHomeDb);
-      if (!match) {
-        selectedHomeDb = "";
-        updateURL("", true);
-        fetchIssues();
-        return;
-      }
-      homeDbFilterSelected.textContent = `${selectedHomeDb} (${match.count} issues)`;
-    } else {
-      homeDbFilterSelected.textContent = `All (${totalForSources} issues)`;
-    }
+    renderFilterDropdown(
+      homeDbFilterOptions,
+      homeDbFilterSelected,
+      facets.total_for_sources || 0,
+      sources,
+      selectedHomeDb
+    );
+    return true;
   }
 
   function displayIssues(paginatedIssues) {

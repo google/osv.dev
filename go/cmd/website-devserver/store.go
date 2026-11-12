@@ -149,6 +149,14 @@ func (ds *DevStore) readRecordFromDisk(id string) (*osvschema.Vulnerability, *Me
 		return readRecordFromFile(exactPath)
 	}
 
+	sanitizedID := strings.ReplaceAll(id, ":", "_")
+	if sanitizedID != id {
+		underscorePath := filepath.Join(ds.dataDir, sanitizedID+".json")
+		if _, err := os.Stat(underscorePath); err == nil {
+			return readRecordFromFile(underscorePath)
+		}
+	}
+
 	// Case-insensitive match in dataDir
 	entries, err := os.ReadDir(ds.dataDir)
 	if err != nil {
@@ -159,7 +167,8 @@ func (ds *DevStore) readRecordFromDisk(id string) (*osvschema.Vulnerability, *Me
 		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
 			continue
 		}
-		if strings.EqualFold(strings.TrimSuffix(entry.Name(), ".json"), id) {
+		stem := strings.TrimSuffix(entry.Name(), ".json")
+		if strings.EqualFold(stem, id) || strings.EqualFold(stem, sanitizedID) {
 			return readRecordFromFile(filepath.Join(ds.dataDir, entry.Name()))
 		}
 	}
@@ -711,17 +720,6 @@ func (ds *DevStore) buildMockLinterData() (map[string]map[string][]devFindingEnt
 	return bySource, importFindings
 }
 
-func (ds *DevStore) ListSources(_ context.Context) ([]string, error) {
-	bySource, _ := ds.buildMockLinterData()
-	sources := make([]string, 0, len(bySource))
-	for s := range bySource {
-		sources = append(sources, s)
-	}
-	slices.Sort(sources)
-
-	return sources, nil
-}
-
 func (ds *DevStore) ListSourceInfos(_ context.Context) ([]models.LinterSourceInfo, error) {
 	bySource, _ := ds.buildMockLinterData()
 	now := time.Now().UTC()
@@ -752,6 +750,18 @@ func (ds *DevStore) GetFindings(_ context.Context, source string) ([]byte, error
 func (ds *DevStore) ListAll(_ context.Context) ([]*models.ImportFinding, error) {
 	_, importFindings := ds.buildMockLinterData()
 	return importFindings, nil
+}
+
+func (ds *DevStore) ListLastAttempts(_ context.Context) (map[string]int64, error) {
+	_, importFindings := ds.buildMockLinterData()
+	out := make(map[string]int64, len(importFindings))
+	for _, f := range importFindings {
+		if f != nil && f.BugID != "" && !f.LastAttempt.IsZero() {
+			out[f.BugID] = f.LastAttempt.Unix()
+		}
+	}
+
+	return out, nil
 }
 
 func (ds *DevStore) GetFile(ctx context.Context, source, cveID string) ([]byte, error) {

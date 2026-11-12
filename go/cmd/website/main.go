@@ -135,24 +135,7 @@ func run() error {
 		Triage:         gcs.NewTriageStore(gcsClient),
 	}
 
-	apiURL := os.Getenv("OSV_API_URL")
-	if apiURL == "" {
-		apiURL = os.Getenv("API_URL")
-	}
-	if apiURL == "" {
-		if project == "oss-vdb-test" {
-			apiURL = "api.test.osv.dev"
-		} else {
-			apiURL = "api.osv.dev"
-		}
-	}
-
-	// Production osv.dev redirects all /linter* traffic to test.osv.dev rather than
-	// loading or serving the in-memory linter index.
-	redirectLinterToTest := project == "oss-vdb" || strings.EqualFold(apiURL, "api.osv.dev")
-	if redirectLinterToTest {
-		stores.ImportFindings = nil
-	}
+	apiURL, redirectLinterToTest := resolveLinterConfig(project, os.Getenv("OSV_API_URL"), os.Getenv("API_URL"))
 
 	secretKey := os.Getenv("SESSION_SECRET_KEY")
 	if secretKey == "" {
@@ -191,9 +174,7 @@ func run() error {
 		return fmt.Errorf("failed to create website server: %w", err)
 	}
 
-	if !redirectLinterToTest {
-		go srv.StartLinterRefresh(ctx)
-	}
+	go srv.StartLinterRefresh(ctx)
 
 	httpServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", *port),
@@ -229,4 +210,29 @@ func run() error {
 	}
 
 	return nil
+}
+
+// resolveLinterConfig normalizes the configured OSV API host and determines whether
+// /linter* routes should redirect to test.osv.dev rather than building linterIndex.
+func resolveLinterConfig(project, osvAPIURL, legacyAPIURL string) (string, bool) {
+	explicit := strings.TrimSpace(osvAPIURL)
+	if explicit == "" {
+		explicit = strings.TrimSpace(legacyAPIURL)
+	}
+	explicit = strings.TrimPrefix(explicit, "https://")
+	explicit = strings.TrimPrefix(explicit, "http://")
+	explicit = strings.TrimRight(explicit, "/")
+
+	redirectToTest := project == "oss-vdb" || strings.EqualFold(explicit, "api.osv.dev")
+
+	apiURL := explicit
+	if apiURL == "" {
+		if project == "oss-vdb-test" {
+			apiURL = "api.test.osv.dev"
+		} else {
+			apiURL = "api.osv.dev"
+		}
+	}
+
+	return apiURL, redirectToTest
 }

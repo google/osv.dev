@@ -21,7 +21,9 @@ func (s *Server) StartLinterRefresh(ctx context.Context) {
 	if s.linterIdx == nil {
 		return
 	}
-	if _, err := s.linterIdx.getSnapshot(ctx); err != nil {
+	defer s.linterIdx.stop()
+
+	if _, err := s.linterIdx.getSnapshot(ctx); err != nil && ctx.Err() == nil {
 		logger.WarnContext(ctx, "initial linter index warmup failed", "error", err)
 	}
 
@@ -33,9 +35,13 @@ func (s *Server) StartLinterRefresh(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			res := <-s.linterIdx.triggerRefresh(ctx)
-			if res.Err != nil && ctx.Err() == nil {
-				logger.WarnContext(ctx, "periodic linter index refresh failed", "error", res.Err)
+			select {
+			case <-ctx.Done():
+				return
+			case res := <-s.linterIdx.triggerRefresh(ctx):
+				if res.Err != nil && ctx.Err() == nil {
+					logger.WarnContext(ctx, "periodic linter index refresh failed", "error", res.Err)
+				}
 			}
 		}
 	}
@@ -143,7 +149,7 @@ func (s *Server) handleLinterVuln(w http.ResponseWriter, r *http.Request) {
 
 // handleLinterSources handles listing sources that have linter findings from GCS.
 func (s *Server) handleLinterSources(w http.ResponseWriter, r *http.Request) {
-	sources, err := s.stores.Linter.ListSources(r.Context())
+	infos, err := s.stores.Linter.ListSourceInfos(r.Context())
 	if err != nil {
 		logger.ErrorContext(r.Context(), "failed to list linter sources", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -151,8 +157,9 @@ func (s *Server) handleLinterSources(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if sources == nil {
-		sources = []string{}
+	sources := make([]string, len(infos))
+	for i, info := range infos {
+		sources[i] = info.Source
 	}
 
 	w.Header().Set("Content-Type", "application/json")

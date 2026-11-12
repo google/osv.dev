@@ -14,9 +14,6 @@ type LinterSourceInfo struct {
 
 // LinterStore defines the interface for accessing linter findings from storage.
 type LinterStore interface {
-	// ListSources returns the list of source repository names that have linter results.
-	ListSources(ctx context.Context) ([]string, error)
-
 	// ListSourceInfos returns metadata for each source repository's linter result object.
 	ListSourceInfos(ctx context.Context) ([]LinterSourceInfo, error)
 
@@ -28,10 +25,6 @@ type LinterStore interface {
 type UnimplementedLinterStore struct{}
 
 var _ LinterStore = UnimplementedLinterStore{}
-
-func (UnimplementedLinterStore) ListSources(_ context.Context) ([]string, error) {
-	panic("not implemented")
-}
 
 func (UnimplementedLinterStore) ListSourceInfos(_ context.Context) ([]LinterSourceInfo, error) {
 	panic("not implemented")

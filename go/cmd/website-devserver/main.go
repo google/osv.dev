@@ -92,10 +92,11 @@ func run() error {
 	}
 
 	srv, err := website.NewServer(website.Config{
-		StaticFS: staticFS,
-		DocsFS:   docsFS,
-		Stores:   stores,
-		APIURL:   *apiURLFlag,
+		StaticFS:       staticFS,
+		DocsFS:         docsFS,
+		Stores:         stores,
+		APIURL:         *apiURLFlag,
+		LinterCacheTTL: 2 * time.Second,
 		Auth: website.AuthConfig{
 			BypassOAuth: true,
 		},

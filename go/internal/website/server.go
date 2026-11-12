@@ -240,9 +240,9 @@ func (s *Server) registerRoutes() {
 
 	// Linter findings (matching strict_slashes=False)
 	s.mux.HandleFunc("GET /linter", s.redirectProdLinter(s.handleLinterPage))
-	s.mux.HandleFunc("GET /linter/", s.redirectProdLinter(s.handleLinterPage))
+	s.mux.HandleFunc("GET /linter/{$}", s.redirectProdLinter(s.handleLinterPage))
 	s.mux.HandleFunc("GET /linter-findings", s.redirectProdLinter(s.handleLinterSources))
-	s.mux.HandleFunc("GET /linter-findings/", s.redirectProdLinter(s.handleLinterSources))
+	s.mux.HandleFunc("GET /linter-findings/{$}", s.redirectProdLinter(s.handleLinterSources))
 	s.mux.HandleFunc("GET /linter-findings/query", s.redirectProdLinter(s.handleLinterQuery))
 	s.mux.HandleFunc("GET /linter-findings/vuln/{bug_id}", s.redirectProdLinter(s.handleLinterVuln))
 	s.mux.HandleFunc("GET /linter-findings/{source}", s.redirectProdLinter(s.handleLinterFindings))

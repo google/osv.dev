@@ -37,40 +37,9 @@ func NewLinterStore(bucket *storage.BucketHandle, prefix string) *LinterStore {
 	}
 }
 
-// ListSources lists all source directories with linter findings under the prefix.
-func (s *LinterStore) ListSources(ctx context.Context) ([]string, error) {
-	it := s.bucket.Objects(ctx, &storage.Query{
-		Prefix:    s.prefix,
-		Delimiter: "/",
-	})
-
-	var sources []string
-	for {
-		attrs, err := it.Next()
-		if errors.Is(err, iterator.Done) {
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to list linter sources: %w", err)
-		}
-		if attrs.Prefix != "" {
-			src := strings.TrimPrefix(attrs.Prefix, s.prefix)
-			src = strings.TrimSuffix(src, "/")
-			if src != "" {
-				sources = append(sources, src)
-			}
-		}
-	}
-
-	slices.Sort(sources)
-
-	return sources, nil
-}
-
-// ParseLinterResultObjectName extracts the source name from an object path matching
-// "<prefix><source>/result.json". It returns ("", false) for non-matching paths
-// (such as root-level files or nested subdirectories).
-func ParseLinterResultObjectName(prefix, objName string) (string, bool) {
+// parseLinterResultObjectName extracts the source name from an object path matching
+// "<prefix><source>/result.json", returning ("", false) for non-matching paths.
+func parseLinterResultObjectName(prefix, objName string) (string, bool) {
 	if !strings.HasPrefix(objName, prefix) {
 		return "", false
 	}
@@ -98,7 +67,7 @@ func (s *LinterStore) ListSourceInfos(ctx context.Context) ([]models.LinterSourc
 		if err != nil {
 			return nil, fmt.Errorf("failed to list linter source infos: %w", err)
 		}
-		if src, ok := ParseLinterResultObjectName(s.prefix, attrs.Name); ok {
+		if src, ok := parseLinterResultObjectName(s.prefix, attrs.Name); ok {
 			infos = append(infos, models.LinterSourceInfo{
 				Source:     src,
 				Updated:    attrs.Updated,

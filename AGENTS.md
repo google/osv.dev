@@ -352,7 +352,7 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
 
 ### Internal Shared Libraries (`go/internal/`)
 - **`api/`**: Shared package containing the core gRPC public server implementation of the OSV API.
-- **`website/`**: Shared package implementing HTTP handlers, templates, routing, and search logic for the Go website frontend.
+- **`website/`**: Shared package implementing HTTP handlers, templates, routing, vulnerability search logic, and the in-memory cached linter findings index/query engine for the Go website frontend.
 - **`worker/`**: Core engine and subscriber logic for the Go worker.
 - **`importer/`**: Core importer engine (Git, REST, and GCS bucket source handling, deletion detection, reconciliation) used by `cmd/importer`.
 - **`recoverer/`**: Core engine and handlers for the Go recoverer.

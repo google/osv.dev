@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
 - ../../base/core
+- ../../base/ksm
 
 patches:
 - path: backup.yaml

@@ -185,8 +185,8 @@ gcloud components install cloud-firestore-emulator
 ### Running Test Suites
 Run `make help` to list all documented Make targets.
 - **All Tests**: `make all-tests` (runs `lib-tests`, `vulnfeed-tests`, `bindings-tests`, and `go-tests`; it does **not** include the API integration tests)
-- **Go Tests**: `make go-tests` (or run `./run_tests.sh` inside `go/`; this also runs the Go/Python Datastore model validation)
-- **Python Library Tests**: `make lib-tests`
+- **Go Tests**: `make go-tests` (or run `./run_tests.sh` inside `go/`)
+- **Python Library Tests**: `make lib-tests` (also runs the Go/Python Datastore model validation)
 - **Vulnfeeds Tests**: `make vulnfeed-tests`
 - **API Bindings Tests**: `make bindings-tests`
 - **API Integration (Snapshot) Tests**: `make api-server-tests` (runs [`tools/apitester`](tools/apitester/README.md) against a locally started API server backed by the test project, or against `OSV_API_BASE_URL` if set)

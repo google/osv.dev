@@ -1,5 +1,8 @@
-#!/bin/bash
+#!/bin/bash -ex
 
-set -e
+if [ -n "$CI" ]; then
+  cd go && go test ./... -coverprofile=coverage.out
+else
+  cd go && go test ./...
+fi
 
-cd go && go test ./...

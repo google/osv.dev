@@ -1,4 +1,9 @@
 #!/bin/bash -ex
 
-go test ./...
+if [ -n "$CI" ]; then
+  go test ./... -coverprofile=coverage.out
+else
+  go test ./...
+fi
+
 

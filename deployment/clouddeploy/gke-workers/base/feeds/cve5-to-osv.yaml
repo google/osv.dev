@@ -3,14 +3,14 @@ kind: CronJob
 metadata:
   name: cve5-to-osv
   labels:
-    cronLastSuccessfulTimeMins: "2160"
+    cronLastSuccessfulTimeMins: "180"
 spec:
   timeZone: Australia/Sydney
-  schedule: "30 5,13 * * *"
+  schedule: "0 * * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
-      activeDeadlineSeconds: 86400
+      activeDeadlineSeconds: 3600
       template:
         spec:
           containers:

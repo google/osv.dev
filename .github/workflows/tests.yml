@@ -216,7 +216,7 @@ jobs:
         working-directory: tools/sourcerepo-sync
         env:
           CLOUDBUILD: "1"
-        run: ./run_tests.sh
+        run: bash -ex ./run_tests.sh
 
   tests-pass:
     name: All Tests Passed

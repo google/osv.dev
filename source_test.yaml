@@ -2,7 +2,7 @@
 - name: 'almalinux-alba'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!ALBA-).*$']
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
@@ -18,7 +18,7 @@
 - name: 'almalinux-alea'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!ALEA-).*$']
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
@@ -34,7 +34,7 @@
 - name: 'almalinux-alsa'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!ALSA-).*$']
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
@@ -50,7 +50,7 @@
 - name: 'alpine'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!ALPINE-).*$']
+  ignore_patterns: []
   directory_path: 'alpine'
   detect_cherrypicks: False
   extension: '.json'
@@ -66,7 +66,7 @@
 - name: 'android'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!(ASB|PUB|A)-).*$']
+  ignore_patterns: []
   detect_cherrypicks: False
   extension: '.json'
   bucket: 'android-osv-test'
@@ -80,7 +80,7 @@
 - name: 'azurelinux'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!AZL-).*$']
+  ignore_patterns: []
   directory_path: 'osv'
   repo_url: 'https://github.com/microsoft/AzureLinuxVulnerabilityData.git'
   detect_cherrypicks: False
@@ -95,7 +95,7 @@
 - name: 'bellsoft'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!BELL-CVE-).*$']
+  ignore_patterns: []
   directory_path: 'BELL-CVE'
   repo_url: 'https://github.com/bell-sw/osv-database.git'
   detect_cherrypicks: False
@@ -111,7 +111,7 @@
 - name: 'bitnami'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!BIT-).*$']
+  ignore_patterns: []
   directory_path: 'data'
   repo_url: 'https://github.com/bitnami/vulndb.git'
   detect_cherrypicks: False
@@ -127,7 +127,7 @@
   versions_from_repo: False
   rest_api_url: 'https://advisories.cgr.dev/chainguard/v3/osv/all.json'
   type: 2
-  ignore_patterns: ['^(?!CGA-).*$']  # NOTE: Not currently supported for REST sources
+  ignore_patterns: []
   directory_path: 'chainguard/osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -142,7 +142,7 @@
 - name: 'cleanstart'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!CLEANSTART-).*$']
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/cleanstart-dev/cleanstart-security-advisories'
   detect_cherrypicks: False
@@ -158,7 +158,7 @@
   versions_from_repo: False
   rest_api_url: 'https://curl.se/docs/vuln.json'
   type: 2
-  ignore_patterns: ['^(?!CURL-).*$']  # NOTE: Not currently supported for REST sources
+  ignore_patterns: []
   directory_path: 'docs'
   detect_cherrypicks: False
   extension: '.json'
@@ -173,7 +173,7 @@
 - name: 'cve-osv'
   versions_from_repo: True
   type: 1
-  ignore_patterns: ['^(?!CVE-).*$']
+  ignore_patterns: []
   directory_path: 'osv-output'
   detect_cherrypicks: False
   extension: '.json'
@@ -189,7 +189,7 @@
 - name: 'debian-cve'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!DEBIAN-).*$']
+  ignore_patterns: []
   directory_path: 'debian-cve-osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -205,7 +205,7 @@
 - name: 'debian-dla'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!DLA-).*$']
+  ignore_patterns: []
   directory_path: 'dla-osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -221,7 +221,7 @@
 - name: 'debian-dsa'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!DSA-).*$']
+  ignore_patterns: []
   directory_path: 'dsa-osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -237,7 +237,7 @@
 - name: 'debian-dtsa'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!DTSA-).*$']
+  ignore_patterns: []
   directory_path: 'dtsa-osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -253,7 +253,7 @@
 - name: 'dhi'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!DHI-).*$']
+  ignore_patterns: []
   directory_path: 'osv'
   repo_url: 'https://github.com/docker-hardened-images/advisories-test.git'
   detect_cherrypicks: False
@@ -269,7 +269,7 @@
 - name: 'drupal'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!DRUPAL-).*$']
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/DrupalSecurityTeam/drupal-advisory-database.git'
   detect_cherrypicks: False
@@ -285,7 +285,7 @@
   versions_from_repo: False
   rest_api_url: 'https://advisory.dev.echohq.com/osv/all.json'
   type: 2
-  ignore_patterns: ['^(?!ECHO-).*$']
+  ignore_patterns: []
   directory_path: 'osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -305,7 +305,7 @@
   link:  'https://cna.erlef.org/osv/'
   directory_path: 'osv'
   extension: '.json'
-  ignore_patterns: ['^(?!EEF-).*$']
+  ignore_patterns: []
   # Not directly editable, but we're happy to take suggestions:
   # https://cna.erlef.org/contact
   editable: False
@@ -314,7 +314,7 @@
 - name: 'ghsa'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!GHSA-).*$']
+  ignore_patterns: []
   directory_path: 'advisories/github-reviewed'
   repo_url: 'https://github.com/github/advisory-database.git'
   detect_cherrypicks: False
@@ -330,7 +330,7 @@
 - name: 'go'
   versions_from_repo: True
   type: 1
-  ignore_patterns: ['^(?!GO-).*$']
+  ignore_patterns: []
   directory_path: 'ID'
   detect_cherrypicks: True
   extension: '.json'
@@ -346,7 +346,7 @@
 - name: 'haskell'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!HSEC-).*$']
+  ignore_patterns: []
   repo_branch: 'generated/osv-export'
   repo_url: 'https://github.com/haskell/security-advisories.git'
   detect_cherrypicks: False
@@ -362,7 +362,7 @@
 - name: 'julia'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!JLSEC-).*$']
+  ignore_patterns: []
   repo_branch: 'generated/osv'
   repo_url: 'https://github.com/JuliaLang/SecurityAdvisories.jl.git'
   detect_cherrypicks: False
@@ -379,7 +379,7 @@
 - name: 'lightwell'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!RHLW-).*$']
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/project-lightwell/lightwell-osv.git'
   detect_cherrypicks: False
@@ -396,7 +396,7 @@
   versions_from_repo: False
   rest_api_url: 'https://advisories.mageia.org/vulns.json'
   type: 2
-  ignore_patterns: ['^(?!MGASA-).*$']
+  ignore_patterns: []
   directory_path: .
   detect_cherrypicks: False
   extension: '.json'
@@ -411,7 +411,7 @@
 - name: 'malicious-packages'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['MAL-0000.*', '^(?!MAL-).*$']
+  ignore_patterns: ['MAL-0000.*']
   directory_path: 'osv'
   repo_url: 'https://github.com/ossf/malicious-packages.git'
   detect_cherrypicks: False
@@ -427,7 +427,7 @@
   versions_from_repo: False
   rest_api_url: 'https://packages.mini.dev/advisories/osv/all.json'
   type: 2
-  ignore_patterns: ['^(?!MINI-).*$']
+  ignore_patterns: []
   directory_path: 'advisories/osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -441,7 +441,7 @@
 - name: 'opam'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!OSEC-).*$']
+  ignore_patterns: []
   repo_branch: 'generated-osv'
   repo_url: 'https://github.com/ocaml/security-advisories.git'
   detect_cherrypicks: False
@@ -458,7 +458,7 @@
   versions_from_repo: False
   rest_api_url: 'https://repo.openeuler.org/security/data/osv/all.json'
   type: 2
-  ignore_patterns: ['^(?!OESA-).*$']
+  ignore_patterns: []
   directory_path: 'security/data/osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -473,7 +473,7 @@
 - name: 'test-oss-fuzz'
   versions_from_repo: True
   type: 0
-  ignore_patterns: ['^(?!OSV-).*$']
+  ignore_patterns: []
   directory_path: 'vulns'
   # deliberately HTTPS due to lack of SSH credentials in Staging.
   repo_url: 'https://github.com/google/oss-fuzz-vulns.git'
@@ -489,7 +489,7 @@
 - name: 'psf'
   versions_from_repo: True
   type: 0
-  ignore_patterns: ['^(?!PSF-).*$']
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/psf/advisory-database.git'
   detect_cherrypicks: False
@@ -504,7 +504,7 @@
 - name: 'python'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['PYSEC-0000.*', '^(?!PYSEC-).*$']
+  ignore_patterns: ['PYSEC-0000.*']
   directory_path: 'vulns'
   repo_url: 'https://github.com/pypa/advisory-database'
   detect_cherrypicks: False
@@ -519,7 +519,7 @@
 - name: 'r'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!RSEC-).*$']
+  ignore_patterns: []
   directory_path: 'vulns'
   repo_url: 'https://github.com/RConsortium/r-advisory-database.git'
   detect_cherrypicks: False
@@ -537,7 +537,7 @@
   type: 2
   directory_path: 'data/osv'
   detect_cherrypicks: False
-  ignore_patterns: ['^(?!RH[BES]{1}A-).*$']
+  ignore_patterns: []
   extension: '.json'
   db_prefix: ['RHBA-', 'RHEA-', 'RHSA-']
   accepted_ecosystems: ['Red Hat']
@@ -550,7 +550,7 @@
 - name: 'rockylinux'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!RLSA-).*$']
+  ignore_patterns: []
   detect_cherrypicks: False
   extension: '.json'
   bucket: 'resf-osv-data'
@@ -565,7 +565,7 @@
 - name: 'rockylinux-rxsa'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!RXSA-).*$']
+  ignore_patterns: []
   detect_cherrypicks: False
   extension: '.json'
   bucket: 'resf-osv-data'
@@ -581,7 +581,7 @@
   versions_from_repo: False
   type: 2
   rest_api_url: 'https://api.root.io/external/osv/all.json'
-  ignore_patterns: ['^(?!ROOT-).*$']
+  ignore_patterns: []
   directory_path: 'osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -596,7 +596,7 @@
 - name: 'rust'
   versions_from_repo: True
   type: 0
-  ignore_patterns: ['^(?!RUSTSEC-).*$']
+  ignore_patterns: []
   repo_branch: 'osv'
   directory_path: 'crates'
   repo_url: 'https://github.com/rustsec/advisory-db.git'
@@ -615,7 +615,7 @@
   versions_from_repo: False
   rest_api_url: 'https://ftp.suse.com/pub/projects/security/osv/all.json'
   type: 2
-  ignore_patterns: ['^(?!(?:open)?SUSE-[FORS]U-).*$']  # NOTE: Not currently supported for REST sources
+  ignore_patterns: []
   directory_path: 'pub/projects/security/osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -630,7 +630,7 @@
 - name: 'tuxcare'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!CLSA-).*$']
+  ignore_patterns: []
   directory_path: 'data'
   repo_branch: 'osv-test'
   repo_url: 'https://github.com/cloudlinux/tuxcare-osv.git'
@@ -646,7 +646,7 @@
 - name: 'ubuntu-cve'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!UBUNTU-).*$']
+  ignore_patterns: []
   directory_path: 'osv'
   repo_url: 'https://github.com/canonical/ubuntu-security-notices.git'
   detect_cherrypicks: False
@@ -662,7 +662,7 @@
 - name: 'ubuntu-lsn'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!LSN-).*$']
+  ignore_patterns: []
   directory_path: 'osv'
   repo_url: 'https://github.com/canonical/ubuntu-security-notices.git'
   detect_cherrypicks: False
@@ -678,7 +678,7 @@
 - name: 'ubuntu-usn'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!USN-).*$']
+  ignore_patterns: []
   directory_path: 'osv'
   repo_url: 'https://github.com/canonical/ubuntu-security-notices.git'
   detect_cherrypicks: False
@@ -694,7 +694,7 @@
 - name: 'uvi'
   versions_from_repo: True
   type: 0
-  ignore_patterns: ['^(?!GSD-).*$']
+  ignore_patterns: []
   repo_url: 'https://github.com/cloudsecurityalliance/gsd-database.git'
   detect_cherrypicks: False
   extension: '.json'
@@ -711,7 +711,7 @@
 - name: 'V8'
   versions_from_repo: True
   type: 0
-  ignore_patterns: [ '^(?!V8-advisory).*$' ]
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/google/chromium-policy-vulnfeed.git'
   detect_cherrypicks: False

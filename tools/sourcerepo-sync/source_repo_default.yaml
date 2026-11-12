@@ -23,7 +23,7 @@
   # Ignore last import time once (SourceRepositoryType.BUCKET & REST)
   ignore_last_import_time: False
   # Patterns of files to exclude (regex).
-  ignore_patterns: ["propertyValue"]
+  ignore_patterns: []
   # Key path within each file to store the vulnerability.
   key_path: null
   # Last synced hash of the repository. (GIT and REST)

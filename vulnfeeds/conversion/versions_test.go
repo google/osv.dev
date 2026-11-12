@@ -504,7 +504,6 @@ func TestExtractGitCommit(t *testing.T) {
 		inputCommitType        models.CommitType
 		expectedAffectedCommit models.AffectedCommit
 		expectFailure          bool
-		skipOnCloudBuild       bool
 		disableExpiryDate      time.Time // If test needs to be disabled due to known outage.
 	}{
 		{
@@ -647,7 +646,6 @@ func TestExtractGitCommit(t *testing.T) {
 				Fixed:  "ee1fee900537b5d9560e9f937402de5ddc8412f3",
 				Source: models.VersionSourceRefsCommit,
 			},
-			skipOnCloudBuild: true, // observing indications of IP denylisting as at 2025-02-13
 		},
 		{
 			description:     "Valid GitWeb commit URL",
@@ -706,9 +704,6 @@ func TestExtractGitCommit(t *testing.T) {
 			r := testutils.SetupVCR(t)
 			client := r.GetDefaultClient()
 
-			if _, ok := os.LookupEnv("BUILD_ID"); ok && tc.skipOnCloudBuild {
-				t.Skipf("test %q: running on Cloud Build", tc.description)
-			}
 			if time.Now().Before(tc.disableExpiryDate) {
 				t.Skipf("test %q: extractGitAffectedCommit for %q (%v) has been skipped due to known outage and will be reenabled on %s.", tc.description, tc.inputLink, tc.inputCommitType, tc.disableExpiryDate)
 			}

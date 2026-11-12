@@ -170,7 +170,10 @@ th {
   background-color: var(--osv-surface-color);
   font-weight: 500;
   font-family: var(--osv-heading-font-family);
-  cursor: pointer;
+
+  &[data-sort] {
+    cursor: pointer;
+  }
 }
 
 th .material-icons {
@@ -357,8 +360,7 @@ tr:hover {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   z-index: 10;
   display: none;
-  max-height: 320px;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .filter-option {
@@ -409,15 +411,15 @@ tr:hover {
   display: none;
 }
 
-#homedb-filter-options::-webkit-scrollbar {
+.filter-options-scroll::-webkit-scrollbar {
   width: 8px;
 }
 
-#homedb-filter-options::-webkit-scrollbar-track {
+.filter-options-scroll::-webkit-scrollbar-track {
   background: var(--osv-surface-color);
 }
 
-#homedb-filter-options::-webkit-scrollbar-thumb {
+.filter-options-scroll::-webkit-scrollbar-thumb {
   background-color: var(--osv-grey-800);
   border-radius: 4px;
 }

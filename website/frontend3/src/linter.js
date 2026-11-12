@@ -1,15 +1,17 @@
 import "./linter.scss";
 import "@github/clipboard-copy-element";
 
-const SINCE_LABELS = {
+const SINCE_LABELS = Object.freeze({
+  __proto__: null,
   "": "Any time",
   "24h": "New in last 24h",
   "7d": "New in last 7 days",
   "30d": "New in last 30 days",
   "90d": "New in last 90 days",
-};
+});
 
-const LEGACY_FINDING_TO_CODES = {
+const LEGACY_FINDING_TO_CODES = Object.freeze({
+  __proto__: null,
   INVALID_JSON: ["SCH:001"],
   INVALID_RECORD: ["REC:001"],
   INVALID_ALIASES: ["REC:002"],
@@ -22,7 +24,7 @@ const LEGACY_FINDING_TO_CODES = {
   INVALID_COMMIT: ["COMMIT:001"],
   BAD_ALIASED_CVE: ["CVE:001"],
   DELETED: ["DEL:001"],
-};
+});
 
 document.addEventListener("DOMContentLoaded", function () {
   const apiUrl = (document.body.dataset.apiUrl || "api.test.osv.dev").replace(/^https?:\/\//, "");
@@ -57,7 +59,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const sinceFilter = document.getElementById("since-filter");
   const sinceFilterSelected = document.getElementById("since-filter-selected");
-  const sinceFilterOptions = document.getElementById("since-filter-options");
+  const sinceFilterPanel = document.getElementById("since-filter-panel");
 
   const activeChipsEl = document.getElementById("active-filter-chips");
   const syncStatusEl = document.getElementById("timestamps-sync-status");
@@ -102,10 +104,10 @@ document.addEventListener("DOMContentLoaded", function () {
     pageSizeSelect.value = String(issuesPerPage);
   }
 
-  function updateURL(replace = true) {
+  function buildQueryParams(sourceKey = "source") {
     const params = new URLSearchParams();
     if (selectedSources.size > 0) {
-      params.set("homedb", Array.from(selectedSources).join(","));
+      params.set(sourceKey, Array.from(selectedSources).join(","));
       if (sourceMode === "exclude") params.set("source_mode", "exclude");
     }
     if (selectedCodes.size > 0) params.set("code", Array.from(selectedCodes).join(","));
@@ -119,10 +121,27 @@ document.addEventListener("DOMContentLoaded", function () {
     if (sortDirection !== "desc") params.set("order", sortDirection);
     if (currentPage > 1) params.set("page", String(currentPage));
     if (issuesPerPage !== 25) params.set("page_size", String(issuesPerPage));
+    return params;
+  }
 
-    const qs = params.toString();
+  function updateURL() {
+    const qs = buildQueryParams("homedb").toString();
     const newURL = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
-    history[replace ? "replaceState" : "pushState"]({ path: newURL }, "", newURL);
+    history.replaceState({ path: newURL }, "", newURL);
+  }
+
+  function resetAndFetch() {
+    currentPage = 1;
+    fetchIssues();
+  }
+
+  function toggleSetFilter(set, value, checked) {
+    if (checked) {
+      set.add(value);
+    } else {
+      set.delete(value);
+    }
+    resetAndFetch();
   }
 
   applyFiltersFromURL();
@@ -136,25 +155,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const controller = new AbortController();
     activeQueryController = controller;
     globalLoader.classList.add("visible");
-    updateURL(true);
+    updateURL();
 
-    const params = new URLSearchParams();
-    if (selectedSources.size > 0) {
-      params.set("source", Array.from(selectedSources).join(","));
-      params.set("source_mode", sourceMode);
-    }
-    if (selectedCodes.size > 0) params.set("code", Array.from(selectedCodes).join(","));
-    if (selectedCategories.size > 0) params.set("cat", Array.from(selectedCategories).join(","));
-    if (selectedCodes.size > 0 || selectedCategories.size > 0) params.set("rule_mode", ruleMode);
-    if (selectedSince) params.set("since", selectedSince);
-    if (searchInput.value.trim()) params.set("q", searchInput.value.trim());
-    params.set("sort", sortField);
-    params.set("order", sortDirection);
-    params.set("page", String(currentPage));
-    params.set("page_size", String(issuesPerPage));
+    const qs = buildQueryParams("source").toString();
+    const queryURL = qs ? `/linter-findings/query?${qs}` : "/linter-findings/query";
 
     try {
-      const res = await fetch(`/linter-findings/query?${params.toString()}`, {
+      const res = await fetch(queryURL, {
         signal: controller.signal,
       });
       if (!res.ok) {
@@ -163,8 +170,12 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await res.json();
       if (controller.signal.aborted) return;
 
+      const prevPage = currentPage;
       totalIssues = data.total || 0;
       currentPage = data.page || 1;
+      if (currentPage !== prevPage) {
+        updateURL();
+      }
       latestFacets = data.facets || {};
 
       if (data.timestamps_ready) {
@@ -229,10 +240,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     searchInput.addEventListener("input", () => {
       clearTimeout(searchDebounceTimer);
-      searchDebounceTimer = setTimeout(() => {
-        currentPage = 1;
-        fetchIssues();
-      }, 200);
+      searchDebounceTimer = setTimeout(resetAndFetch, 200);
     });
 
     document.querySelectorAll("#issues-table th[data-sort]").forEach((th) => {
@@ -245,15 +253,13 @@ document.addEventListener("DOMContentLoaded", function () {
           sortDirection = nextField === "bug_id" ? "asc" : "desc";
         }
         syncSortHeaders();
-        currentPage = 1;
-        fetchIssues();
+        resetAndFetch();
       });
     });
 
     pageSizeSelect.addEventListener("change", () => {
       issuesPerPage = parseInt(pageSizeSelect.value, 10) || 25;
-      currentPage = 1;
-      fetchIssues();
+      resetAndFetch();
     });
 
     tabBarContainer.addEventListener("click", handleTabClick);
@@ -290,17 +296,11 @@ document.addEventListener("DOMContentLoaded", function () {
         if (btn.dataset.filter === "homedb" && sourceMode !== btn.dataset.mode) {
           sourceMode = btn.dataset.mode;
           syncModeButtons();
-          if (selectedSources.size > 0) {
-            currentPage = 1;
-            fetchIssues();
-          }
+          if (selectedSources.size > 0) resetAndFetch();
         } else if (btn.dataset.filter === "findings" && ruleMode !== btn.dataset.mode) {
           ruleMode = btn.dataset.mode;
           syncModeButtons();
-          if (selectedCodes.size > 0 || selectedCategories.size > 0) {
-            currentPage = 1;
-            fetchIssues();
-          }
+          if (selectedCodes.size > 0 || selectedCategories.size > 0) resetAndFetch();
         }
       });
     });
@@ -308,27 +308,24 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("homedb-clear-btn").addEventListener("click", () => {
       if (selectedSources.size > 0) {
         selectedSources.clear();
-        currentPage = 1;
-        fetchIssues();
+        resetAndFetch();
       }
     });
     document.getElementById("findings-clear-btn").addEventListener("click", () => {
       if (selectedCodes.size > 0 || selectedCategories.size > 0) {
         selectedCodes.clear();
         selectedCategories.clear();
-        currentPage = 1;
-        fetchIssues();
+        resetAndFetch();
       }
     });
 
-    sinceFilterOptions.addEventListener("click", (e) => {
+    sinceFilterPanel.addEventListener("click", (e) => {
       const opt = e.target.closest(".filter-option");
       if (!opt) return;
       selectedSince = opt.dataset.value || "";
       sinceFilterSelected.textContent = opt.textContent;
-      sinceFilterOptions.style.display = "none";
-      currentPage = 1;
-      fetchIssues();
+      sinceFilterPanel.style.display = "none";
+      resetAndFetch();
     });
   }
 
@@ -372,15 +369,7 @@ document.addEventListener("DOMContentLoaded", function () {
         cat.count,
         selectedCategories.has(cat.code),
         "is-category",
-        (checked) => {
-          if (checked) {
-            selectedCategories.add(cat.code);
-          } else {
-            selectedCategories.delete(cat.code);
-          }
-          currentPage = 1;
-          fetchIssues();
-        }
+        (checked) => toggleSetFilter(selectedCategories, cat.code, checked)
       );
       visibleRules.forEach((r) => {
         appendCheckboxRow(
@@ -389,15 +378,7 @@ document.addEventListener("DOMContentLoaded", function () {
           r.count,
           selectedCodes.has(r.code),
           "is-child",
-          (checked) => {
-            if (checked) {
-              selectedCodes.add(r.code);
-            } else {
-              selectedCodes.delete(r.code);
-            }
-            currentPage = 1;
-            fetchIssues();
-          }
+          (checked) => toggleSetFilter(selectedCodes, r.code, checked)
         );
       });
     });
@@ -419,15 +400,9 @@ document.addEventListener("DOMContentLoaded", function () {
     sources.forEach((src) => {
       if (src.count === 0 && !selectedSources.has(src.name)) return;
       if (srcTerm && !src.name.toLowerCase().includes(srcTerm)) return;
-      appendCheckboxRow(homeDbFilterOptions, src.name, src.count, selectedSources.has(src.name), "", (checked) => {
-        if (checked) {
-          selectedSources.add(src.name);
-        } else {
-          selectedSources.delete(src.name);
-        }
-        currentPage = 1;
-        fetchIssues();
-      });
+      appendCheckboxRow(homeDbFilterOptions, src.name, src.count, selectedSources.has(src.name), "", (checked) =>
+        toggleSetFilter(selectedSources, src.name, checked)
+      );
     });
     homeDbFilterOptions.scrollTop = prevSourcesScroll;
 
@@ -444,29 +419,17 @@ document.addEventListener("DOMContentLoaded", function () {
     selectedSources.forEach((s) => chips.push({
       label: `${sourceMode === "exclude" ? "DB ≠ " : "DB: "}${s}`,
       exclude: sourceMode === "exclude",
-      remove: () => {
-        selectedSources.delete(s);
-        currentPage = 1;
-        fetchIssues();
-      },
+      remove: () => toggleSetFilter(selectedSources, s, false),
     }));
     selectedCategories.forEach((c) => chips.push({
       label: `${ruleMode === "exclude" ? "Cat ≠ " : "Cat: "}${c}`,
       exclude: ruleMode === "exclude",
-      remove: () => {
-        selectedCategories.delete(c);
-        currentPage = 1;
-        fetchIssues();
-      },
+      remove: () => toggleSetFilter(selectedCategories, c, false),
     }));
     selectedCodes.forEach((c) => chips.push({
       label: `${ruleMode === "exclude" ? "Rule ≠ " : "Rule: "}${c}`,
       exclude: ruleMode === "exclude",
-      remove: () => {
-        selectedCodes.delete(c);
-        currentPage = 1;
-        fetchIssues();
-      },
+      remove: () => toggleSetFilter(selectedCodes, c, false),
     }));
     if (selectedSince) {
       chips.push({
@@ -474,8 +437,7 @@ document.addEventListener("DOMContentLoaded", function () {
         remove: () => {
           selectedSince = "";
           sinceFilterSelected.textContent = SINCE_LABELS[""];
-          currentPage = 1;
-          fetchIssues();
+          resetAndFetch();
         },
       });
     }
@@ -484,8 +446,7 @@ document.addEventListener("DOMContentLoaded", function () {
         label: `Search: "${searchInput.value.trim()}"`,
         remove: () => {
           searchInput.value = "";
-          currentPage = 1;
-          fetchIssues();
+          resetAndFetch();
         },
       });
     }
@@ -517,8 +478,7 @@ document.addEventListener("DOMContentLoaded", function () {
         searchInput.value = "";
         sinceFilterSelected.textContent = SINCE_LABELS[""];
         syncModeButtons();
-        currentPage = 1;
-        fetchIssues();
+        resetAndFetch();
       });
       activeChipsEl.appendChild(clearAll);
     }
@@ -1097,8 +1057,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function toggleFilter(filterName, focusEl = null) {
-    const panelId = filterName === "since" ? "since-filter-options" : `${filterName}-filter-panel`;
-    const options = document.getElementById(panelId);
+    const options = document.getElementById(`${filterName}-filter-panel`);
     const isVisible = options.style.display === "block";
 
     // Hide all filter options first

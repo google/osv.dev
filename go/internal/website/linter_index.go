@@ -52,21 +52,6 @@ var knownRuleLabels = map[string]string{
 	"DEL:001":    "Deleted Record",
 }
 
-var legacyFindingToCodes = map[string][]string{
-	"INVALID_JSON":     {"SCH:001"},
-	"INVALID_RECORD":   {"REC:001"},
-	"INVALID_ALIASES":  {"REC:002"},
-	"INVALID_UPSTREAM": {"REC:003"},
-	"INVALID_RELATED":  {"REC:004"},
-	"INVALID_RANGE":    {"RNG:001", "RNG:002"},
-	"INVALID_PACKAGE":  {"PKG:001"},
-	"INVALID_VERSION":  {"PKG:002"},
-	"INVALID_PURL":     {"PKG:003"},
-	"INVALID_COMMIT":   {"COMMIT:001"},
-	"BAD_ALIASED_CVE":  {"CVE:001"},
-	"DELETED":          {"DEL:001"},
-}
-
 var knownCategoryLabels = map[string]string{
 	"SCH":    "Schema",
 	"REC":    "Record",
@@ -146,14 +131,14 @@ type linterQueryParams struct {
 	Order      string // "desc" (default) or "asc"
 	Page       int
 	PageSize   int
-	Now        time.Time
 }
 
 // cachedFinding stores canonical string handles directly so Go's GC keeps the
-// interned string boxes alive across refreshes while halving per-finding struct size.
+// interned string boxes alive across refreshes while avoiding per-query lowercase allocations.
 type cachedFinding struct {
-	code    unique.Handle[string]
-	message unique.Handle[string]
+	code         unique.Handle[string]
+	message      unique.Handle[string]
+	messageLower unique.Handle[string]
 }
 
 type linterIssue struct {
@@ -347,8 +332,9 @@ func parseSourceResultJSON(data []byte) (map[string][]cachedFinding, error) {
 		for i, f := range list {
 			code := cmp.Or(f.Code, "UNKNOWN")
 			interned[i] = cachedFinding{
-				code:    unique.Make(code),
-				message: unique.Make(f.Message),
+				code:         unique.Make(code),
+				message:      unique.Make(f.Message),
+				messageLower: unique.Make(strings.ToLower(f.Message)),
 			}
 		}
 		id := strings.Clone(bugID)
@@ -511,21 +497,8 @@ func (idx *linterIndex) triggerTimestampEnrichment(ctx context.Context) <-chan s
 		enrichCtx, cancel := idx.backgroundContext(ctx, linterEnrichTimeout)
 		defer cancel()
 
-		var newLA, newFS map[string]int64
-		g, gCtx := errgroup.WithContext(enrichCtx)
-		g.Go(func() error {
-			var err error
-			newLA, err = idx.importFindingsStore.ListLastAttempts(gCtx)
-
-			return err
-		})
-		g.Go(func() error {
-			var err error
-			newFS, err = idx.importFindingsStore.ListFirstSeen(gCtx)
-
-			return err
-		})
-		if err := g.Wait(); err != nil {
+		newLA, newFS, err := idx.importFindingsStore.ListTimestamps(enrichCtx)
+		if err != nil {
 			logger.WarnContext(enrichCtx, "linter index: failed loading ImportFindings timestamps", slog.Any("error", err))
 			return nil, err
 		}
@@ -538,6 +511,22 @@ func (idx *linterIndex) triggerTimestampEnrichment(ctx context.Context) <-chan s
 
 		return idx.rebuildLocked(), nil
 	})
+}
+
+func addRuleAndCategoryCounts(
+	codes []unique.Handle[string],
+	ruleCounts map[unique.Handle[string]]int,
+	catCounts map[string]int,
+) {
+	var seenCats []string
+	for _, c := range codes {
+		ruleCounts[c]++
+		cat := ruleCategory(c.Value())
+		if !slices.Contains(seenCats, cat) {
+			seenCats = append(seenCats, cat)
+			catCounts[cat]++
+		}
+	}
 }
 
 func buildLinterSnapshot(
@@ -592,15 +581,7 @@ func buildLinterSnapshot(
 			})
 
 			sourceCounts[srcHandle]++
-			var seenCats []string
-			for _, c := range seenCodes {
-				ruleCounts[c]++
-				cat := ruleCategory(c.Value())
-				if !slices.Contains(seenCats, cat) {
-					seenCats = append(seenCats, cat)
-					catCounts[cat]++
-				}
-			}
+			addRuleAndCategoryCounts(seenCodes, ruleCounts, catCounts)
 
 			laUnix := timestamps[bugID]
 			if laUnix == 0 {
@@ -748,22 +729,14 @@ func resolveFilterSources(sources []string, knownSources []unique.Handle[string]
 }
 
 func resolveFilterCodes(codes, categories []string, rules []unique.Handle[string]) []unique.Handle[string] {
-	codeSet := make(map[string]struct{})
+	codeSet := make(map[string]struct{}, len(codes))
 	for _, raw := range codes {
-		norm := strings.ToUpper(strings.TrimSpace(raw))
-		if norm == "" {
-			continue
-		}
-		if mapped, ok := legacyFindingToCodes[strings.TrimPrefix(norm, "IMPORT_FINDING_TYPE_")]; ok {
-			for _, mc := range mapped {
-				codeSet[mc] = struct{}{}
-			}
-		} else {
+		if norm := strings.ToUpper(strings.TrimSpace(raw)); norm != "" {
 			codeSet[norm] = struct{}{}
 		}
 	}
 
-	catSet := make(map[string]struct{})
+	catSet := make(map[string]struct{}, len(categories))
 	for _, rawCat := range categories {
 		if cat := strings.ToUpper(strings.TrimSpace(rawCat)); cat != "" {
 			catSet[cat] = struct{}{}
@@ -775,9 +748,7 @@ func resolveFilterCodes(codes, categories []string, rules []unique.Handle[string
 		code := h.Value()
 		if _, ok := codeSet[code]; ok {
 			out = append(out, h)
-			continue
-		}
-		if _, ok := catSet[ruleCategory(code)]; ok {
+		} else if _, ok := catSet[ruleCategory(code)]; ok {
 			out = append(out, h)
 		}
 	}
@@ -785,14 +756,12 @@ func resolveFilterCodes(codes, categories []string, rules []unique.Handle[string
 	return out
 }
 
-func parseSinceCutoff(since string, now time.Time) (int64, bool) {
+func parseSinceCutoff(since string) (int64, bool) {
 	since = strings.TrimSpace(since)
 	if since == "" {
 		return 0, false
 	}
-	if now.IsZero() {
-		now = time.Now()
-	}
+	now := time.Now()
 
 	switch strings.ToLower(since) {
 	case "24h", "1d":
@@ -817,7 +786,7 @@ func issueMatchesQuery(issue *linterIssue, qLower string) bool {
 		return true
 	}
 	for _, f := range issue.findings {
-		if strings.Contains(strings.ToLower(f.message.Value()), qLower) {
+		if strings.Contains(f.messageLower.Value(), qLower) {
 			return true
 		}
 	}
@@ -865,7 +834,9 @@ func (snap *linterSnapshot) query(params linterQueryParams) LinterQueryResponse 
 	page := max(params.Page, 1)
 
 	sortField := strings.ToLower(strings.TrimSpace(params.Sort))
-	if sortField == "" {
+	switch sortField {
+	case "first_seen", "finding_count", "bug_id":
+	default:
 		sortField = "last_attempt"
 	}
 	isAsc := strings.EqualFold(params.Order, "asc")
@@ -877,12 +848,13 @@ func (snap *linterSnapshot) query(params linterQueryParams) LinterQueryResponse 
 	excludeRules := strings.EqualFold(params.RuleMode, "exclude")
 
 	qLower := strings.ToLower(strings.TrimSpace(params.Query))
-	cutoffUnix, hasSince := parseSinceCutoff(params.Since, params.Now)
+	cutoffUnix, hasSince := parseSinceCutoff(params.Since)
 	// Avoid filtering out all issues before background Datastore FirstSeen enrichment finishes.
 	applySince := hasSince && snap.timestampsReady
+	hasAnyFilter := applySince || qLower != "" || hasSourceFilter || hasRuleInput
 
 	// O(pageSize) fast path when no filters or custom sort fields are active.
-	if !applySince && qLower == "" && !hasSourceFilter && !hasRuleInput && sortField == "last_attempt" {
+	if !hasAnyFilter && sortField == "last_attempt" {
 		total := len(snap.issues)
 		page = min(page, max((total+pageSize-1)/pageSize, 1))
 		start := (page - 1) * pageSize
@@ -907,76 +879,51 @@ func (snap *linterSnapshot) query(params linterQueryParams) LinterQueryResponse 
 		}
 	}
 
-	targetSources := resolveFilterSources(params.Sources, snap.sources)
-	targetCodes := resolveFilterCodes(params.Codes, params.Categories, snap.rules)
-
-	sourceCounts := make(map[unique.Handle[string]]int, len(snap.sources))
-	ruleCounts := make(map[unique.Handle[string]]int, len(snap.rules))
-	catCounts := make(map[string]int, 8)
-	totalForSources := 0
-	totalForRules := 0
-
-	matchesFilter := func(issue *linterIssue) (bool, bool, bool) {
-		if applySince && issue.firstSeen < cutoffUnix {
-			return false, false, false
+	var matched []int
+	var facets LinterFacets
+	if !hasAnyFilter {
+		matched = make([]int, 0, len(snap.issues))
+		for i := range snap.issues {
+			matched = append(matched, i)
 		}
-		if qLower != "" && !issueMatchesQuery(issue, qLower) {
-			return false, false, false
-		}
+		facets = snap.defaultFacets
+	} else {
+		targetSources := resolveFilterSources(params.Sources, snap.sources)
+		targetCodes := resolveFilterCodes(params.Codes, params.Categories, snap.rules)
 
-		srcMatch := true
-		if hasSourceFilter {
-			inSet := slices.Contains(targetSources, issue.source)
-			srcMatch = inSet != excludeSources
-		}
+		sourceCounts := make(map[unique.Handle[string]]int, len(snap.sources))
+		ruleCounts := make(map[unique.Handle[string]]int, len(snap.rules))
+		catCounts := make(map[string]int, 8)
+		totalForSources := 0
+		totalForRules := 0
 
-		ruleMatch := true
-		if hasRuleInput {
-			if excludeRules {
+		matchesFilter := func(issue *linterIssue) (bool, bool, bool) {
+			if applySince && issue.firstSeen < cutoffUnix {
+				return false, false, false
+			}
+			if qLower != "" && !issueMatchesQuery(issue, qLower) {
+				return false, false, false
+			}
+
+			srcMatch := true
+			if hasSourceFilter {
+				srcMatch = slices.Contains(targetSources, issue.source) != excludeSources
+			}
+
+			ruleMatch := true
+			if hasRuleInput {
 				ruleMatch = slices.ContainsFunc(issue.codes, func(c unique.Handle[string]) bool {
-					return !slices.Contains(targetCodes, c)
-				})
-			} else {
-				ruleMatch = slices.ContainsFunc(issue.codes, func(c unique.Handle[string]) bool {
-					return slices.Contains(targetCodes, c)
+					return slices.Contains(targetCodes, c) != excludeRules
 				})
 			}
+
+			return true, srcMatch, ruleMatch
 		}
 
-		return true, srcMatch, ruleMatch
-	}
-
-	recordFacets := func(issue *linterIssue, srcMatch, ruleMatch bool) {
-		if ruleMatch {
-			sourceCounts[issue.source]++
-			totalForSources++
-		}
-		if srcMatch {
-			totalForRules++
-			var seenCats []string
-			for _, c := range issue.codes {
-				ruleCounts[c]++
-				cat := ruleCategory(c.Value())
-				if !slices.Contains(seenCats, cat) {
-					seenCats = append(seenCats, cat)
-					catCounts[cat]++
-				}
-			}
-		}
-	}
-
-	var pageIssues []LinterIssueSummary
-	var total int
-
-	if sortField == "last_attempt" {
-		reqStart := (page - 1) * pageSize
-		reqEnd := reqStart + pageSize
-		pageIdxs := make([]int, 0, defaultLinterPageSize)
-
-		n := len(snap.issues)
-		for step := range n {
+		useAscOrder := sortField == "last_attempt" && isAsc
+		for step := range snap.issues {
 			idx := step
-			if isAsc {
+			if useAscOrder {
 				idx = int(snap.ascOrder[step])
 			}
 			issue := &snap.issues[idx]
@@ -985,74 +932,36 @@ func (snap *linterSnapshot) query(params linterQueryParams) LinterQueryResponse 
 				continue
 			}
 
-			recordFacets(issue, srcMatch, ruleMatch)
-			if srcMatch && ruleMatch {
-				if total >= reqStart && total < reqEnd {
-					pageIdxs = append(pageIdxs, idx)
-				}
-				total++
+			if ruleMatch {
+				sourceCounts[issue.source]++
+				totalForSources++
 			}
-		}
-
-		clampedPage := min(page, max((total+pageSize-1)/pageSize, 1))
-		if clampedPage != page && total > 0 {
-			page = clampedPage
-			clampedStart := (page - 1) * pageSize
-			clampedEnd := min(clampedStart+pageSize, total)
-			seen := 0
-			for step := range n {
-				idx := step
-				if isAsc {
-					idx = int(snap.ascOrder[step])
-				}
-				ok, srcMatch, ruleMatch := matchesFilter(&snap.issues[idx])
-				if !ok || !srcMatch || !ruleMatch {
-					continue
-				}
-				if seen >= clampedStart && seen < clampedEnd {
-					pageIdxs = append(pageIdxs, idx)
-				}
-				seen++
-				if seen >= clampedEnd {
-					break
-				}
+			if srcMatch {
+				totalForRules++
+				addRuleAndCategoryCounts(issue.codes, ruleCounts, catCounts)
 			}
-		} else {
-			page = clampedPage
-		}
-
-		pageIssues = make([]LinterIssueSummary, 0, len(pageIdxs))
-		for _, idx := range pageIdxs {
-			pageIssues = append(pageIssues, issueToSummary(&snap.issues[idx]))
-		}
-	} else {
-		var matched []int
-		for idx := range snap.issues {
-			issue := &snap.issues[idx]
-			ok, srcMatch, ruleMatch := matchesFilter(issue)
-			if !ok {
-				continue
-			}
-
-			recordFacets(issue, srcMatch, ruleMatch)
 			if srcMatch && ruleMatch {
 				matched = append(matched, idx)
 			}
 		}
 
+		facets = buildFacets(snap.sources, snap.rules, sourceCounts, ruleCounts, catCounts, totalForSources, totalForRules)
+	}
+
+	if sortField != "last_attempt" {
 		slices.SortFunc(matched, func(ia, ib int) int {
 			return compareIssuesBySort(&snap.issues[ia], &snap.issues[ib], sortField, isAsc)
 		})
+	}
 
-		total = len(matched)
-		page = min(page, max((total+pageSize-1)/pageSize, 1))
-		start := (page - 1) * pageSize
-		end := min(start+pageSize, total)
+	total := len(matched)
+	page = min(page, max((total+pageSize-1)/pageSize, 1))
+	start := (page - 1) * pageSize
+	end := min(start+pageSize, total)
 
-		pageIssues = make([]LinterIssueSummary, 0, defaultLinterPageSize)
-		for i := start; i < end; i++ {
-			pageIssues = append(pageIssues, issueToSummary(&snap.issues[matched[i]]))
-		}
+	pageIssues := make([]LinterIssueSummary, 0, defaultLinterPageSize)
+	for _, idx := range matched[start:end] {
+		pageIssues = append(pageIssues, issueToSummary(&snap.issues[idx]))
 	}
 
 	return LinterQueryResponse{
@@ -1061,6 +970,6 @@ func (snap *linterSnapshot) query(params linterQueryParams) LinterQueryResponse 
 		Page:            page,
 		PageSize:        pageSize,
 		TimestampsReady: snap.timestampsReady,
-		Facets:          buildFacets(snap.sources, snap.rules, sourceCounts, ruleCounts, catCounts, totalForSources, totalForRules),
+		Facets:          facets,
 	}
 }

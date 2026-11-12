@@ -106,29 +106,14 @@ func (s *Server) handleLinterQuery(w http.ResponseWriter, r *http.Request) {
 	}
 
 	q := r.URL.Query()
-	sources := splitQueryList(q["source"])
-	if len(sources) == 0 {
-		sources = splitQueryList(q["homedb"])
-	}
-
-	codes := splitQueryList(q["code"])
-	if legacy := splitQueryList(q["finding"]); len(legacy) > 0 {
-		codes = append(codes, legacy...)
-	}
-
-	categories := splitQueryList(q["category"])
-	if len(categories) == 0 {
-		categories = splitQueryList(q["cat"])
-	}
-
 	page, _ := strconv.Atoi(q.Get("page"))
 	pageSize, _ := strconv.Atoi(q.Get("page_size"))
 
 	resp := snap.query(linterQueryParams{
-		Sources:    sources,
+		Sources:    splitQueryList(q["source"]),
 		SourceMode: q.Get("source_mode"),
-		Codes:      codes,
-		Categories: categories,
+		Codes:      splitQueryList(q["code"]),
+		Categories: splitQueryList(q["cat"]),
 		RuleMode:   q.Get("rule_mode"),
 		Query:      q.Get("q"),
 		Since:      q.Get("since"),

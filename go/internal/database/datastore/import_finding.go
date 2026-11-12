@@ -10,6 +10,7 @@ import (
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/internal/models"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/iterator"
 )
 
@@ -222,46 +223,33 @@ func (s *ImportFindingsStore) listAll(ctx context.Context, pageSize int) ([]*mod
 	return findings, nil
 }
 
-type importFindingLastAttemptProjection struct {
-	LastAttempt time.Time `datastore:"last_attempt"`
+func (s *ImportFindingsStore) ListTimestamps(ctx context.Context) (map[string]int64, map[string]int64, error) {
+	return s.listTimestamps(ctx, 5000)
 }
 
-type importFindingFirstSeenProjection struct {
-	FirstSeen time.Time `datastore:"first_seen"`
-}
+func (s *ImportFindingsStore) listTimestamps(ctx context.Context, pageSize int) (map[string]int64, map[string]int64, error) {
+	var lastAttempts, firstSeen map[string]int64
+	g, gCtx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		var err error
+		lastAttempts, err = s.listTimestampProjection(gCtx, "last_attempt", pageSize)
 
-func (s *ImportFindingsStore) ListLastAttempts(ctx context.Context) (map[string]int64, error) {
-	return s.listLastAttempts(ctx, 5000)
-}
-
-func (s *ImportFindingsStore) ListFirstSeen(ctx context.Context) (map[string]int64, error) {
-	return s.listFirstSeen(ctx, 5000)
-}
-
-func (s *ImportFindingsStore) listLastAttempts(ctx context.Context, pageSize int) (map[string]int64, error) {
-	return s.listTimestampProjection(ctx, "last_attempt", pageSize, func(it *datastore.Iterator) (*datastore.Key, time.Time, error) {
-		var proj importFindingLastAttemptProjection
-		key, err := it.Next(&proj)
-
-		return key, proj.LastAttempt, err
+		return err
 	})
-}
+	g.Go(func() error {
+		var err error
+		firstSeen, err = s.listTimestampProjection(gCtx, "first_seen", pageSize)
 
-func (s *ImportFindingsStore) listFirstSeen(ctx context.Context, pageSize int) (map[string]int64, error) {
-	return s.listTimestampProjection(ctx, "first_seen", pageSize, func(it *datastore.Iterator) (*datastore.Key, time.Time, error) {
-		var proj importFindingFirstSeenProjection
-		key, err := it.Next(&proj)
-
-		return key, proj.FirstSeen, err
+		return err
 	})
+	if err := g.Wait(); err != nil {
+		return nil, nil, err
+	}
+
+	return lastAttempts, firstSeen, nil
 }
 
-func (s *ImportFindingsStore) listTimestampProjection(
-	ctx context.Context,
-	field string,
-	pageSize int,
-	nextProj func(it *datastore.Iterator) (*datastore.Key, time.Time, error),
-) (map[string]int64, error) {
+func (s *ImportFindingsStore) listTimestampProjection(ctx context.Context, field string, pageSize int) (map[string]int64, error) {
 	timestamps := make(map[string]int64)
 	var cursor *datastore.Cursor
 
@@ -274,12 +262,20 @@ func (s *ImportFindingsStore) listTimestampProjection(
 		it := s.dsClient.Run(ctx, q)
 		count := 0
 		for {
-			key, ts, err := nextProj(it)
+			var proj struct {
+				LastAttempt time.Time `datastore:"last_attempt"`
+				FirstSeen   time.Time `datastore:"first_seen"`
+			}
+			key, err := it.Next(&proj)
 			if errors.Is(err, iterator.Done) {
 				break
 			}
 			if err != nil {
 				return nil, fmt.Errorf("failed to fetch import finding %s projections: %w", field, err)
+			}
+			ts := proj.LastAttempt
+			if field == "first_seen" {
+				ts = proj.FirstSeen
 			}
 			if key != nil && key.Name != "" && !ts.IsZero() {
 				timestamps[key.Name] = ts.Unix()

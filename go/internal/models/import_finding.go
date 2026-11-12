@@ -65,13 +65,9 @@ type ImportFindingsStore interface {
 	// ListAll lists all import findings across all sources.
 	ListAll(ctx context.Context) ([]*ImportFinding, error)
 
-	// ListLastAttempts returns a map of bug ID to LastAttempt Unix timestamp (seconds)
-	// across all import findings using a lightweight projection scan when supported.
-	ListLastAttempts(ctx context.Context) (map[string]int64, error)
-
-	// ListFirstSeen returns a map of bug ID to FirstSeen Unix timestamp (seconds)
-	// across all import findings using a lightweight projection scan when supported.
-	ListFirstSeen(ctx context.Context) (map[string]int64, error)
+	// ListTimestamps returns maps of bug ID to LastAttempt and FirstSeen Unix timestamps (seconds)
+	// across all import findings using lightweight projection scans when supported.
+	ListTimestamps(ctx context.Context) (lastAttempts, firstSeen map[string]int64, err error)
 }
 
 // UnimplementedImportFindingsStore provides a default unimplemented stub for ImportFindingsStore.
@@ -119,10 +115,6 @@ func (UnimplementedImportFindingsStore) ListAll(_ context.Context) ([]*ImportFin
 	panic("not implemented")
 }
 
-func (UnimplementedImportFindingsStore) ListLastAttempts(_ context.Context) (map[string]int64, error) {
-	panic("not implemented")
-}
-
-func (UnimplementedImportFindingsStore) ListFirstSeen(_ context.Context) (map[string]int64, error) {
+func (UnimplementedImportFindingsStore) ListTimestamps(_ context.Context) (map[string]int64, map[string]int64, error) {
 	panic("not implemented")
 }

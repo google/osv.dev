@@ -16,7 +16,7 @@
 # Stage 1: Build the Go linter binary
 FROM golang:1.27.1-alpine@sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414 AS go_builder
 
-RUN apk add --no-cache git
+RUN apk add --no-cache "git>=2.54.1"
 WORKDIR /src
 
 # Using osv-schema v1.9.0

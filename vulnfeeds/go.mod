@@ -14,6 +14,7 @@ require (
 	github.com/go-git/go-git/v5 v5.19.3
 	github.com/goccy/go-yaml v1.19.2
 	github.com/google/go-cmp v0.7.0
+	github.com/google/osv-scalibr v0.5.3
 	github.com/knqyf263/go-cpe v0.0.0-20261015082322-2cb8736448ff
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20261026052736-6410c13304f9
 	github.com/redis/go-redis/v9 v9.23.0
@@ -23,7 +24,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.47.0
 	go.opentelemetry.io/otel/sdk v1.47.0
 	go.opentelemetry.io/otel/trace v1.47.0
-	golang.org/x/sync v0.24.0
+	golang.org/x/sync v0.25.0
 	golang.org/x/text v0.43.0
 	google.golang.org/api v0.310.0
 	google.golang.org/grpc v1.85.0
@@ -99,7 +100,7 @@ require (
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.8.1 // indirect
 	github.com/tidwall/gjson v1.19.0 // indirect
-	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/match v1.2.0 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect

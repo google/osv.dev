@@ -527,8 +527,6 @@ func (ds *DevStore) Search(_ context.Context, query models.VulnerabilitySearchQu
 				Vulnerabilities: []*models.ListedVulnerability{},
 			}, nil
 		}
-	} else if query.Page > 1 {
-		startIndex = (query.Page - 1) * pageSize
 	}
 
 	if startIndex >= len(listed) {
@@ -554,7 +552,7 @@ func (ds *DevStore) Search(_ context.Context, query models.VulnerabilitySearchQu
 	}
 
 	// Exact ID match prioritization on page 1
-	if query.AfterTime.IsZero() && query.Page <= 1 && q != "" && len(pageItems) > 1 {
+	if query.AfterTime.IsZero() && q != "" && len(pageItems) > 1 {
 		for i, v := range pageItems {
 			if strings.EqualFold(v.ID, query.Query) {
 				if i > 0 {

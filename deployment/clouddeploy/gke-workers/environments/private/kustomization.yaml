@@ -7,6 +7,7 @@ resources:
 patches:
 - path: backup.yaml
 - path: exporter.yaml
+- path: exporter-deleter.yaml
 - path: gitter.yaml
 - path: importer.yaml
 - path: importer-deleter.yaml

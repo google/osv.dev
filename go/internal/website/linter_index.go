@@ -641,9 +641,11 @@ func findHandle(handles []unique.Handle[string], target string) (unique.Handle[s
 }
 
 func (snap *linterSnapshot) query(params linterQueryParams) LinterQueryResponse {
-	pageSize := min(max(params.PageSize, 0), maxLinterPageSize)
-	if pageSize == 0 {
+	pageSize := params.PageSize
+	if pageSize <= 0 {
 		pageSize = defaultLinterPageSize
+	} else if pageSize > maxLinterPageSize {
+		pageSize = maxLinterPageSize
 	}
 	page := max(params.Page, 1)
 	isAsc := strings.EqualFold(params.Order, "asc")

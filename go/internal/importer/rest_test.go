@@ -94,11 +94,11 @@ func TestHandleImportREST(t *testing.T) {
 			return
 		}
 
-		// Return two records: one newer, one older (or ignored)
 		jsonResp := `[
 			{"id": "CVE-NEWER", "modified": "2023-01-02T00:00:00Z"},
+			{"id": "CVE-LOOKBACK", "modified": "2022-12-31T18:00:00Z"},
+			{"id": "CVE-CUTOFF", "modified": "2022-12-31T12:00:00Z"},
 			{"id": "CVE-OLDER", "modified": "2022-12-31T00:00:00Z"},
-			{"id": "CVE-EQUAL", "modified": "2023-01-01T00:00:00Z"},
 			{"id": "IGNORE-ME", "modified": "2023-01-02T00:00:00Z"}
 		]`
 		w.Header().Set("Content-Type", "application/json")
@@ -138,19 +138,31 @@ func TestHandleImportREST(t *testing.T) {
 	}
 	close(ch)
 
-	records := make([]restSourceRecord, 0, 10)
+	items := make([]WorkItem, 0, 10)
 	for r := range ch {
-		records = append(records, r.SourceRecord.(restSourceRecord))
+		items = append(items, r)
 	}
 
-	// We expect 1 record: CVE-NEWER
-	// (CVE-OLDER is skipped due to modified time, IGNORE-ME is skipped due to regex)
-	if len(records) != 1 {
-		t.Fatalf("Expected 1 record, got %d", len(records))
+	// Expect CVE-NEWER and CVE-LOOKBACK (within 12h lookback window before lastUpdated);
+	// CVE-CUTOFF and CVE-OLDER are <= lastUpdated - 12h, and IGNORE-ME matches ignore pattern.
+	if len(items) != 2 {
+		t.Fatalf("Expected 2 records, got %d", len(items))
 	}
 
-	if records[0].urlPath != "CVE-NEWER.json" {
-		t.Errorf("Expected urlPath=CVE-NEWER.json, got %s", records[0].urlPath)
+	if items[0].SourceRecord.(restSourceRecord).urlPath != "CVE-NEWER.json" || items[0].KnownID != "CVE-NEWER" {
+		t.Errorf("Unexpected item[0]: path=%s knownID=%s", items[0].SourcePath, items[0].KnownID)
+	}
+	if items[1].SourceRecord.(restSourceRecord).urlPath != "CVE-LOOKBACK.json" || items[1].KnownID != "CVE-LOOKBACK" {
+		t.Errorf("Unexpected item[1]: path=%s knownID=%s", items[1].SourcePath, items[1].KnownID)
+	}
+
+	wantLastUpdated := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+	if sourceRepo.REST.LastUpdated == nil || !sourceRepo.REST.LastUpdated.Equal(wantLastUpdated) {
+		t.Errorf("LastUpdated = %v, want %v", sourceRepo.REST.LastUpdated, wantLastUpdated)
+	}
+	wantHTTPLastModified := time.Date(2023, 1, 2, 12, 0, 0, 0, time.UTC)
+	if sourceRepo.REST.HTTPLastModified == nil || !sourceRepo.REST.HTTPLastModified.Equal(wantHTTPLastModified) {
+		t.Errorf("HTTPLastModified = %v, want %v", sourceRepo.REST.HTTPLastModified, wantHTTPLastModified)
 	}
 
 	wantLastUpdated := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)

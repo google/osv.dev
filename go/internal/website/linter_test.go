@@ -85,9 +85,10 @@ func (s *richSourceRepoStore) All(_ context.Context) iter.Seq2[*models.SourceRep
 type richImportFindingsStore struct {
 	models.UnimplementedImportFindingsStore
 
-	findings map[string]int64
-	err      error
-	gate     <-chan struct{}
+	findings  map[string]int64
+	firstSeen map[string]int64
+	err       error
+	gate      <-chan struct{}
 }
 
 func (s richImportFindingsStore) ListLastAttempts(ctx context.Context) (map[string]int64, error) {
@@ -103,6 +104,21 @@ func (s richImportFindingsStore) ListLastAttempts(ctx context.Context) (map[stri
 	}
 
 	return s.findings, nil
+}
+
+func (s richImportFindingsStore) ListFirstSeen(ctx context.Context) (map[string]int64, error) {
+	if s.gate != nil {
+		select {
+		case <-s.gate:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+	if s.err != nil {
+		return nil, s.err
+	}
+
+	return s.firstSeen, nil
 }
 
 type linterVulnStore struct {
@@ -142,7 +158,7 @@ func setupLinterTestServer(t *testing.T, ttl time.Duration) (*website.Server, *r
 				{"Code": "REC:001", "Message": "Invalid Affected"},
 				{"Code": "PKG:003", "Message": "Invalid PURL"}
 			]}`,
-			"ghsa": `{"tmp/tmp/GHSA-aaaa-bbbb-cccc.json": [{"Code": "SCH:001", "Message": "Invalid URL"}]}`,
+			"ghsa": `{"tmp/tmp/GHSA-aaaa-bbbb-cccc.json": [{"Code": "SCH:001", "Message": "Invalid URL (naïve encoding)"}]}`,
 		},
 		fetchCounts: make(map[string]int),
 		fetchErrs:   make(map[string]error),
@@ -154,6 +170,12 @@ func setupLinterTestServer(t *testing.T, ttl time.Duration) (*website.Server, *r
 			"CVE-2026-0001":       now.Add(-30 * time.Minute).Unix(),
 			"CGA-2222":            now.Add(-45 * time.Minute).Unix(), // Ties with CGA-1111 to exercise BugID tie-breaking.
 			"CGA-1111":            now.Add(-45 * time.Minute).Unix(),
+		},
+		firstSeen: map[string]int64{
+			"GHSA-aaaa-bbbb-cccc": now.Add(-1 * time.Hour).Unix(),
+			"CVE-2026-0001":       now.Add(-48 * time.Hour).Unix(),
+			"CGA-2222":            now.Add(-72 * time.Hour).Unix(),
+			"CGA-1111":            now.Add(-96 * time.Hour).Unix(),
 		},
 	}
 
@@ -213,8 +235,19 @@ func TestLinterQuery_PaginatedIndexAndEndpoints(t *testing.T) {
 	}{
 		{"source=chainguard", 2, 1, "CGA-1111"},
 		{"source=chainguard&order=asc", 2, 1, "CGA-1111"},
+		{"source=ghsa,cve-osv&source_mode=include", 2, 1, "GHSA-aaaa-bbbb-cccc"},
+		{"source=chainguard&source_mode=exclude", 2, 1, "GHSA-aaaa-bbbb-cccc"},
 		{"code=SCH:001", 2, 1, "GHSA-aaaa-bbbb-cccc"},
+		{"cat=PKG", 1, 1, "CVE-2026-0001"},
+		// Excluding RNG:002 hides CGA-1111 (RNG:002-only) while keeping CGA-2222 (also has SCH:001).
+		{"code=RNG:002&rule_mode=exclude", 3, 1, "GHSA-aaaa-bbbb-cccc"},
+		{"cat=RNG&rule_mode=exclude", 3, 1, "GHSA-aaaa-bbbb-cccc"},
+		{"finding=IMPORT_FINDING_TYPE_INVALID_RECORD", 1, 1, "CVE-2026-0001"},
 		{"q=ghsa-aaaa", 1, 1, "GHSA-aaaa-bbbb-cccc"},
+		{"q=NAÏVE", 1, 1, "GHSA-aaaa-bbbb-cccc"},
+		{"since=24h", 1, 1, "GHSA-aaaa-bbbb-cccc"},
+		{"sort=finding_count&order=desc", 4, 1, "CGA-2222"},
+		{"sort=first_seen&order=asc", 4, 1, "CGA-1111"},
 		{"q=nomatch", 0, 1, ""},
 		{"order=asc", 4, 1, "CGA-1111"},
 		{"page=2&page_size=2", 4, 2, "CGA-1111"},
@@ -383,10 +416,53 @@ func TestLinterIndex_AsyncTimestampEnrichment(t *testing.T) {
 
 	close(gate)
 	for range 100 {
-		if enriched := queryLinter(t, srv, ""); enriched.Issues[0].LastAttempt == enrichedTime.Format(time.RFC3339) {
+		if enriched := queryLinter(t, srv, ""); enriched.TimestampsReady && enriched.Issues[0].LastAttempt == enrichedTime.Format(time.RFC3339) {
 			return
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
 	t.Fatal("timed out waiting for background ImportFindings timestamp enrichment")
+}
+
+func TestLinterQuery_MissingFirstSeenSortsLast(t *testing.T) {
+	t.Parallel()
+
+	now := time.Now().UTC().Truncate(time.Second)
+	linterStore := &richLinterStore{
+		infos: []models.LinterSourceInfo{{Source: "ghsa", Generation: 1}},
+		payloads: map[string]string{
+			"ghsa": `{
+				"tmp/tmp/GHSA-new.json": [{"Code": "SCH:001", "Message": "a"}],
+				"tmp/tmp/GHSA-old.json": [{"Code": "SCH:001", "Message": "b"}],
+				"tmp/tmp/GHSA-zero.json": [{"Code": "SCH:001", "Message": "c"}]
+			}`,
+		},
+	}
+	srv := newTestServer(t, website.Config{
+		Stores: website.Stores{
+			Linter: linterStore,
+			ImportFindings: richImportFindingsStore{
+				findings: map[string]int64{
+					"GHSA-new":  now.Unix(),
+					"GHSA-old":  now.Unix(),
+					"GHSA-zero": now.Unix(),
+				},
+				firstSeen: map[string]int64{
+					"GHSA-new": now.Add(-1 * time.Hour).Unix(),
+					"GHSA-old": now.Add(-48 * time.Hour).Unix(),
+					// GHSA-zero intentionally has zero FirstSeen
+				},
+			},
+		},
+	})
+
+	desc := queryLinter(t, srv, "sort=first_seen&order=desc")
+	if got := []string{desc.Issues[0].BugID, desc.Issues[1].BugID, desc.Issues[2].BugID}; !slices.Equal(got, []string{"GHSA-new", "GHSA-old", "GHSA-zero"}) {
+		t.Errorf("sort=first_seen desc = %v, want [GHSA-new GHSA-old GHSA-zero]", got)
+	}
+
+	asc := queryLinter(t, srv, "sort=first_seen&order=asc")
+	if got := []string{asc.Issues[0].BugID, asc.Issues[1].BugID, asc.Issues[2].BugID}; !slices.Equal(got, []string{"GHSA-old", "GHSA-new", "GHSA-zero"}) {
+		t.Errorf("sort=first_seen asc = %v, want [GHSA-old GHSA-new GHSA-zero]", got)
+	}
 }

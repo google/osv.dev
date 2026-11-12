@@ -49,34 +49,92 @@
                                     <i class="material-icons">keyboard_arrow_down</i>
                                 </div>
                             </div>
-                            <div id="homedb-filter-options" class="filter-option-container"></div>
+                            <div id="homedb-filter-panel" class="filter-option-container">
+                                <div class="filter-panel-toolbar">
+                                    <div class="mode-toggle" role="group" aria-label="Database filter mode">
+                                        <button type="button" class="mode-btn active" data-filter="homedb" data-mode="include">Include</button>
+                                        <button type="button" class="mode-btn" data-filter="homedb" data-mode="exclude">Exclude</button>
+                                    </div>
+                                    <button type="button" class="filter-clear-btn" id="homedb-clear-btn">Clear</button>
+                                </div>
+                                <div class="filter-panel-search">
+                                    <input type="text" id="homedb-search-input" placeholder="Filter databases..." autocomplete="off" />
+                                </div>
+                                <div id="homedb-filter-options" class="filter-options-scroll"></div>
+                            </div>
                         </div>
                         <div class="filter-container">
-                            <span>Finding</span>
+                            <span>Rule / Category</span>
                             <div id="findings-filter" class="filter">
                                 <p id="findings-filter-selected" class="filter-selected"></p>
                                 <div class="filter-icon">
                                     <i class="material-icons">keyboard_arrow_down</i>
                                 </div>
                             </div>
-                            <div id="findings-filter-options" class="filter-option-container"></div>
+                            <div id="findings-filter-panel" class="filter-option-container">
+                                <div class="filter-panel-toolbar">
+                                    <div class="mode-toggle" role="group" aria-label="Rule filter mode">
+                                        <button type="button" class="mode-btn active" data-filter="findings" data-mode="include">Include</button>
+                                        <button type="button" class="mode-btn" data-filter="findings" data-mode="exclude">Exclude</button>
+                                    </div>
+                                    <button type="button" class="filter-clear-btn" id="findings-clear-btn">Clear</button>
+                                </div>
+                                <div class="filter-panel-search">
+                                    <input type="text" id="findings-search-input" placeholder="Filter rules (e.g. SCH:001)..." autocomplete="off" />
+                                </div>
+                                <div id="findings-filter-options" class="filter-options-scroll"></div>
+                            </div>
+                        </div>
+                        <div class="filter-container filter-container-compact">
+                            <span>First Seen</span>
+                            <div id="since-filter" class="filter">
+                                <p id="since-filter-selected" class="filter-selected">Any time</p>
+                                <div class="filter-icon">
+                                    <i class="material-icons">keyboard_arrow_down</i>
+                                </div>
+                            </div>
+                            <div id="since-filter-options" class="filter-option-container">
+                                <div class="filter-option" data-value="">Any time</div>
+                                <div class="filter-option" data-value="24h">New in last 24h</div>
+                                <div class="filter-option" data-value="7d">New in last 7 days</div>
+                                <div class="filter-option" data-value="30d">New in last 30 days</div>
+                                <div class="filter-option" data-value="90d">New in last 90 days</div>
+                            </div>
+                        </div>
+                        <div class="search-container">
+                            <label for="search-input">Search</label>
+                            <div class="search-box">
+                                <div class="search-icon">
+                                    <i class="material-icons">search</i>
+                                </div>
+                                <input id="search-input" placeholder="Bug ID or finding message..." />
+                            </div>
                         </div>
                     </div>
 
-                    <div class="search-box">
-                        <div class="search-icon">
-                            <i class="material-icons">search</i>
+                    <div class="results-toolbar">
+                        <div id="active-filter-chips" class="active-chips"></div>
+                        <div class="results-meta">
+                            <span id="timestamps-sync-status" class="sync-badge" hidden>Syncing First Seen timestamps...</span>
+                            <span id="results-summary"></span>
+                            <select id="page-size-select" title="Rows per page">
+                                <option value="15">15 rows</option>
+                                <option value="25" selected>25 rows</option>
+                                <option value="50">50 rows</option>
+                                <option value="100">100 rows</option>
+                            </select>
                         </div>
-                        <input id="search-input" placeholder="Search for a specific record..." />
                     </div>
 
                     <div id="homedb-details">
                         <table id="issues-table">
                             <thead>
                                 <tr>
-                                    <th>Bug ID</th>
-                                    <th>Findings</th>
-                                    <th id="modified-header">
+                                    <th data-sort="bug_id">Bug ID <i class="material-icons">unfold_more</i></th>
+                                    <th>Home DB</th>
+                                    <th data-sort="finding_count">Findings <i class="material-icons">unfold_more</i></th>
+                                    <th data-sort="first_seen">First Seen <i class="material-icons">unfold_more</i></th>
+                                    <th id="modified-header" data-sort="last_attempt">
                                         Modified <i class="material-icons">expand_more</i>
                                     </th>
                                 </tr>

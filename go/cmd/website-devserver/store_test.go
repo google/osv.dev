@@ -118,6 +118,9 @@ func TestDevStore_Linter(t *testing.T) {
 	if lastAttempts, err := store.ListLastAttempts(ctx); err != nil || len(lastAttempts) == 0 {
 		t.Fatalf("ListLastAttempts() = (%d, %v), want non-empty", len(lastAttempts), err)
 	}
+	if firstSeen, err := store.ListFirstSeen(ctx); err != nil || len(firstSeen) == 0 {
+		t.Fatalf("ListFirstSeen() = (%d, %v), want non-empty", len(firstSeen), err)
+	}
 	// Colon-containing IDs map to underscore-sanitized filenames (SUSE-SU-2023_3313-1.json).
 	if vuln, err := store.GetFull(ctx, "SUSE-SU-2023:3313-1"); err != nil || vuln.GetId() != "SUSE-SU-2023:3313-1" {
 		t.Errorf("GetFull(SUSE-SU-2023:3313-1) = (%v, %v), want matching record", vuln.GetId(), err)

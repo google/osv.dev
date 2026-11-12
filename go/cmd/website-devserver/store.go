@@ -762,6 +762,18 @@ func (ds *DevStore) ListLastAttempts(_ context.Context) (map[string]int64, error
 	return out, nil
 }
 
+func (ds *DevStore) ListFirstSeen(_ context.Context) (map[string]int64, error) {
+	_, importFindings := ds.buildMockLinterData()
+	out := make(map[string]int64, len(importFindings))
+	for _, f := range importFindings {
+		if f != nil && f.BugID != "" && !f.FirstSeen.IsZero() {
+			out[f.BugID] = f.FirstSeen.Unix()
+		}
+	}
+
+	return out, nil
+}
+
 func (ds *DevStore) GetFile(ctx context.Context, source, cveID string) ([]byte, error) {
 	vuln, _, err := ds.readRecordFromDisk(cveID)
 	if err == nil && vuln != nil {

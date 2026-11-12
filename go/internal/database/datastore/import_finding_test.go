@@ -63,4 +63,19 @@ func TestImportFindingsStore_ListAllAndLastAttempts(t *testing.T) {
 	if diff := cmp.Diff(wantTS, gotTS); diff != "" {
 		t.Errorf("listLastAttempts() mismatch (-want +got):\n%s", diff)
 	}
+
+	gotFS, err := store.listFirstSeen(t.Context(), 2)
+	if err != nil {
+		t.Fatalf("listFirstSeen() error: %v", err)
+	}
+	wantFS := map[string]int64{
+		"BUG-0001":     baseTime.Unix(),
+		"BUG-0002":     baseTime.Unix(),
+		"BUG-0003":     baseTime.Unix(),
+		"BUG-0004":     baseTime.Unix(),
+		"KEY-ONLY-BUG": baseTime.Unix(),
+	}
+	if diff := cmp.Diff(wantFS, gotFS); diff != "" {
+		t.Errorf("listFirstSeen() mismatch (-want +got):\n%s", diff)
+	}
 }

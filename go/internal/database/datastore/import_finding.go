@@ -226,16 +226,47 @@ type importFindingLastAttemptProjection struct {
 	LastAttempt time.Time `datastore:"last_attempt"`
 }
 
+type importFindingFirstSeenProjection struct {
+	FirstSeen time.Time `datastore:"first_seen"`
+}
+
 func (s *ImportFindingsStore) ListLastAttempts(ctx context.Context) (map[string]int64, error) {
 	return s.listLastAttempts(ctx, 5000)
 }
 
+func (s *ImportFindingsStore) ListFirstSeen(ctx context.Context) (map[string]int64, error) {
+	return s.listFirstSeen(ctx, 5000)
+}
+
 func (s *ImportFindingsStore) listLastAttempts(ctx context.Context, pageSize int) (map[string]int64, error) {
-	lastAttempts := make(map[string]int64)
+	return s.listTimestampProjection(ctx, "last_attempt", pageSize, func(it *datastore.Iterator) (*datastore.Key, time.Time, error) {
+		var proj importFindingLastAttemptProjection
+		key, err := it.Next(&proj)
+
+		return key, proj.LastAttempt, err
+	})
+}
+
+func (s *ImportFindingsStore) listFirstSeen(ctx context.Context, pageSize int) (map[string]int64, error) {
+	return s.listTimestampProjection(ctx, "first_seen", pageSize, func(it *datastore.Iterator) (*datastore.Key, time.Time, error) {
+		var proj importFindingFirstSeenProjection
+		key, err := it.Next(&proj)
+
+		return key, proj.FirstSeen, err
+	})
+}
+
+func (s *ImportFindingsStore) listTimestampProjection(
+	ctx context.Context,
+	field string,
+	pageSize int,
+	nextProj func(it *datastore.Iterator) (*datastore.Key, time.Time, error),
+) (map[string]int64, error) {
+	timestamps := make(map[string]int64)
 	var cursor *datastore.Cursor
 
 	for {
-		q := datastore.NewQuery("ImportFinding").Project("last_attempt").Limit(pageSize)
+		q := datastore.NewQuery("ImportFinding").Project(field).Limit(pageSize)
 		if cursor != nil {
 			q = q.Start(*cursor)
 		}
@@ -243,16 +274,15 @@ func (s *ImportFindingsStore) listLastAttempts(ctx context.Context, pageSize int
 		it := s.dsClient.Run(ctx, q)
 		count := 0
 		for {
-			var proj importFindingLastAttemptProjection
-			key, err := it.Next(&proj)
+			key, ts, err := nextProj(it)
 			if errors.Is(err, iterator.Done) {
 				break
 			}
 			if err != nil {
-				return nil, fmt.Errorf("failed to fetch import finding last_attempt projections: %w", err)
+				return nil, fmt.Errorf("failed to fetch import finding %s projections: %w", field, err)
 			}
-			if key != nil && key.Name != "" && !proj.LastAttempt.IsZero() {
-				lastAttempts[key.Name] = proj.LastAttempt.Unix()
+			if key != nil && key.Name != "" && !ts.IsZero() {
+				timestamps[key.Name] = ts.Unix()
 			}
 			count++
 		}
@@ -262,12 +292,12 @@ func (s *ImportFindingsStore) listLastAttempts(ctx context.Context, pageSize int
 		}
 		nextCursor, err := it.Cursor()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get datastore cursor for import finding last_attempt projections: %w", err)
+			return nil, fmt.Errorf("failed to get datastore cursor for import finding %s projections: %w", field, err)
 		}
 		cursor = &nextCursor
 	}
 
-	return lastAttempts, nil
+	return timestamps, nil
 }
 
 func (f *ImportFinding) toModel() *models.ImportFinding {

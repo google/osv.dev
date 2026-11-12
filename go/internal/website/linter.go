@@ -82,6 +82,19 @@ func (s *Server) handleLinterPage(w http.ResponseWriter, r *http.Request) {
 	s.renderStandalone(w, r, "linter.html", http.StatusOK, data)
 }
 
+func splitQueryList(values []string) []string {
+	var out []string
+	for _, raw := range values {
+		for part := range strings.SplitSeq(raw, ",") {
+			if trimmed := strings.TrimSpace(part); trimmed != "" {
+				out = append(out, trimmed)
+			}
+		}
+	}
+
+	return out
+}
+
 // handleLinterQuery handles paginated server-side querying of cached linter findings.
 func (s *Server) handleLinterQuery(w http.ResponseWriter, r *http.Request) {
 	snap, err := s.linterIdx.getSnapshot(r.Context())
@@ -93,16 +106,36 @@ func (s *Server) handleLinterQuery(w http.ResponseWriter, r *http.Request) {
 	}
 
 	q := r.URL.Query()
+	sources := splitQueryList(q["source"])
+	if len(sources) == 0 {
+		sources = splitQueryList(q["homedb"])
+	}
+
+	codes := splitQueryList(q["code"])
+	if legacy := splitQueryList(q["finding"]); len(legacy) > 0 {
+		codes = append(codes, legacy...)
+	}
+
+	categories := splitQueryList(q["category"])
+	if len(categories) == 0 {
+		categories = splitQueryList(q["cat"])
+	}
+
 	page, _ := strconv.Atoi(q.Get("page"))
 	pageSize, _ := strconv.Atoi(q.Get("page_size"))
 
 	resp := snap.query(linterQueryParams{
-		Source:   q.Get("source"),
-		Code:     q.Get("code"),
-		Query:    q.Get("q"),
-		Order:    q.Get("order"),
-		Page:     page,
-		PageSize: pageSize,
+		Sources:    sources,
+		SourceMode: q.Get("source_mode"),
+		Codes:      codes,
+		Categories: categories,
+		RuleMode:   q.Get("rule_mode"),
+		Query:      q.Get("q"),
+		Since:      q.Get("since"),
+		Sort:       q.Get("sort"),
+		Order:      q.Get("order"),
+		Page:       page,
+		PageSize:   pageSize,
 	})
 
 	s.renderJSON(w, r, http.StatusOK, resp)

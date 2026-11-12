@@ -1,85 +1,154 @@
 import "./linter.scss";
 import "@github/clipboard-copy-element";
 
+const SINCE_LABELS = {
+  "": "Any time",
+  "24h": "New in last 24h",
+  "7d": "New in last 7 days",
+  "30d": "New in last 30 days",
+  "90d": "New in last 90 days",
+};
 
+const LEGACY_FINDING_TO_CODES = {
+  INVALID_JSON: ["SCH:001"],
+  INVALID_RECORD: ["REC:001"],
+  INVALID_ALIASES: ["REC:002"],
+  INVALID_UPSTREAM: ["REC:003"],
+  INVALID_RELATED: ["REC:004"],
+  INVALID_RANGE: ["RNG:001", "RNG:002"],
+  INVALID_PACKAGE: ["PKG:001"],
+  INVALID_VERSION: ["PKG:002"],
+  INVALID_PURL: ["PKG:003"],
+  INVALID_COMMIT: ["COMMIT:001"],
+  BAD_ALIASED_CVE: ["CVE:001"],
+  DELETED: ["DEL:001"],
+};
 
 document.addEventListener("DOMContentLoaded", function () {
   const apiUrl = (document.body.dataset.apiUrl || "api.test.osv.dev").replace(/^https?:\/\//, "");
   let activeVulnData = {};
   let activeVulnValueMaps = {};
-  const issuesPerPage = 15;
+  let issuesPerPage = 25;
   let currentPage = 1;
   let totalIssues = 0;
+  let sortField = "last_attempt";
   let sortDirection = "desc";
   let activeQueryController = null;
   let searchDebounceTimer = null;
+  let timestampRetryTimer = null;
+  let timestampRetryCount = 0;
+  const maxTimestampRetries = 6;
 
   const globalLoader = document.getElementById("global-loader");
   const searchInput = document.getElementById("search-input");
-  const modifiedHeader = document.getElementById("modified-header");
   const tabBarContainer = document.querySelector(".tab-bar-container");
   const tabSwitch = document.getElementById("tab-switch");
   const tabsContent = document.getElementById("tabs-content");
 
   const homeDbFilter = document.getElementById("homedb-filter");
-  const homeDbFilterSelected = document.getElementById(
-    "homedb-filter-selected"
-  );
-  const homeDbFilterOptions = document.getElementById(
-    "homedb-filter-options"
-  );
+  const homeDbFilterSelected = document.getElementById("homedb-filter-selected");
+  const homeDbFilterOptions = document.getElementById("homedb-filter-options");
+  const homeDbSearchInput = document.getElementById("homedb-search-input");
 
   const findingsFilter = document.getElementById("findings-filter");
-  const findingsFilterSelected = document.getElementById(
-    "findings-filter-selected"
-  );
-  const findingsFilterOptions = document.getElementById(
-    "findings-filter-options"
-  );
+  const findingsFilterSelected = document.getElementById("findings-filter-selected");
+  const findingsFilterOptions = document.getElementById("findings-filter-options");
+  const findingsSearchInput = document.getElementById("findings-search-input");
 
-  let selectedHomeDb = "";
-  let selectedFinding = "";
+  const sinceFilter = document.getElementById("since-filter");
+  const sinceFilterSelected = document.getElementById("since-filter-selected");
+  const sinceFilterOptions = document.getElementById("since-filter-options");
+
+  const activeChipsEl = document.getElementById("active-filter-chips");
+  const syncStatusEl = document.getElementById("timestamps-sync-status");
+  const resultsSummaryEl = document.getElementById("results-summary");
+  const pageSizeSelect = document.getElementById("page-size-select");
+
+  let selectedSources = new Set();
+  let sourceMode = "include";
+  let selectedCodes = new Set();
+  let selectedCategories = new Set();
+  let ruleMode = "include";
+  let selectedSince = "";
+  let latestFacets = {};
+
+  function splitCSV(val) {
+    return val ? val.split(",").map((s) => s.trim()).filter(Boolean) : [];
+  }
 
   function applyFiltersFromURL() {
     const params = new URLSearchParams(window.location.search);
-    const homeDb = params.get("homedb");
-    if (homeDb) {
-      selectedHomeDb = homeDb;
-    }
+    selectedSources = new Set(splitCSV(params.get("homedb") || params.get("source")));
+    sourceMode = params.get("source_mode") === "exclude" ? "exclude" : "include";
+
+    selectedCodes = new Set();
+    splitCSV(params.get("code")).forEach((c) => selectedCodes.add(c.toUpperCase()));
+    splitCSV(params.get("finding")).forEach((f) => {
+      const key = f.toUpperCase().replace(/^IMPORT_FINDING_TYPE_/, "");
+      (LEGACY_FINDING_TO_CODES[key] || [key]).forEach((c) => selectedCodes.add(c));
+    });
+    selectedCategories = new Set(splitCSV(params.get("cat") || params.get("category")).map((c) => c.toUpperCase()));
+    ruleMode = params.get("rule_mode") === "exclude" ? "exclude" : "include";
+    selectedSince = params.get("since") || "";
+    searchInput.value = params.get("q") || "";
+
+    const sort = params.get("sort");
+    if (["last_attempt", "first_seen", "bug_id", "finding_count"].includes(sort)) sortField = sort;
+    if (params.get("order") === "asc") sortDirection = "asc";
+    const page = parseInt(params.get("page") || "1", 10);
+    if (page > 0) currentPage = page;
+    const ps = parseInt(params.get("page_size") || "25", 10);
+    if ([15, 25, 50, 100].includes(ps)) issuesPerPage = ps;
+    pageSizeSelect.value = String(issuesPerPage);
   }
 
-  function updateURL(homeDb, replace = false) {
-    const params = new URLSearchParams(window.location.search);
-    if (homeDb) {
-      params.set("homedb", homeDb);
-    } else {
-      params.delete("homedb");
+  function updateURL(replace = true) {
+    const params = new URLSearchParams();
+    if (selectedSources.size > 0) {
+      params.set("homedb", Array.from(selectedSources).join(","));
+      if (sourceMode === "exclude") params.set("source_mode", "exclude");
     }
-    const newURL = `${
-      window.location.pathname
-    }?${params.toString()}`.replace(/\?$/, "");
+    if (selectedCodes.size > 0) params.set("code", Array.from(selectedCodes).join(","));
+    if (selectedCategories.size > 0) params.set("cat", Array.from(selectedCategories).join(","));
+    if ((selectedCodes.size > 0 || selectedCategories.size > 0) && ruleMode === "exclude") {
+      params.set("rule_mode", "exclude");
+    }
+    if (selectedSince) params.set("since", selectedSince);
+    if (searchInput.value.trim()) params.set("q", searchInput.value.trim());
+    if (sortField !== "last_attempt") params.set("sort", sortField);
+    if (sortDirection !== "desc") params.set("order", sortDirection);
+    if (currentPage > 1) params.set("page", String(currentPage));
+    if (issuesPerPage !== 25) params.set("page_size", String(issuesPerPage));
 
-    if (replace) {
-      history.replaceState({ path: newURL }, "", newURL);
-    } else {
-      history.pushState({ path: newURL }, "", newURL);
-    }
+    const qs = params.toString();
+    const newURL = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    history[replace ? "replaceState" : "pushState"]({ path: newURL }, "", newURL);
   }
 
   applyFiltersFromURL();
 
-  async function fetchIssues() {
-    if (activeQueryController) {
-      activeQueryController.abort();
+  async function fetchIssues(isTimestampRetry = false) {
+    clearTimeout(timestampRetryTimer);
+    if (!isTimestampRetry) {
+      timestampRetryCount = 0;
     }
+    if (activeQueryController) activeQueryController.abort();
     const controller = new AbortController();
     activeQueryController = controller;
     globalLoader.classList.add("visible");
+    updateURL(true);
 
     const params = new URLSearchParams();
-    if (selectedHomeDb) params.set("source", selectedHomeDb);
-    if (selectedFinding) params.set("code", selectedFinding);
+    if (selectedSources.size > 0) {
+      params.set("source", Array.from(selectedSources).join(","));
+      params.set("source_mode", sourceMode);
+    }
+    if (selectedCodes.size > 0) params.set("code", Array.from(selectedCodes).join(","));
+    if (selectedCategories.size > 0) params.set("cat", Array.from(selectedCategories).join(","));
+    if (selectedCodes.size > 0 || selectedCategories.size > 0) params.set("rule_mode", ruleMode);
+    if (selectedSince) params.set("since", selectedSince);
     if (searchInput.value.trim()) params.set("q", searchInput.value.trim());
+    params.set("sort", sortField);
     params.set("order", sortDirection);
     params.set("page", String(currentPage));
     params.set("page_size", String(issuesPerPage));
@@ -96,7 +165,25 @@ document.addEventListener("DOMContentLoaded", function () {
 
       totalIssues = data.total || 0;
       currentPage = data.page || 1;
-      if (!updateDynamicFilterCounts(data.facets || {})) return;
+      latestFacets = data.facets || {};
+
+      if (data.timestamps_ready) {
+        syncStatusEl.hidden = true;
+        timestampRetryCount = 0;
+      } else {
+        syncStatusEl.hidden = false;
+        if (timestampRetryCount < maxTimestampRetries) {
+          const delayMs = Math.min(1500 * Math.pow(2, timestampRetryCount), 15000);
+          timestampRetryCount++;
+          syncStatusEl.textContent = "Syncing First Seen timestamps...";
+          timestampRetryTimer = setTimeout(() => fetchIssues(true), delayMs);
+        } else {
+          syncStatusEl.textContent = "First Seen timestamps still syncing (reload later)";
+        }
+      }
+
+      updateDynamicFilterCounts(latestFacets);
+      renderActiveChips();
       displayIssues(data.issues || []);
     } catch (err) {
       if (err.name === "AbortError") return;
@@ -104,8 +191,9 @@ document.addEventListener("DOMContentLoaded", function () {
       const tableBody = document
         .getElementById("issues-table")
         .getElementsByTagName("tbody")[0];
-      tableBody.innerHTML = '<tr><td colspan="3">Failed to load issues.</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="5">Failed to load issues.</td></tr>';
       totalIssues = 0;
+      resultsSummaryEl.textContent = "";
       setupPagination();
     } finally {
       if (activeQueryController === controller) {
@@ -114,7 +202,29 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  function syncModeButtons() {
+    document.querySelectorAll(".mode-btn[data-filter='homedb']").forEach((b) => {
+      b.classList.toggle("active", b.dataset.mode === sourceMode);
+    });
+    document.querySelectorAll(".mode-btn[data-filter='findings']").forEach((b) => {
+      b.classList.toggle("active", b.dataset.mode === ruleMode);
+    });
+  }
+
+  function syncSortHeaders() {
+    document.querySelectorAll("#issues-table th[data-sort]").forEach((th) => {
+      const icon = th.querySelector(".material-icons");
+      if (!icon) return;
+      icon.textContent = th.dataset.sort === sortField
+        ? (sortDirection === "asc" ? "expand_less" : "expand_more")
+        : "unfold_more";
+    });
+  }
+
   function processAndDisplayData() {
+    syncModeButtons();
+    syncSortHeaders();
+    sinceFilterSelected.textContent = SINCE_LABELS[selectedSince] || selectedSince;
     fetchIssues();
 
     searchInput.addEventListener("input", () => {
@@ -124,14 +234,28 @@ document.addEventListener("DOMContentLoaded", function () {
         fetchIssues();
       }, 200);
     });
-    modifiedHeader.addEventListener("click", () => {
-      sortDirection = sortDirection === "asc" ? "desc" : "asc";
-      const icon = modifiedHeader.querySelector(".material-icons");
-      icon.textContent =
-        sortDirection === "asc" ? "expand_less" : "expand_more";
+
+    document.querySelectorAll("#issues-table th[data-sort]").forEach((th) => {
+      th.addEventListener("click", () => {
+        const nextField = th.dataset.sort;
+        if (sortField === nextField) {
+          sortDirection = sortDirection === "asc" ? "desc" : "asc";
+        } else {
+          sortField = nextField;
+          sortDirection = nextField === "bug_id" ? "asc" : "desc";
+        }
+        syncSortHeaders();
+        currentPage = 1;
+        fetchIssues();
+      });
+    });
+
+    pageSizeSelect.addEventListener("change", () => {
+      issuesPerPage = parseInt(pageSizeSelect.value, 10) || 25;
       currentPage = 1;
       fetchIssues();
     });
+
     tabBarContainer.addEventListener("click", handleTabClick);
 
     tabSwitch.addEventListener("wheel", (e) => {
@@ -142,88 +266,262 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     tabSwitch.addEventListener("scroll", () => {
-      if (tabSwitch.scrollLeft > 0) {
-        tabBarContainer.classList.add("scrolled");
-      } else {
-        tabBarContainer.classList.remove("scrolled");
-      }
+      tabBarContainer.classList.toggle("scrolled", tabSwitch.scrollLeft > 0);
     });
 
     homeDbFilter.addEventListener("click", (e) => {
       e.stopPropagation();
-      toggleFilter("homedb");
+      toggleFilter("homedb", homeDbSearchInput);
     });
     findingsFilter.addEventListener("click", (e) => {
       e.stopPropagation();
-      toggleFilter("findings");
+      toggleFilter("findings", findingsSearchInput);
+    });
+    sinceFilter.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleFilter("since");
     });
 
-    homeDbFilterOptions.addEventListener("click", (e) => {
-      if (e.target.classList.contains("filter-option")) {
-        selectedHomeDb = e.target.dataset.value || "";
-        updateURL(selectedHomeDb);
+    homeDbSearchInput.addEventListener("input", () => updateDynamicFilterCounts(latestFacets));
+    findingsSearchInput.addEventListener("input", () => updateDynamicFilterCounts(latestFacets));
+
+    document.querySelectorAll(".mode-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (btn.dataset.filter === "homedb" && sourceMode !== btn.dataset.mode) {
+          sourceMode = btn.dataset.mode;
+          syncModeButtons();
+          if (selectedSources.size > 0) {
+            currentPage = 1;
+            fetchIssues();
+          }
+        } else if (btn.dataset.filter === "findings" && ruleMode !== btn.dataset.mode) {
+          ruleMode = btn.dataset.mode;
+          syncModeButtons();
+          if (selectedCodes.size > 0 || selectedCategories.size > 0) {
+            currentPage = 1;
+            fetchIssues();
+          }
+        }
+      });
+    });
+
+    document.getElementById("homedb-clear-btn").addEventListener("click", () => {
+      if (selectedSources.size > 0) {
+        selectedSources.clear();
+        currentPage = 1;
+        fetchIssues();
+      }
+    });
+    document.getElementById("findings-clear-btn").addEventListener("click", () => {
+      if (selectedCodes.size > 0 || selectedCategories.size > 0) {
+        selectedCodes.clear();
+        selectedCategories.clear();
         currentPage = 1;
         fetchIssues();
       }
     });
 
-    findingsFilterOptions.addEventListener("click", (e) => {
-      if (e.target.classList.contains("filter-option")) {
-        selectedFinding = e.target.dataset.value || "";
-        currentPage = 1;
-        fetchIssues();
-      }
+    sinceFilterOptions.addEventListener("click", (e) => {
+      const opt = e.target.closest(".filter-option");
+      if (!opt) return;
+      selectedSince = opt.dataset.value || "";
+      sinceFilterSelected.textContent = opt.textContent;
+      sinceFilterOptions.style.display = "none";
+      currentPage = 1;
+      fetchIssues();
     });
   }
 
-  function renderFilterDropdown(optionsEl, selectedEl, total, items, selectedValue) {
-    optionsEl.replaceChildren();
-    for (const { value, label } of [{ value: "", label: `All (${total})` }, ...items]) {
-      const option = document.createElement("div");
-      option.className = "filter-option";
-      option.dataset.value = value;
-      option.textContent = label;
-      optionsEl.appendChild(option);
-    }
-    const match = selectedValue && items.find((item) => item.value === selectedValue);
-    selectedEl.textContent = selectedValue
-      ? `${selectedValue} (${match ? match.count : 0} issues)`
-      : `All (${total} issues)`;
+  function appendCheckboxRow(container, labelText, count, checked, className, onChange) {
+    const row = document.createElement("label");
+    row.className = `check-option ${className}${count === 0 ? " zero-count" : ""}`;
+    const left = document.createElement("span");
+    left.className = "check-option-left";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = checked;
+    cb.addEventListener("change", () => onChange(cb.checked));
+    left.appendChild(cb);
+    left.appendChild(document.createTextNode(labelText));
+    const badge = document.createElement("span");
+    badge.textContent = count.toLocaleString();
+    row.appendChild(left);
+    row.appendChild(badge);
+    container.appendChild(row);
   }
 
   function updateDynamicFilterCounts(facets) {
-    const rules = (facets.rules || []).map((rule) => ({
-      value: rule.code,
-      label: `${rule.code} — ${rule.label} (${rule.count})`,
-      count: rule.count,
-    }));
-    renderFilterDropdown(
-      findingsFilterOptions,
-      findingsFilterSelected,
-      facets.total_for_rules || 0,
-      rules,
-      selectedFinding
-    );
+    const rulesTerm = findingsSearchInput.value.toLowerCase().trim();
+    const categories = facets.categories || [];
+    const rules = facets.rules || [];
+    const totalForRules = facets.total_for_rules || 0;
 
-    const sources = (facets.sources || []).map((src) => ({
-      value: src.name,
-      label: `${src.name} (${src.count})`,
-      count: src.count,
+    const prevRulesScroll = findingsFilterOptions.scrollTop;
+    findingsFilterOptions.replaceChildren();
+    categories.forEach((cat) => {
+      const catRules = rules.filter((r) => r.category === cat.code);
+      const catMatch = !rulesTerm || cat.code.toLowerCase().includes(rulesTerm) || cat.label.toLowerCase().includes(rulesTerm);
+      const visibleRules = catMatch ? catRules : catRules.filter((r) =>
+        r.code.toLowerCase().includes(rulesTerm) || r.label.toLowerCase().includes(rulesTerm)
+      );
+      if (!catMatch && visibleRules.length === 0) return;
+
+      appendCheckboxRow(
+        findingsFilterOptions,
+        `${cat.code} — ${cat.label}`,
+        cat.count,
+        selectedCategories.has(cat.code),
+        "is-category",
+        (checked) => {
+          if (checked) {
+            selectedCategories.add(cat.code);
+          } else {
+            selectedCategories.delete(cat.code);
+          }
+          currentPage = 1;
+          fetchIssues();
+        }
+      );
+      visibleRules.forEach((r) => {
+        appendCheckboxRow(
+          findingsFilterOptions,
+          `${r.code} (${r.label})`,
+          r.count,
+          selectedCodes.has(r.code),
+          "is-child",
+          (checked) => {
+            if (checked) {
+              selectedCodes.add(r.code);
+            } else {
+              selectedCodes.delete(r.code);
+            }
+            currentPage = 1;
+            fetchIssues();
+          }
+        );
+      });
+    });
+    findingsFilterOptions.scrollTop = prevRulesScroll;
+
+    const ruleTokens = [...Array.from(selectedCategories).map((c) => `${c}:*`), ...Array.from(selectedCodes)];
+    findingsFilter.classList.toggle("has-active-include", ruleTokens.length > 0 && ruleMode === "include");
+    findingsFilter.classList.toggle("has-active-exclude", ruleTokens.length > 0 && ruleMode === "exclude");
+    findingsFilterSelected.textContent = ruleTokens.length === 0
+      ? `All (${totalForRules.toLocaleString()} issues)`
+      : `${ruleMode === "exclude" ? "Excl: " : ""}${ruleTokens.join(", ")}`;
+
+    const srcTerm = homeDbSearchInput.value.toLowerCase().trim();
+    const sources = [...(facets.sources || [])].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    const totalForSources = facets.total_for_sources || 0;
+
+    const prevSourcesScroll = homeDbFilterOptions.scrollTop;
+    homeDbFilterOptions.replaceChildren();
+    sources.forEach((src) => {
+      if (src.count === 0 && !selectedSources.has(src.name)) return;
+      if (srcTerm && !src.name.toLowerCase().includes(srcTerm)) return;
+      appendCheckboxRow(homeDbFilterOptions, src.name, src.count, selectedSources.has(src.name), "", (checked) => {
+        if (checked) {
+          selectedSources.add(src.name);
+        } else {
+          selectedSources.delete(src.name);
+        }
+        currentPage = 1;
+        fetchIssues();
+      });
+    });
+    homeDbFilterOptions.scrollTop = prevSourcesScroll;
+
+    homeDbFilter.classList.toggle("has-active-include", selectedSources.size > 0 && sourceMode === "include");
+    homeDbFilter.classList.toggle("has-active-exclude", selectedSources.size > 0 && sourceMode === "exclude");
+    homeDbFilterSelected.textContent = selectedSources.size === 0
+      ? `All (${totalForSources.toLocaleString()} issues)`
+      : `${sourceMode === "exclude" ? "Excl: " : ""}${Array.from(selectedSources).join(", ")}`;
+  }
+
+  function renderActiveChips() {
+    activeChipsEl.replaceChildren();
+    const chips = [];
+    selectedSources.forEach((s) => chips.push({
+      label: `${sourceMode === "exclude" ? "DB ≠ " : "DB: "}${s}`,
+      exclude: sourceMode === "exclude",
+      remove: () => {
+        selectedSources.delete(s);
+        currentPage = 1;
+        fetchIssues();
+      },
     }));
-    if (selectedHomeDb && !sources.some((s) => s.value === selectedHomeDb)) {
-      selectedHomeDb = "";
-      updateURL("", true);
-      fetchIssues();
-      return false;
+    selectedCategories.forEach((c) => chips.push({
+      label: `${ruleMode === "exclude" ? "Cat ≠ " : "Cat: "}${c}`,
+      exclude: ruleMode === "exclude",
+      remove: () => {
+        selectedCategories.delete(c);
+        currentPage = 1;
+        fetchIssues();
+      },
+    }));
+    selectedCodes.forEach((c) => chips.push({
+      label: `${ruleMode === "exclude" ? "Rule ≠ " : "Rule: "}${c}`,
+      exclude: ruleMode === "exclude",
+      remove: () => {
+        selectedCodes.delete(c);
+        currentPage = 1;
+        fetchIssues();
+      },
+    }));
+    if (selectedSince) {
+      chips.push({
+        label: `First seen: ${SINCE_LABELS[selectedSince] || selectedSince}`,
+        remove: () => {
+          selectedSince = "";
+          sinceFilterSelected.textContent = SINCE_LABELS[""];
+          currentPage = 1;
+          fetchIssues();
+        },
+      });
     }
-    renderFilterDropdown(
-      homeDbFilterOptions,
-      homeDbFilterSelected,
-      facets.total_for_sources || 0,
-      sources,
-      selectedHomeDb
-    );
-    return true;
+    if (searchInput.value.trim()) {
+      chips.push({
+        label: `Search: "${searchInput.value.trim()}"`,
+        remove: () => {
+          searchInput.value = "";
+          currentPage = 1;
+          fetchIssues();
+        },
+      });
+    }
+
+    chips.forEach((c) => {
+      const chip = document.createElement("span");
+      chip.className = `filter-chip${c.exclude ? " exclude-chip" : ""}`;
+      chip.textContent = c.label;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.innerHTML = '<i class="material-icons">close</i>';
+      btn.addEventListener("click", c.remove);
+      chip.appendChild(btn);
+      activeChipsEl.appendChild(chip);
+    });
+
+    if (chips.length > 1) {
+      const clearAll = document.createElement("button");
+      clearAll.type = "button";
+      clearAll.className = "clear-all-chips-btn";
+      clearAll.textContent = "Clear all";
+      clearAll.addEventListener("click", () => {
+        selectedSources.clear();
+        selectedCategories.clear();
+        selectedCodes.clear();
+        sourceMode = "include";
+        ruleMode = "include";
+        selectedSince = "";
+        searchInput.value = "";
+        sinceFilterSelected.textContent = SINCE_LABELS[""];
+        syncModeButtons();
+        currentPage = 1;
+        fetchIssues();
+      });
+      activeChipsEl.appendChild(clearAll);
+    }
   }
 
   function displayIssues(paginatedIssues) {
@@ -231,20 +529,25 @@ document.addEventListener("DOMContentLoaded", function () {
       .getElementById("issues-table")
       .getElementsByTagName("tbody")[0];
     tableBody.innerHTML = "";
+    resultsSummaryEl.textContent = totalIssues > 0
+      ? `${totalIssues.toLocaleString()} matching issues`
+      : "0 issues";
 
     if (paginatedIssues.length === 0) {
-      tableBody.innerHTML = '<tr><td colspan="3">No issues found.</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="5">No issues found.</td></tr>';
     } else {
       paginatedIssues.forEach((issue) => {
-        let row = tableBody.insertRow();
+        const row = tableBody.insertRow();
         row.classList.add("clickable");
         row.addEventListener("click", () => {
           openCombinedView(issue.bug_id, issue.details || []);
         });
 
-        let cell1 = row.insertCell();
-        let cell2 = row.insertCell();
-        let cell3 = row.insertCell();
+        const cell1 = row.insertCell();
+        const cell2 = row.insertCell();
+        const cell3 = row.insertCell();
+        const cell4 = row.insertCell();
+        const cell5 = row.insertCell();
 
         const bugLink = document.createElement("a");
         bugLink.href = `https://${apiUrl}/v1/vulns/${encodeURIComponent(issue.bug_id)}`;
@@ -256,6 +559,8 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         cell1.appendChild(bugLink);
 
+        cell2.textContent = issue.source || "—";
+
         const findingsContainer = document.createElement("div");
         (issue.codes || []).forEach((code) => {
           const findingSpan = document.createElement("span");
@@ -263,9 +568,12 @@ document.addEventListener("DOMContentLoaded", function () {
           findingSpan.className = "finding-tag";
           findingsContainer.appendChild(findingSpan);
         });
-        cell2.appendChild(findingsContainer);
+        cell3.appendChild(findingsContainer);
 
-        cell3.textContent = issue.last_attempt
+        cell4.textContent = issue.first_seen
+          ? new Date(issue.first_seen).toLocaleDateString()
+          : "—";
+        cell5.textContent = issue.last_attempt
           ? new Date(issue.last_attempt).toLocaleString()
           : "—";
       });
@@ -788,8 +1096,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function toggleFilter(filterName) {
-    const options = document.getElementById(`${filterName}-filter-options`);
+  function toggleFilter(filterName, focusEl = null) {
+    const panelId = filterName === "since" ? "since-filter-options" : `${filterName}-filter-panel`;
+    const options = document.getElementById(panelId);
     const isVisible = options.style.display === "block";
 
     // Hide all filter options first
@@ -799,6 +1108,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (!isVisible) {
       options.style.display = "block";
+      if (focusEl) setTimeout(() => focusEl.focus(), 0);
     }
   }
 

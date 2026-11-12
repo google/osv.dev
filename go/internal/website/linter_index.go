@@ -21,15 +21,17 @@ import (
 )
 
 const (
-	linterCacheTTL          = 2 * time.Minute
-	linterDevCacheTTL       = 2 * time.Second
-	linterBackgroundRefresh = 10 * time.Minute
-	linterTimestampRefresh  = 30 * time.Minute
-	linterColdGraceWait     = 150 * time.Millisecond
-	linterEnrichTimeout     = 10 * time.Minute
-	linterFetchConcurrency  = 16
-	defaultLinterPageSize   = 15
-	maxLinterPageSize       = 100
+	linterCacheTTL           = 2 * time.Minute
+	linterDevCacheTTL        = 2 * time.Second
+	linterUnenrichedCacheTTL = 15 * time.Second
+	linterBackgroundRefresh  = 10 * time.Minute
+	linterTimestampRefresh   = 30 * time.Minute
+	linterColdGraceWait      = 150 * time.Millisecond
+	linterRefreshTimeout     = 30 * time.Second
+	linterEnrichTimeout      = 10 * time.Minute
+	linterFetchConcurrency   = 16
+	defaultLinterPageSize    = 15
+	maxLinterPageSize        = 100
 )
 
 var knownRuleLabels = map[string]string{
@@ -220,13 +222,24 @@ func (idx *linterIndex) getSnapshot(ctx context.Context) (*linterSnapshot, error
 		if !snap.hasGenerations {
 			ttl = linterDevCacheTTL
 		}
+		if !snap.timestampsReady {
+			idx.mu.Lock()
+			enriching := idx.enriching
+			idx.mu.Unlock()
+			if !enriching {
+				ttl = min(ttl, linterUnenrichedCacheTTL)
+			}
+		}
 		if time.Since(snap.loadedAt) < ttl {
 			return snap, nil
 		}
 	}
 
 	val, err, _ := idx.sf.Do("refresh", func() (any, error) {
-		return idx.refresh(ctx)
+		refreshCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), linterRefreshTimeout)
+		defer cancel()
+
+		return idx.refresh(refreshCtx)
 	})
 	if err != nil {
 		if snap != nil {

@@ -3,6 +3,7 @@ package website_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"iter"
 	"net/http"
 	"net/http/httptest"
@@ -84,9 +85,14 @@ type richImportFindingsStore struct {
 	models.UnimplementedImportFindingsStore
 
 	findings []*models.ImportFinding
+	err      error
 }
 
 func (s richImportFindingsStore) ListAll(_ context.Context) ([]*models.ImportFinding, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+
 	return s.findings, nil
 }
 
@@ -198,6 +204,19 @@ func TestLinterQuery_PaginatedIndexAndEndpoints(t *testing.T) {
 		t.Errorf("expected CGA-1111 first for order=asc, got %s", got.Issues[0].BugID)
 	}
 
+	p1 := queryLinter(t, srv, "page=1&page_size=2")
+	p2 := queryLinter(t, srv, "page=2&page_size=2")
+	p99 := queryLinter(t, srv, "page=99&page_size=2")
+	if p1.Page != 1 || len(p1.Issues) != 2 || p2.Page != 2 || len(p2.Issues) != 2 {
+		t.Errorf("unexpected pagination pages: p1=(%d,%d) p2=(%d,%d)", p1.Page, len(p1.Issues), p2.Page, len(p2.Issues))
+	}
+	if p1.Issues[0].BugID == p2.Issues[0].BugID {
+		t.Errorf("expected distinct issues across page 1 and page 2")
+	}
+	if p99.Page != 2 {
+		t.Errorf("expected out-of-range page=99 to clamp to 2, got %d", p99.Page)
+	}
+
 	for _, tc := range []struct {
 		path       string
 		host       string
@@ -231,5 +250,30 @@ func TestLinterIndex_GenerationCaching(t *testing.T) {
 	defer store.mu.Unlock()
 	if store.fetchCounts["chainguard"] != 1 {
 		t.Errorf("expected chainguard fetch count 1, got %d", store.fetchCounts["chainguard"])
+	}
+}
+
+func TestLinterIndex_TimestampEnrichmentErrorFallback(t *testing.T) {
+	t.Parallel()
+
+	linterStore := &richLinterStore{
+		infos: []models.LinterSourceInfo{{Source: "ghsa", Generation: 1}},
+		payloads: map[string]string{
+			"ghsa": `{"tmp/tmp/GHSA-1.json": [{"Code": "SCH:001", "Message": "bad schema"}]}`,
+		},
+	}
+	srv := newTestServer(t, website.Config{
+		Stores: website.Stores{
+			Linter:         linterStore,
+			ImportFindings: richImportFindingsStore{err: errors.New("datastore unavailable")},
+		},
+	})
+
+	resp := queryLinter(t, srv, "")
+	if resp.TimestampsReady {
+		t.Errorf("expected TimestampsReady=false when ImportFindings.ListAll fails")
+	}
+	if resp.Total != 1 || resp.Issues[0].BugID != "GHSA-1" {
+		t.Errorf("expected GCS findings to still be served on timestamp error, got %+v", resp)
 	}
 }

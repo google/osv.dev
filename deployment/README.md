@@ -129,7 +129,7 @@ To connect or run `goose` manually from your workstation via IAM authentication:
 5. Run `goose`:
    ```bash
    goose -dir go/internal/database/postgres/migrations postgres \
-     "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=disable" \
+     "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=disable default_query_exec_mode=cache_describe" \
      status
    ```
 

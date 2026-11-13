@@ -27,6 +27,8 @@ func TestZeroVersion(t *testing.T) {
 		{"SUSE:Linux Enterprise Server LTSS Extended Security 12 SP5", "s20161105-11.9.1"}, // SUSE-SU-2025:01777-1
 		{"Ubuntu:22.04:LTS", "0~20210324.2-2ubuntu0.2"},                                    // UBUNTU-CVE-2025-0838
 		{"openSUSE:Tumbleweed", "0~20240902.c95cc9e-1.1"},                                  // openSUSE-SU-2024:14314-1
+		{"Linux", "0.0.1-rc1"},
+		{"Linux", "6.1.100"},
 	}
 
 	p := NewProvider(nil)

@@ -55,7 +55,7 @@ Accordingly, the license for any contributed data source **must** at minimum per
   repo_url:    # The repo URL for the source
   db_prefix: # DB prefix, as reserved in ossf. https://ossf.github.io/osv-schema/#id-modified-fields
   accepted_ecosystems: # List of OSV ecosystems this datasource will provide vulnerability records for.
-  human_link: # HTTP link prefix to individual vulnerability records for humans. 
+  human_link: # Template for the human readable link to individual vulnerability records (see below).
   link: # HTTP link prefix to individual OSV source records. 
   directory_path: # Vulnerability data not under this path is ignored by the importer.
   extension: '.json' # Default extension.
@@ -83,7 +83,7 @@ Advanced and optional fields
   rest_api_url: # URL pointing to a REST endpoint containing at least all of the vulnerabilities' IDs and date modified
   db_prefix: # DB prefix, as reserved in ossf. https://ossf.github.io/osv-schema/#id-modified-fields
   accepted_ecosystems: # List of OSV ecosystems this datasource will provide vulnerability records for.
-  human_link: # The human readable link
+  human_link: # Template for the human readable link (see below)
   link:  # The base link
   directory_path: # Vulnerability data not under this path is ignored by the importer
   extension: # Extension for vulnerability data
@@ -105,7 +105,7 @@ Advanced and optional fields
   bucket:  # Bucket name
   db_prefix:  # DB prefix, as reserved in ossf. https://ossf.github.io/osv-schema/#id-modified-fields
   accepted_ecosystems: # List of OSV ecosystems this datasource will provide vulnerability records for.
-  human_link:  # The human readable link
+  human_link:  # Template for the human readable link (see below)
   link:  # The base link
   directory_path: # Vulnerability data not under this path is ignored by the importer
   extension: '.json' # Extension for vulnerability data
@@ -120,6 +120,27 @@ Advanced and optional fields
   versions_from_repo: False # Whether to populate "affected[].versions" from Git ranges.
   strict_validation: False # Apply strict validation (JSON Schema + linter checks) to this source.
 ```
+
+### `human_link` templates
+
+{% raw %}
+`human_link` is a [Go template](https://pkg.go.dev/text/template) rendered for each vulnerability. The following are available:
+
+- `.ID`: the vulnerability ID.
+- `.Ecosystems`: the ecosystems of each affected package, in order (e.g. `{{ index .Ecosystems 0 }}`).
+- `field SEP N`: splits the input on `SEP` and returns the `N`th part (0-indexed).
+- `replace OLD NEW`: replaces all occurrences of `OLD` with `NEW`.
+- `lower`: lowercases the input.
+
+If the template fails to render (e.g. `field` is out of range), no link is shown.
+
+``` yaml
+  human_link: 'https://github.com/advisories/{{ .ID }}'
+  human_link: 'https://security.alpinelinux.org/vuln/{{ .ID | replace "ALPINE-" "" }}'
+  # SUSE-SU-2024:1234-1 -> https://www.suse.com/support/update/announcement/2024/suse-su-20241234-1/
+  human_link: 'https://www.suse.com/support/update/announcement/{{ .ID | field ":" 0 | field "-" 2 }}/{{ .ID | replace ":" "" | lower }}/'
+```
+{% endraw %}
 
 </details>
 

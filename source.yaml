@@ -10,7 +10,7 @@
   db_prefix: ['ALBA-']
   accepted_ecosystems: ['AlmaLinux']
   ignore_git: False
-  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
+  human_link: 'https://errata.almalinux.org/{{ index .Ecosystems 0 | field ":" 1 }}/{{ .ID | replace ":" "-" }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
   strict_validation: False
@@ -26,7 +26,7 @@
   db_prefix: ['ALEA-']
   accepted_ecosystems: ['AlmaLinux']
   ignore_git: False
-  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
+  human_link: 'https://errata.almalinux.org/{{ index .Ecosystems 0 | field ":" 1 }}/{{ .ID | replace ":" "-" }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
   strict_validation: False
@@ -42,7 +42,7 @@
   db_prefix: ['ALSA-']
   accepted_ecosystems: ['AlmaLinux']
   ignore_git: False
-  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
+  human_link: 'https://errata.almalinux.org/{{ index .Ecosystems 0 | field ":" 1 }}/{{ .ID | replace ":" "-" }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
   strict_validation: False
@@ -58,7 +58,7 @@
   db_prefix: ['ALPINE-']
   accepted_ecosystems: ['Alpine']
   ignore_git: True
-  human_link: 'https://security.alpinelinux.org/vuln/{{ BUG_ID | replace("ALPINE-", "") }}'
+  human_link: 'https://security.alpinelinux.org/vuln/{{ .ID | replace "ALPINE-" "" }}'
   link: 'https://storage.googleapis.com/cve-osv-conversion/'
   editable: False
   strict_validation: True
@@ -103,7 +103,7 @@
   db_prefix: ['BELL-']
   accepted_ecosystems: ['Alpaquita', 'BellSoft Hardened Containers']
   ignore_git: False
-  human_link: 'https://docs.bell-sw.com/security/cves/{{ BUG_ID }}/'
+  human_link: 'https://docs.bell-sw.com/security/cves/{{ .ID }}/'
   link: 'https://github.com/bell-sw/osv-database/blob/master/'
   editable: False
   strict_validation: True
@@ -134,7 +134,7 @@
   db_prefix: ['ROOT-']
   accepted_ecosystems: ['Root']
   ignore_git: True
-  human_link: 'https://root.io/security/{{ BUG_ID }}'
+  human_link: 'https://root.io/security/{{ .ID }}'
   link: 'https://api.root.io/external/osv/'
   editable: False
   strict_validation: True
@@ -151,7 +151,7 @@
   accepted_ecosystems: ['Chainguard', 'Wolfi']
   ignore_git: True
   link: 'https://advisories.cgr.dev/chainguard/v3/osv/'
-  human_link: 'https://images.chainguard.dev/security/{{ BUG_ID }}'
+  human_link: 'https://images.chainguard.dev/security/{{ .ID }}'
   editable: False
   strict_validation: True
 
@@ -181,7 +181,7 @@
   db_prefix: ['CURL-']
   accepted_ecosystems: [] # None: There is no curl ecosystem, they just publish GIT advisories
   ignore_git: False
-  human_link: 'https://curl.se/docs/{{ BUG_ID | replace("CURL-", "") }}.html'
+  human_link: 'https://curl.se/docs/{{ .ID | replace "CURL-" "" }}.html'
   link: 'https://curl.se/docs/'
   editable: False
   strict_validation: False
@@ -197,7 +197,7 @@
   db_prefix: ['CVE-']
   accepted_ecosystems: ['*'] # All ecosystems (we maintain these conversions)
   ignore_git: False
-  human_link: 'https://cve.org/CVERecord?id={{ BUG_ID }}'
+  human_link: 'https://cve.org/CVERecord?id={{ .ID }}'
   link: 'https://storage.googleapis.com/cve-osv-conversion/'
   editable: False
   strict_validation: True
@@ -213,7 +213,7 @@
   db_prefix: ['DEBIAN-']
   accepted_ecosystems: ['Debian']
   ignore_git: True
-  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID | replace("DEBIAN-", "") }}'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ .ID | replace "DEBIAN-" "" }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
   strict_validation: True
@@ -229,7 +229,7 @@
   db_prefix: ['DLA-']
   accepted_ecosystems: ['Debian']
   ignore_git: True
-  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ .ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
   strict_validation: True
@@ -245,7 +245,7 @@
   db_prefix: ['DSA-']
   accepted_ecosystems: ['Debian']
   ignore_git: True
-  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ .ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
   strict_validation: True
@@ -261,7 +261,7 @@
   db_prefix: ['DTSA-']
   accepted_ecosystems: ['Debian']
   ignore_git: True
-  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ .ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
   strict_validation: True
@@ -301,7 +301,7 @@
   rest_api_url: 'https://cna.erlef.org/osv/all.json'
   db_prefix: ['EEF-']
   accepted_ecosystems: ['Hex','npm']
-  human_link: 'https://cna.erlef.org/osv/{{ BUG_ID }}.html'
+  human_link: 'https://cna.erlef.org/osv/{{ .ID }}.html'
   link:  'https://cna.erlef.org/osv/'
   directory_path: 'osv'
   extension: '.json'
@@ -322,7 +322,7 @@
   db_prefix: ['GHSA-']
   accepted_ecosystems: ['*'] # All ecosystems (We trust GHSA)
   ignore_git: False
-  human_link: 'https://github.com/advisories/{{ BUG_ID }}'
+  human_link: 'https://github.com/advisories/{{ .ID }}'
   link: 'https://github.com/github/advisory-database/blob/main/'
   editable: False
   strict_validation: False
@@ -338,7 +338,7 @@
   db_prefix: ['GO-']
   accepted_ecosystems: ['Go']
   ignore_git: True
-  human_link: 'https://pkg.go.dev/vuln/{{ BUG_ID }}'
+  human_link: 'https://pkg.go.dev/vuln/{{ .ID }}'
   link: 'https://vuln.go.dev/'
   editable: False
   strict_validation: True
@@ -370,7 +370,7 @@
   db_prefix: ['JLSEC-']
   accepted_ecosystems: ['Julia']
   ignore_git: False
-  human_link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/blob/main/advisories/published/{{ BUG_ID.split("-")[1] }}/{{ BUG_ID }}.md'
+  human_link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/blob/main/advisories/published/{{ .ID | field "-" 1 }}/{{ .ID }}.md'
   link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/tree/generated/osv/'
   editable: False
   repo_username: 'git'
@@ -387,7 +387,7 @@
   db_prefix: ['RHLW-']
   accepted_ecosystems: ['Red Hat Lightwell']
   ignore_git: False
-  human_link: 'https://github.com/project-lightwell/lightwell-osv/blob/main/advisories/{{ BUG_ID }}.json'
+  human_link: 'https://github.com/project-lightwell/lightwell-osv/blob/main/advisories/{{ .ID }}.json'
   link: 'https://github.com/project-lightwell/lightwell-osv/blob/main/'
   editable: False
   strict_validation: False
@@ -403,7 +403,7 @@
   db_prefix: ['MGASA-']
   accepted_ecosystems: ['Mageia']
   ignore_git: True
-  human_link: 'https://advisories.mageia.org/{{ BUG_ID }}.html'
+  human_link: 'https://advisories.mageia.org/{{ .ID }}.html'
   link: 'https://advisories.mageia.org/'
   editable: False
   strict_validation: False
@@ -465,7 +465,7 @@
   db_prefix: ['OESA-']
   accepted_ecosystems: ['openEuler']
   ignore_git: True
-  human_link: 'https://www.openeuler.org/en/security/security-bulletins/detail/?id=openEuler-SA-{{ BUG_ID | replace("OESA-", "") }}'
+  human_link: 'https://www.openeuler.org/en/security/security-bulletins/detail/?id=openEuler-SA-{{ .ID | replace "OESA-" "" }}'
   link: 'https://repo.openeuler.org/security/data/osv/'
   editable: False
   strict_validation: False
@@ -541,7 +541,7 @@
   db_prefix: ['RHBA-', 'RHEA-', 'RHSA-']
   accepted_ecosystems: ['Red Hat']
   ignore_git: False
-  human_link: 'https://access.redhat.com/errata/{{ BUG_ID }}'
+  human_link: 'https://access.redhat.com/errata/{{ .ID }}'
   link: 'https://security.access.redhat.com/data/osv/'
   editable: False
   strict_validation: False
@@ -556,7 +556,7 @@
   db_prefix: ['RLSA-']
   accepted_ecosystems: ['Rocky Linux']
   ignore_git: False
-  human_link: 'https://errata.rockylinux.org/{{ BUG_ID }}'
+  human_link: 'https://errata.rockylinux.org/{{ .ID }}'
   link: 'https://storage.googleapis.com/resf-osv-data/'
   editable: False
   strict_validation: False
@@ -571,7 +571,7 @@
   db_prefix: ['RXSA-']
   accepted_ecosystems: ['Rocky Linux']
   ignore_git: False
-  human_link: 'https://errata.rockylinux.org/{{ BUG_ID }}'
+  human_link: 'https://errata.rockylinux.org/{{ .ID }}'
   link: 'https://storage.googleapis.com/resf-osv-data/'
   editable: False
   strict_validation: False
@@ -588,7 +588,7 @@
   db_prefix: ['RUSTSEC-']
   accepted_ecosystems: ['crates.io']
   ignore_git: False
-  human_link: 'https://rustsec.org/advisories/{{ BUG_ID }}'
+  human_link: 'https://rustsec.org/advisories/{{ .ID }}'
   link: 'https://github.com/rustsec/advisory-db/blob/osv/'
   editable: False
   repo_username: 'git'
@@ -605,7 +605,7 @@
   db_prefix: ['openSUSE-', 'SUSE-']
   accepted_ecosystems: ['openSUSE', 'SUSE']
   ignore_git: True
-  human_link: 'https://www.suse.com/support/update/announcement/{{ BUG_ID.split(":")[0].split("-")[2] }}/{{ BUG_ID | replace(":", "") | lower }}/'
+  human_link: 'https://www.suse.com/support/update/announcement/{{ .ID | field ":" 0 | field "-" 2 }}/{{ .ID | replace ":" "" | lower }}/'
   link: 'https://ftp.suse.com/pub/projects/security/osv/'
   editable: False
   strict_validation: False
@@ -636,7 +636,7 @@
   db_prefix: ['UBUNTU-']
   accepted_ecosystems: ['Ubuntu']
   ignore_git: False
-  human_link: 'https://ubuntu.com/security/{{ BUG_ID | replace("UBUNTU-", "") }}'
+  human_link: 'https://ubuntu.com/security/{{ .ID | replace "UBUNTU-" "" }}'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
   editable: False
   strict_validation: False
@@ -652,7 +652,7 @@
   db_prefix: ['LSN-']
   accepted_ecosystems: ['Ubuntu']
   ignore_git: False
-  human_link: 'https://ubuntu.com/security/notices/{{ BUG_ID }}'
+  human_link: 'https://ubuntu.com/security/notices/{{ .ID }}'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
   editable: False
   strict_validation: True
@@ -668,7 +668,7 @@
   db_prefix: ['USN-']
   accepted_ecosystems: ['Ubuntu']
   ignore_git: False
-  human_link: 'https://ubuntu.com/security/notices/{{ BUG_ID }}'
+  human_link: 'https://ubuntu.com/security/notices/{{ .ID }}'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
   editable: False
   strict_validation: False
@@ -683,7 +683,7 @@
   db_prefix: ['GSD-']
   accepted_ecosystems: ['Linux']
   ignore_git: False
-  human_link: 'https://data.gsd.id/{{ BUG_ID }}'
+  human_link: 'https://data.gsd.id/{{ .ID }}'
   link: 'https://github.com/cloudsecurityalliance/gsd-database/blob/main/'
   editable: False
   key_path: 'OSV'

@@ -91,7 +91,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 	}
 
 	// If we have ranges, try to resolve them
-	r, un, sR := c.ProcessRanges(cpeRanges, repos, metrics, cache, httpClient)
+	r, un, sR := c.ProcessRanges(cpeRanges, repos, v.GetModified().AsTime(), metrics, cache, httpClient)
 	if metrics.Outcome == models.Error {
 		return nil, metrics, models.Error
 	}
@@ -125,7 +125,7 @@ func CVEToOSV(cve models.NVDCVE, repos []string, vpRepoCache *c.VPRepoCache, cac
 		if len(textRanges) > 0 {
 			metrics.AddNotef("Extracted versions from description: %v", textRanges)
 		}
-		r, un, sR := c.ProcessRanges(textRanges, repos, metrics, cache, httpClient)
+		r, un, sR := c.ProcessRanges(textRanges, repos, v.GetModified().AsTime(), metrics, cache, httpClient)
 		if metrics.Outcome == models.Error {
 			return nil, metrics, models.Error
 		}

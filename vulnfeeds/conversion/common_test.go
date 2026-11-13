@@ -2,14 +2,18 @@ package conversion
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/csv"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/fsouza/fake-gcs-server/fakestorage"
 	"github.com/google/go-cmp/cmp"
@@ -772,7 +776,7 @@ func TestGitVersionsToCommits_Canonicalization(t *testing.T) {
 		httpClient := http.DefaultClient
 		t.Run(tt.name, func(t *testing.T) {
 			metrics := &models.ConversionMetrics{}
-			gotResolved, gotUnresolved, gotSuccessful := GitVersionsToCommits(tt.versionRanges, tt.repos, metrics, cache, httpClient)
+			gotResolved, gotUnresolved, gotSuccessful := GitVersionsToCommits(tt.versionRanges, tt.repos, time.Time{}, metrics, cache, httpClient)
 
 			if len(gotResolved) != tt.wantResolved {
 				t.Errorf("GitVersionsToCommits() gotResolved count = %v, want %v", len(gotResolved), tt.wantResolved)
@@ -782,6 +786,110 @@ func TestGitVersionsToCommits_Canonicalization(t *testing.T) {
 			}
 			if diff := cmp.Diff(tt.wantSuccessful, gotSuccessful); diff != "" {
 				t.Errorf("GitVersionsToCommits() gotSuccessful mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGitVersionsToCommits_StaleCachedTags(t *testing.T) {
+	const repo = "https://github.com/example/repo"
+	const oldCommit = "1000000000000000000000000000000000000000"
+	const newCommit = "1010000000000000000000000000000000000000"
+
+	// A fake gitter, which knows of a v1.0.1 tagged since the repo's tags were cached.
+	oldHash, _ := hex.DecodeString(oldCommit)
+	newHash, _ := hex.DecodeString(newCommit)
+	resp := git.GitterTagsResponse{Tags: []git.GitterRef{
+		{Label: "v1.0.0", Hash: base64.StdEncoding.EncodeToString(oldHash)},
+		{Label: "v1.0.1", Hash: base64.StdEncoding.EncodeToString(newHash)},
+	}}
+	requests := 0
+	gitter := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests++
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	}))
+	defer gitter.Close()
+
+	t.Setenv("GITTER_HOST", gitter.URL)
+
+	// The repo's tags were cached a day ago.
+	fetchedAt := time.Now().Add(-24 * time.Hour)
+	tests := []struct {
+		name           string
+		modified       time.Time
+		fixed          []string
+		wantFixed      []string
+		wantUnresolved int
+		wantRequests   int
+	}{
+		{
+			name:         "A version tagged since the tags were cached is resolved",
+			modified:     fetchedAt.Add(time.Hour),
+			fixed:        []string{"1.0.1"},
+			wantFixed:    []string{newCommit},
+			wantRequests: 1,
+		},
+		{
+			name:           "Versions that were never tagged fetch the tags just once",
+			modified:       fetchedAt.Add(time.Hour),
+			fixed:          []string{"1.0.2", "1.0.3"},
+			wantUnresolved: 2,
+			wantRequests:   1,
+		},
+		{
+			name:           "A record modified before the tags were cached doesn't fetch them",
+			modified:       fetchedAt.Add(-time.Hour),
+			fixed:          []string{"1.0.1"},
+			wantUnresolved: 1,
+			wantRequests:   0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requests = 0
+			cache := &git.InMemoryRepoTagsCache{}
+			cache.SetCanonicalLink(repo, repo)
+			cache.Set(repo, git.RepoTagsMap{
+				Tag:           map[string]git.Tag{"v1.0.0": {Tag: "v1.0.0", Commit: oldCommit}},
+				NormalizedTag: map[string]git.NormalizedTag{"1-0-0": {OriginalTag: "v1.0.0", Commit: oldCommit}},
+				FetchedAt:     fetchedAt,
+			})
+			var versionRanges []models.RangeWithMetadata
+			for _, fixed := range tt.fixed {
+				versionRanges = append(versionRanges, models.RangeWithMetadata{
+					Range: &osvschema.Range{
+						Type:   osvschema.Range_GIT,
+						Events: []*osvschema.Event{{Introduced: "1.0.0"}, {Fixed: fixed}},
+					},
+				})
+			}
+
+			// A conversion can look for the same versions more than once, as each of its sources of them is tried.
+			var gotResolved, gotUnresolved []models.RangeWithMetadata
+			for range 2 {
+				gotResolved, gotUnresolved, _ = GitVersionsToCommits(versionRanges, []string{repo}, tt.modified, &models.ConversionMetrics{}, cache, http.DefaultClient)
+			}
+
+			var gotFixed []string
+			for _, r := range gotResolved {
+				for _, e := range r.Range.GetEvents() {
+					if e.GetFixed() != "" {
+						gotFixed = append(gotFixed, e.GetFixed())
+					}
+				}
+			}
+			if diff := cmp.Diff(tt.wantFixed, gotFixed); diff != "" {
+				t.Errorf("GitVersionsToCommits() fixed commits mismatch (-want +got):\n%s", diff)
+			}
+			if len(gotUnresolved) != tt.wantUnresolved {
+				t.Errorf("GitVersionsToCommits() gotUnresolved count = %v, want %v", len(gotUnresolved), tt.wantUnresolved)
+			}
+			if requests != tt.wantRequests {
+				t.Errorf("GitVersionsToCommits() fetched the tags %d times, want %d", requests, tt.wantRequests)
 			}
 		})
 	}

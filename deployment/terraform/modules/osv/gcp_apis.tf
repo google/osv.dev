@@ -115,3 +115,9 @@ resource "google_project_service" "telemetry" {
   service            = "telemetry.googleapis.com"
   disable_on_destroy = false
 }
+
+resource "google_project_service" "recommender" {
+  project            = var.project_id
+  service            = "recommender.googleapis.com"
+  disable_on_destroy = false
+}

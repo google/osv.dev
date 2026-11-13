@@ -151,32 +151,3 @@ resource "google_pubsub_topic" "pypi_bridge" {
   project = var.project_id
   name    = "pypi-bridge"
 }
-
-# Service account permissions
-data "google_compute_default_service_account" "default" {
-  project = var.project_id
-}
-
-resource "google_project_iam_member" "compute_service" {
-  project = var.project_id
-  role    = "roles/editor"
-  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
-}
-
-resource "google_project_iam_member" "compute_service_datastore" {
-  project = var.project_id
-  role    = "roles/datastore.importExportAdmin"
-  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
-}
-
-resource "google_service_account" "deployment_service" {
-  project      = var.project_id
-  account_id   = "deployment"
-  display_name = "deployment"
-}
-
-resource "google_project_iam_member" "deployment_service" {
-  project = var.project_id
-  role    = "roles/editor"
-  member  = "serviceAccount:${google_service_account.deployment_service.email}"
-}

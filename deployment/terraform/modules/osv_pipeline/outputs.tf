@@ -93,3 +93,8 @@ output "postgres_connection_name" {
   description = "The connection name of the primary Cloud SQL PostgreSQL instance"
 }
 
+output "datastore_database_id" {
+  value       = google_firestore_database.datastore.id
+  description = "The ID of the Datastore database"
+}
+

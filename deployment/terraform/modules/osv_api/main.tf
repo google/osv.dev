@@ -8,6 +8,7 @@ resource "google_cloud_run_service" "api_backend" {
 
   template {
     spec {
+      service_account_name = var.service_account_email
       containers {
         image = "us-docker.pkg.dev/cloudrun/container/hello:latest" # Placeholder image.
       }
@@ -35,6 +36,7 @@ resource "google_cloud_run_v2_service" "api_backend_batch" {
   location = "us-central1"
 
   template {
+    service_account = var.service_account_email
     containers {
       image = "us-docker.pkg.dev/cloudrun/container/hello:latest" # Placeholder image.
     }
@@ -50,6 +52,22 @@ resource "google_cloud_run_v2_service" "api_backend_batch" {
     ]
     prevent_destroy = true
   }
+}
+
+resource "google_cloud_run_service_iam_member" "frontend_api_backend_invoker" {
+  project  = var.project_id
+  location = google_cloud_run_service.api_backend.location
+  service  = google_cloud_run_service.api_backend.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${var.frontend_service_account_email}"
+}
+
+resource "google_cloud_run_service_iam_member" "frontend_api_backend_batch_invoker" {
+  project  = var.project_id
+  location = google_cloud_run_v2_service.api_backend_batch.location
+  service  = google_cloud_run_v2_service.api_backend_batch.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${var.frontend_service_account_email}"
 }
 
 resource "google_endpoints_service" "grpc_service" {
@@ -114,6 +132,7 @@ resource "google_cloud_run_service" "api" {
 
   template {
     spec {
+      service_account_name = var.service_account_email
       containers {
         image = data.google_container_registry_image.api.image_url
         ports {

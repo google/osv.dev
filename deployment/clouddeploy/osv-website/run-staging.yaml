@@ -2,6 +2,8 @@ apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
   name: osv-website
+  annotations:
+    run.googleapis.com/ingress: internal-and-cloud-load-balancing
 spec:
   template:
     metadata:
@@ -10,6 +12,7 @@ spec:
         run.googleapis.com/cpu-throttling: 'false'
         run.googleapis.com/vpc-access-connector: projects/oss-vdb-test/locations/us-west2/connectors/connector
     spec:
+      serviceAccountName: osv-frontend@oss-vdb-test.iam.gserviceaccount.com
       containers:
       - image: osv-website
         env:

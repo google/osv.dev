@@ -104,3 +104,34 @@ moved {
   to   = module.osv_api.google_cloud_run_domain_mapping.api
 }
 
+# Production CI/CD deployment SA and legacy Default Compute SA bindings moved out of shared modules
+moved {
+  from = module.osv.google_service_account.deployment_service
+  to   = google_service_account.deployment_service
+}
+
+moved {
+  from = module.osv.google_project_iam_member.deployment_service
+  to   = google_project_iam_member.deployment_service
+}
+
+moved {
+  from = module.osv.google_project_iam_member.compute_service
+  to   = google_project_iam_member.compute_service
+}
+
+moved {
+  from = module.osv.google_project_iam_member.compute_service_datastore
+  to   = google_project_iam_member.compute_service_datastore
+}
+
+moved {
+  from = module.osv.google_project_iam_member.website_secret_accessor
+  to   = google_project_iam_member.website_secret_accessor
+}
+
+moved {
+  from = module.osv_api.google_secret_manager_secret_iam_member.cloud_run_readonly_secret_access
+  to   = google_secret_manager_secret_iam_member.legacy_compute_readonly_secret_access
+}
+

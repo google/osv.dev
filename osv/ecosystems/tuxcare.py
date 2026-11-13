@@ -19,6 +19,10 @@ from .ecosystems_base import OrderedEcosystem
 
 _TUXCARE = 'TuxCare'
 
+# Inner names TuxCare uses for distributions that are not OSV ecosystems
+# (e.g. "TuxCare:CentOS:7"). Their package versions follow RPM ordering.
+_RPM_INNER_NAMES = frozenset(('CentOS', 'CentOS-Stream', 'OracleLinux', 'RHEL'))
+
 
 class TuxCareEcosystem(OrderedEcosystem):
   """TuxCare advisories use the form "TuxCare:<ecosystem>" (e.g.
@@ -41,6 +45,11 @@ class TuxCareEcosystem(OrderedEcosystem):
     if not suffix:
       return False
     return suffix.partition(':')[0] != _TUXCARE
+
+  @staticmethod
+  def rpm_inner(suffix: str) -> bool:
+    """Whether the suffix names a distribution TuxCare versions with RPM."""
+    return suffix.partition(':')[0] in _RPM_INNER_NAMES
 
   def _sort_key(self, version: str) -> Any:
     if self.inner is None:

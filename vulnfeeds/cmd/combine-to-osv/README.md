@@ -18,7 +18,7 @@ See [`run_combine_to_osv_convert.sh`](run_combine_to_osv_convert.sh):
   * What gets written can be overridden by OSV records in [`gs://cve-osv-conversion/osv-output-overrides`](https://storage.googleapis.com/cve-osv-conversion/index.html?prefix=osv-output-overrides/)
 ## Operational matters
 
-* Runs every hour (on the half hour) as a [Kubernetes CronJob](https://github.com/google/osv.dev/blob/master/deployment/clouddeploy/gke-workers/base/feeds/combine-to-osv.yaml)
+* Runs every hour (at 45 minutes past the hour) as a [Kubernetes CronJob](https://github.com/google/osv.dev/blob/master/deployment/clouddeploy/gke-workers/base/feeds/combine-to-osv.yaml)
 
 ## Usage
 
@@ -42,9 +42,9 @@ go run main.go [flags]
 The tool performs the following steps:
 1. Loads CVE5 OSVs from the specified path.
 2. Loads NVD OSVs from the specified path.
-3. Lists Debian and Alpine CVEs from GCS buckets to ensure mandatory CVEs are created.
-4. Combines the loaded data into OSV records.
-5. Uploads the results to GCS or writes them to the local filesystem.
+3. Combines the loaded data into OSV records (skipping records marked `withdrawn` in either source).
+4. Uploads the combined results to GCS or writes them to the local filesystem.
+5. Deletes any existing combined output records whose CVE5 or NVD input is marked `withdrawn` (unless a manual override exists in `osv-output-overrides/`).
 
 ### Overriding an OSV record
 

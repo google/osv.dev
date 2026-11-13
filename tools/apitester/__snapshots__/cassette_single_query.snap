@@ -2711,6 +2711,75 @@
       ]
     },
     {
+      "id": "CURL-CVE-2026-86410",
+      "summary": "redirect to SFTP or SCP bypasses host verification",
+      "details": "A flaw in the curl command line tool's logic makes it only set SSH host\nverification options when interacting directly using SFTP or SCP, and not as a\nresult of following a redirect.",
+      "aliases": ["CVE-2026-86410"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-10-14T08:00:00Z",
+      "database_specific": "<Any value>",
+      "affected": [
+        {
+          "ranges": [
+            {
+              "type": "SEMVER",
+              "events": [
+                {
+                  "introduced": "7.81.0"
+                },
+                {
+                  "fixed": "8.14.3"
+                },
+                {
+                  "introduced": "8.15.0"
+                },
+                {
+                  "fixed": "8.16.2"
+                },
+                {
+                  "introduced": "8.17.0"
+                },
+                {
+                  "fixed": "8.20.2"
+                },
+                {
+                  "introduced": "8.21.0"
+                },
+                {
+                  "fixed": "8.23.0"
+                }
+              ]
+            },
+            {
+              "type": "GIT",
+              "repo": "https://github.com/curl/curl.git",
+              "events": [
+                {
+                  "introduced": "18270893abdb19f0ca170c118f8a2847dbd304be"
+                },
+                {
+                  "fixed": "6ae9befb2fb6bdfdb5fc11fdf76bbe519fe1f52c"
+                }
+              ]
+            }
+          ],
+          "versions": 87,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "credits": [
+        {
+          "name": "Stanislav Fort (Aisle Research)",
+          "type": "FINDER"
+        },
+        {
+          "name": "Daniel Stenberg",
+          "type": "REMEDIATION_DEVELOPER"
+        }
+      ]
+    },
+    {
       "id": "CURL-CVE-2026-86414",
       "summary": "leaking host credentials to HTTP proxy",
       "details": "An HTTP proxy can trick libcurl into sending the origin's credentials (Basic\npassword, or a Negotiate/Kerberos ticket) to the proxy itself, by answering\nthe `CONNECT` tunnel request with 401 `WWW-Authenticate:` instead of the\nexpected 407 `Proxy-Authenticate:`.",
@@ -4716,7 +4785,7 @@
               "repo": "https://github.com/curl/curl",
               "events": [
                 {
-                  "introduced": "b238e0b1b4e8f3e5c4e9c0d7d8c565e3776b0999"
+                  "introduced": "3bc11344deca01726522fadd54927a9f5f3db68f"
                 },
                 {
                   "fixed": "2eebc58c4b8d68c98c8344381a9f6df4cca838fd"
@@ -4738,7 +4807,7 @@
               "database_specific": "<Any value>"
             }
           ],
-          "versions": 285,
+          "versions": 288,
           "database_specific": "<Any value>"
         }
       ],
@@ -5285,6 +5354,10 @@
         "ALSA-2026:69125",
         "ALSA-2026:80511",
         "ALSA-2026:92368",
+        "SUSE-SU-2026:4954-1",
+        "SUSE-SU-2026:5068-1",
+        "SUSE-SU-2026:5069-1",
+        "SUSE-SU-2026:5071-1",
         "openSUSE-SU-2026:11230-1"
       ],
       "database_specific": "<Any value>",
@@ -5371,6 +5444,9 @@
         "SUSE-SU-2026:2925-1",
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
+        "SUSE-SU-2026:5068-1",
+        "SUSE-SU-2026:5069-1",
+        "SUSE-SU-2026:5071-1",
         "openSUSE-SU-2026:11230-1",
         "openSUSE-SU-2026:21272-1"
       ],
@@ -5537,7 +5613,12 @@
       "aliases": ["CURL-CVE-2026-18924"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-09-06T17:47:27.820Z",
-      "related": ["openSUSE-SU-2026:11696-1"],
+      "related": [
+        "SUSE-SU-2026:4954-1",
+        "SUSE-SU-2026:5068-1",
+        "SUSE-SU-2026:5069-1",
+        "openSUSE-SU-2026:11696-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -5703,7 +5784,13 @@
       "aliases": ["CURL-CVE-2026-19931"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-09-06T17:47:43.523Z",
-      "related": ["openSUSE-SU-2026:11696-1"],
+      "related": [
+        "SUSE-SU-2026:4954-1",
+        "SUSE-SU-2026:5068-1",
+        "SUSE-SU-2026:5069-1",
+        "SUSE-SU-2026:5071-1",
+        "openSUSE-SU-2026:11696-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -6768,7 +6855,12 @@
       "aliases": ["CURL-CVE-2026-82209"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2026-09-06T17:49:35.050Z",
-      "related": ["openSUSE-SU-2026:11696-1"],
+      "related": [
+        "SUSE-SU-2026:4954-1",
+        "SUSE-SU-2026:5068-1",
+        "SUSE-SU-2026:5069-1",
+        "openSUSE-SU-2026:11696-1"
+      ],
       "database_specific": "<Any value>",
       "references": [
         {
@@ -6947,6 +7039,7 @@
         "SUSE-SU-2026:2926-1",
         "SUSE-SU-2026:3043-1",
         "SUSE-SU-2026:3814-1",
+        "SUSE-SU-2026:5071-1",
         "openSUSE-SU-2026:11230-1",
         "openSUSE-SU-2026:21272-1"
       ],
@@ -7212,6 +7305,10 @@
         "ALSA-2026:69125",
         "ALSA-2026:92368",
         "ALSA-2026:92907",
+        "SUSE-SU-2026:4954-1",
+        "SUSE-SU-2026:5068-1",
+        "SUSE-SU-2026:5069-1",
+        "SUSE-SU-2026:5071-1",
         "openSUSE-SU-2026:11230-1"
       ],
       "database_specific": "<Any value>",
@@ -7469,6 +7566,146 @@
       "schema_version": "1.9.0"
     },
     {
+      "id": "GHSA-3w22-6jfg-527w",
+      "summary": "Nokogiri: Use-After-Free in Nokogiri when replacing an attribute value",
+      "details": "### Summary\n\nNokogiri's CRuby native extension could leave a Ruby wrapper pointing to freed memory when replacing the value of an existing XML attribute via `Nokogiri::XML::Node#[]=` or `Nokogiri::XML::Node#lang=`. If Ruby code had already accessed the attribute's child nodes, replacing the value could free those native child nodes while their wrappers remained reachable. Using one of those child nodes afterwards could cause an invalid read and a possible segfault.\n\nThis is the same class of issue as [GHSA-phwj-rprq-35pp](https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-phwj-rprq-35pp), which was fixed for `Attr#value=` in Nokogiri 1.19.4.\n\nNokogiri 1.19.5 preserves all already-wrapped attribute child nodes before replacing the attribute value.\n\nJRuby is not affected.\n\n### Severity\n\nThe Nokogiri maintainers have evaluated this as low severity. Reaching it requires an unusual API-usage pattern that does not arise during normal use. The application must directly access an attribute's child nodes and then replace that same attribute's value via `Node#[]=` or `Node#lang=`. Nokogiri 1.19.5 makes this pattern safe with no change to the public API.\n\n### Mitigation\n\nUpgrade to Nokogiri 1.19.5 or later.\n\nAs a workaround, avoid accessing attribute child nodes directly via `Attr#children` or similar before replacing the same attribute's value.\n\n### Credit\n\nThis issue was responsibly reported by zx (@manus-pi).",
+      "aliases": ["CVE-2026-126064"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-11-10T20:51:19Z",
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-3w22-6jfg-527w"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/pull/3752"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/commit/b15b518db9fd15fd6b046f73d1439c282e5cc425"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/commit/feaed3c8c9bd9d81d064d4ca09b16044cd705d6f"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/rubysec/ruby-advisory-db/blob/master/gems/nokogiri/GHSA-3w22-6jfg-527w.yml"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/sparklemotion/nokogiri"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/releases/tag/v1.19.5"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "nokogiri",
+            "ecosystem": "RubyGems",
+            "purl": "pkg:gem/nokogiri"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "1.19.5"
+                }
+              ]
+            }
+          ],
+          "versions": 195,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "severity": [
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:L/AC:H/AT:P/PR:L/UI:N/VC:N/VI:N/VA:L/SC:N/SI:N/SA:N"
+        }
+      ]
+    },
+    {
+      "id": "GHSA-4p39-36wj-23h4",
+      "summary": "Nokogiri: Mutation XSS through `noscript` content in Nokogiri's HTML5 serializer",
+      "details": "### Summary\n\nNokogiri's HTML5 serializer did not escape text inside `noscript` elements, or `\u003c` and `\u003e` inside attribute values. When a document parsed with the default options is serialized, a browser with scripting enabled can parse the output into markup that Nokogiri's parser never produced. This is a mutation XSS for applications that sanitize untrusted HTML with `Nokogiri::HTML5`, allow `noscript` elements, and send the serialized output to browsers.\n\nNokogiri 1.19.5 escapes both, as the HTML standard's serialization algorithm requires. Text inside `noscript` is still emitted unescaped for documents parsed with `parse_noscript_content_as_text: true`.\n\nOnly the C extension (CRuby and TruffleRuby) is affected. JRuby does not implement `Nokogiri::HTML5`.\n\n### Severity\n\nThe Nokogiri maintainers have evaluated this as low severity (CVSS 2.3, `CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:P/VC:N/VI:N/VA:N/SC:L/SI:L/SA:N`). Exploitation requires an application that allows `noscript` in sanitized HTML. Loofah and rails-html-sanitizer do not allow it by default, and Sanitize always removes it.\n\n### Mitigation\n\nUpgrade to Nokogiri 1.19.5 or later.\n\nApplications that sanitize HTML and allow `noscript` should parse with `parse_noscript_content_as_text: true` (available since Nokogiri 1.17.0), or remove `noscript` elements. This is the workaround for earlier versions, and it is recommended on every version: some content inside `noscript` is serialized unchanged, as the standard requires.\n\n### Credit\n\nThis issue was responsibly reported by @a-zara-n.",
+      "aliases": ["CVE-2026-126063"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-11-10T20:47:36Z",
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-4p39-36wj-23h4"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/pull/3752"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/commit/3e84df6ff7ab4d78f446e3a415430bd69a055d32"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/commit/c6c0bffbdcd194694995acafeeed27326b0805f8"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/rubysec/ruby-advisory-db/blob/master/gems/nokogiri/GHSA-4p39-36wj-23h4.yml"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/sparklemotion/nokogiri"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/releases/tag/v1.19.5"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "nokogiri",
+            "ecosystem": "RubyGems",
+            "purl": "pkg:gem/nokogiri"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "1.12.0"
+                },
+                {
+                  "fixed": "1.19.5"
+                }
+              ]
+            }
+          ],
+          "versions": 62,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "severity": [
+        {
+          "type": "CVSS_V4",
+          "score": "CVSS:4.0/AV:N/AC:L/AT:P/PR:N/UI:P/VC:N/VI:N/VA:N/SC:L/SI:L/SA:N"
+        }
+      ]
+    },
+    {
       "id": "GHSA-5prr-v3j2-97mh",
       "summary": "Nokogiri: Possible Out-of-Bounds Read in `Nokogiri::XML::NodeSet#[]`",
       "details": "### Summary\n\n`Nokogiri::XML::NodeSet#[]` (and its alias `#slice`) checked the requested index against the node set's bounds using a 32-bit-truncated copy of the index. A large negative index could pass the check and then be used at full width, reading outside the node set's storage. On CRuby this is an out-of-bounds read that typically crashes the process; on JRuby it is not memory-unsafe but returns an incorrect node.\n\nNokogiri 1.19.4 performs the bounds check against the full-width index.\n\n### Severity\n\nThe Nokogiri maintainers have evaluated this as medium severity.\n\nExploitation requires an application to pass an attacker-controlled integer to `NodeSet#[]`. The primary impact is a controlled crash (denial of service), with potential for memory disclosure on CRuby.\n\nOn JRuby, Nokogiri is not affected by this vulnerability.\n\n### Mitigation\n\nUpgrade to Nokogiri 1.19.4 or later.\n\nAs a workaround, applications that index a `NodeSet` with externally-supplied integers can validate the index against `node_set.length` before use, or avoid passing untrusted values as an index.\n\n### Credit\n\nThis issue was responsibly reported by Zheng Yu from depthfirst.com.",
@@ -7572,7 +7809,6 @@
       "id": "GHSA-5w6v-399v-w3cc",
       "summary": "Nokogiri updates packaged libxml2 to v2.13.8 to resolve CVE-2025-32414 and CVE-2025-32415",
       "details": "## Summary\n\nNokogiri v1.18.8 upgrades its dependency libxml2 to [v2.13.8](https://gitlab.gnome.org/GNOME/libxml2/-/releases/v2.13.8).\n\nlibxml2 v2.13.8 addresses:\n\n- CVE-2025-32414\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/889\n- CVE-2025-32415\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/890\n\n## Impact\n\n### CVE-2025-32414: No impact\n\nIn libxml2 before 2.13.8 and 2.14.x before 2.14.2, out-of-bounds memory access can occur in the Python API (Python bindings) because of an incorrect return value. This occurs in xmlPythonFileRead and xmlPythonFileReadRaw because of a difference between bytes and characters.\n\n**There is no impact** from this CVE for Nokogiri users.\n\n\n### CVE-2025-32415: Low impact\n\nIn libxml2 before 2.13.8 and 2.14.x before 2.14.2, xmlSchemaIDCFillNodeTables in xmlschemas.c has a heap-based buffer under-read. To exploit this, a crafted XML document must be validated against an XML schema with certain identity constraints, or a crafted XML schema must be used.\n\nIn the upstream issue, further context is provided by the maintainer:\n\n\u003e The bug affects validation against untrusted XML Schemas (.xsd) and validation of untrusted\n\u003e documents against trusted Schemas if they make use of xsd:keyref in combination with recursively\n\u003e defined types that have additional identity constraints.\n\nMITRE has published a severity score of 2.9 LOW (CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:U/C:N/I:N/A:L) for this CVE.",
-      "aliases": ["CVE-2025-71346"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-04-21T21:55:56Z",
       "database_specific": "<Any value>",
@@ -7786,7 +8022,6 @@
       "id": "GHSA-mrxw-mxhj-p664",
       "summary": "Nokogiri updates packaged libxslt to v1.1.43 to resolve multiple CVEs",
       "details": "## Summary\n\nNokogiri v1.18.4 upgrades its dependency libxslt to [v1.1.43](https://gitlab.gnome.org/GNOME/libxslt/-/releases/v1.1.43).\n\nlibxslt v1.1.43 resolves:\n\n- CVE-2025-24855: Fix use-after-free of XPath context node\n- CVE-2024-55549: Fix UAF related to excluded namespaces\n\n## Impact\n\n### CVE-2025-24855\n\n- \"Use-after-free due to xsltEvalXPathStringNs leaking xpathCtxt-\u003enode\"\n- MITRE has rated this 7.8 High CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:N/I:H/A:H\n- Upstream report: https://gitlab.gnome.org/GNOME/libxslt/-/issues/128\n- NVD entry: https://nvd.nist.gov/vuln/detail/CVE-2025-24855\n\n### CVE-2024-55549\n\n- \"Use-after-free related to excluded result prefixes\"\n- MITRE has rated this 7.8 High CVSS:3.1/AV:L/AC:H/PR:N/UI:N/S:C/C:N/I:H/A:H\n- Upstream report: https://gitlab.gnome.org/GNOME/libxslt/-/issues/127\n- NVD entry: https://nvd.nist.gov/vuln/detail/CVE-2024-55549",
-      "aliases": ["CVE-2025-71406"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-03-14T18:51:37Z",
       "database_specific": "<Any value>",
@@ -8007,10 +8242,79 @@
       ]
     },
     {
+      "id": "GHSA-v995-44v6-5fqm",
+      "summary": "JRuby: NONET is bypassed for external DTDs and entities when the systemId uses a short-form IPv4 host",
+      "details": "### Summary\n\nOn JRuby, the `NONET` parse option did not block an external DTD or entity whose system identifier used a short-form IPv4 host, such as `http://127.1/` or `http://169.254.43518/`, or was an absolute path such as `/x.dtd` in a document parsed from a network URL. An application that parses untrusted XML with `DTDLOAD`, `DTDVALID` or `NOENT` could be made to send network requests, potentially enabling SSRF.\n\nNokogiri 1.19.5 applies the `XML::Schema` check from [GHSA-8678-w3jw-xfc2](https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-8678-w3jw-xfc2): with `NONET` set, only local resources are loaded.\n\nOnly JRuby is affected. Default parse options are not affected.\n\n### Severity\n\nThe Nokogiri maintainers have evaluated this as low severity.\n\n### Mitigation\n\nUpgrade to Nokogiri 1.19.5 or later, or do not enable `DTDLOAD`, `DTDVALID` or `NOENT` for untrusted input.\n\n### Credit\n\nThis issue was responsibly reported by @arpitjain099.",
+      "aliases": ["CVE-2026-126062"],
+      "modified": "<RFC3339 date with the year 2026>",
+      "published": "2026-11-10T20:52:38Z",
+      "database_specific": "<Any value>",
+      "references": [
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/security/advisories/GHSA-v995-44v6-5fqm"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/pull/3752"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/commit/97f41b65f4ee0cac859b87f0b26d2648c4806cb8"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/commit/e448ca2827a9198644610fb730259e12baacdeac"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/rubysec/ruby-advisory-db/blob/master/gems/nokogiri/GHSA-v995-44v6-5fqm.yml"
+        },
+        {
+          "type": "PACKAGE",
+          "url": "https://github.com/sparklemotion/nokogiri"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/sparklemotion/nokogiri/releases/tag/v1.19.5"
+        }
+      ],
+      "affected": [
+        {
+          "package": {
+            "name": "nokogiri",
+            "ecosystem": "RubyGems",
+            "purl": "pkg:gem/nokogiri"
+          },
+          "ranges": [
+            {
+              "type": "ECOSYSTEM",
+              "events": [
+                {
+                  "introduced": "0"
+                },
+                {
+                  "fixed": "1.19.5"
+                }
+              ]
+            }
+          ],
+          "versions": 195,
+          "database_specific": "<Any value>"
+        }
+      ],
+      "schema_version": "1.9.2",
+      "severity": [
+        {
+          "type": "CVSS_V3",
+          "score": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:L/I:N/A:N"
+        }
+      ]
+    },
+    {
       "id": "GHSA-vvfq-8hwr-qm4m",
       "summary": "Nokogiri updates packaged libxml2 to 2.13.6 to resolve CVE-2025-24928 and CVE-2024-56171",
       "details": "## Summary\n\nNokogiri v1.18.3 upgrades its dependency libxml2 to [v2.13.6](https://gitlab.gnome.org/GNOME/libxml2/-/releases/v2.13.6).\n\nlibxml2 v2.13.6 addresses:\n\n- CVE-2025-24928\n  - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/847\n- CVE-2024-56171\n   - described at https://gitlab.gnome.org/GNOME/libxml2/-/issues/828\n\n## Impact\n\n### CVE-2025-24928\n\nStack-buffer overflow is possible when reporting DTD validation errors if the input contains a long (~3kb) QName prefix.\n\n### CVE-2024-56171\n\nUse-after-free is possible during validation against untrusted XML Schemas (.xsd) and, potentially, validation of untrusted documents against trusted Schemas if they make use of `xsd:keyref` in combination with recursively defined types that have additional identity constraints.",
-      "aliases": ["CVE-2025-71407"],
       "modified": "<RFC3339 date with the year 2026>",
       "published": "2025-02-18T22:36:03Z",
       "database_specific": "<Any value>",

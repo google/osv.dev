@@ -20,3 +20,19 @@ var validVersionChecker = regexp.MustCompile(
 func validVersion(ver string) bool {
 	return validVersionChecker.MatchString(ver)
 }
+
+// strictAPKVersionChecker matches the strict APK version specification
+// (*number{.number}...{letter}{_suffix{number}}...{~hash}{-r#}*) parsed without
+// remainder by osv-scalibr's semantic.ParseAlpineVersion:
+// https://github.com/alpinelinux/apk-tools/blob/master/doc/apk-package.5.scd#package-info-metadata
+var strictAPKVersionChecker = regexp.MustCompile(
+	`^(\d+\.)*(\d+)` +
+		`[a-z]?` +
+		`(_(?:alpha|beta|pre|rc|cvs|svn|git|hg|p)\d*)*` +
+		`(~[0-9a-f]+)?` +
+		`(-r\d+)?$`,
+)
+
+func validAPKVersion(ver string) bool {
+	return strictAPKVersionChecker.MatchString(ver)
+}

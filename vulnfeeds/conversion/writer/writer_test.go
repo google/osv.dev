@@ -10,10 +10,12 @@ import (
 	"io"
 	"os"
 	"path"
+	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/fsouza/fake-gcs-server/fakestorage"
 	gcs "github.com/google/osv.dev/vulnfeeds/gcs-tools"
 	"github.com/google/osv.dev/vulnfeeds/models"
@@ -437,5 +439,89 @@ func TestUploadMetricsToGCSAsync(t *testing.T) {
 	_, err = bkt.Object(objName).Attrs(ctx)
 	if err != nil {
 		t.Fatalf("Expected metrics object %q to exist on GCS, got error: %v", objName, err)
+	}
+}
+
+func TestHandleWithdrawnDeletions(t *testing.T) {
+	server := fakestorage.NewServer([]fakestorage.Object{})
+	defer server.Stop()
+	client := server.Client()
+	ctx := context.Background()
+
+	outBucketName := "test-out-bucket"
+	overridesBucketName := "test-overrides-bucket"
+	server.CreateBucketWithOpts(fakestorage.CreateBucketOpts{Name: outBucketName})
+	server.CreateBucketWithOpts(fakestorage.CreateBucketOpts{Name: overridesBucketName})
+	outBkt := client.Bucket(outBucketName)
+	overridesBkt := client.Bucket(overridesBucketName)
+
+	seedObjects := []string{
+		"osv-output/CVE-2014-0004.json",
+		"osv-output/CVE-2026-97618.json",
+		"osv-output/CVE-2026-56395.json",
+		"osv-output/CVE-2026-11111.json",
+	}
+	for _, objName := range seedObjects {
+		w := outBkt.Object(objName).NewWriter(ctx)
+		if _, err := w.Write([]byte(`{"id":"test"}`)); err != nil {
+			t.Fatalf("Failed to seed %s: %v", objName, err)
+		}
+		if err := w.Close(); err != nil {
+			t.Fatalf("Failed to close writer for %s: %v", objName, err)
+		}
+	}
+
+	// Seed a manual override for CVE-2026-56395 so it should be preserved.
+	ow := overridesBkt.Object(path.Join(overrideFolder, "CVE-2026-56395.json")).NewWriter(ctx)
+	if _, err := ow.Write([]byte(`{"id":"CVE-2026-56395"}`)); err != nil {
+		t.Fatalf("Failed to seed override: %v", err)
+	}
+	if err := ow.Close(); err != nil {
+		t.Fatalf("Failed to close override writer: %v", err)
+	}
+
+	withdrawnIDs := []string{
+		"CVE-2026-97618",
+		"CVE-2026-56395",
+		"CVE-2026-99999", // Does not exist in osv-output; should be ignored cleanly.
+	}
+
+	HandleWithdrawnDeletions(ctx, outBkt, overridesBkt, "osv-output", withdrawnIDs)
+
+	if _, err := outBkt.Object("osv-output/CVE-2026-97618.json").Attrs(ctx); !errors.Is(err, storage.ErrObjectNotExist) {
+		t.Errorf("Expected osv-output/CVE-2026-97618.json to be deleted (ErrObjectNotExist), got: %v", err)
+	}
+
+	mustStillExist := []string{
+		"osv-output/CVE-2014-0004.json",
+		"osv-output/CVE-2026-56395.json",
+		"osv-output/CVE-2026-11111.json",
+	}
+	for _, objName := range mustStillExist {
+		if _, err := outBkt.Object(objName).Attrs(ctx); err != nil {
+			t.Errorf("Expected %s to still exist, got error: %v", objName, err)
+		}
+	}
+}
+
+func TestDeleteLocalFiles(t *testing.T) {
+	dir := t.TempDir()
+	keepPath := filepath.Join(dir, "CVE-2026-11111.json")
+	deletePath := filepath.Join(dir, "CVE-2026-97618.json")
+
+	if err := os.WriteFile(keepPath, []byte("{}"), 0600); err != nil {
+		t.Fatalf("Failed to write keep file: %v", err)
+	}
+	if err := os.WriteFile(deletePath, []byte("{}"), 0600); err != nil {
+		t.Fatalf("Failed to write delete file: %v", err)
+	}
+
+	DeleteLocalFiles(dir, []string{"CVE-2026-97618", "CVE-2026-99999"})
+
+	if _, err := os.Stat(deletePath); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("Expected %s to be deleted, got err: %v", deletePath, err)
+	}
+	if _, err := os.Stat(keepPath); err != nil {
+		t.Errorf("Expected %s to remain, got err: %v", keepPath, err)
 	}
 }

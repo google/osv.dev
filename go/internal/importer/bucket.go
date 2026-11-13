@@ -193,7 +193,7 @@ func handleDeleteBucket(ctx context.Context, ch chan<- WorkItem, config Config, 
 	return nil
 }
 
-func handleReconcileBucket(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
+func handleReconcileBucket(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository, timeOfRun time.Time) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeBucket || sourceRepo.Bucket == nil {
 		return errors.New("invalid SourceRepository for bucket reconcile")
 	}
@@ -230,7 +230,7 @@ func handleReconcileBucket(ctx context.Context, ch chan<- WorkItem, config Confi
 			objectPath: obj.Name,
 		}
 
-		checkReconcile(ctx, ch, sourceRepo, dbRecords, obj.Name, nil, sourceRecord, format, config.ReimportTaskPool)
+		checkReconcile(ctx, ch, sourceRepo, dbRecords, obj.Name, nil, sourceRecord, format, config.ReimportTaskPool, timeOfRun)
 	}
 
 	logger.InfoContext(ctx, "Finished reconciling bucket source repository",

@@ -1,9 +1,4 @@
-#!/bin/bash
-
-echo !!!
-echo !!! FYI external IP is: $(curl -s https://ipinfo.io/ip)
-echo !!!
-
-set -e
+#!/bin/bash -ex
 
 go test ./...
+

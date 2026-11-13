@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"iter"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -34,6 +35,7 @@ type DevStore struct {
 	models.UnimplementedVulnerabilitySearchStore
 	models.UnimplementedSourceRepositoryStore
 	models.UnimplementedLinterStore
+	models.UnimplementedImportFindingsStore
 	models.UnimplementedTriageStore
 
 	dataDir     string
@@ -147,6 +149,14 @@ func (ds *DevStore) readRecordFromDisk(id string) (*osvschema.Vulnerability, *Me
 		return readRecordFromFile(exactPath)
 	}
 
+	sanitizedID := strings.ReplaceAll(id, ":", "_")
+	if sanitizedID != id {
+		underscorePath := filepath.Join(ds.dataDir, sanitizedID+".json")
+		if _, err := os.Stat(underscorePath); err == nil {
+			return readRecordFromFile(underscorePath)
+		}
+	}
+
 	// Case-insensitive match in dataDir
 	entries, err := os.ReadDir(ds.dataDir)
 	if err != nil {
@@ -157,7 +167,8 @@ func (ds *DevStore) readRecordFromDisk(id string) (*osvschema.Vulnerability, *Me
 		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
 			continue
 		}
-		if strings.EqualFold(strings.TrimSuffix(entry.Name(), ".json"), id) {
+		stem := strings.TrimSuffix(entry.Name(), ".json")
+		if strings.EqualFold(stem, id) || strings.EqualFold(stem, sanitizedID) {
 			return readRecordFromFile(filepath.Join(ds.dataDir, entry.Name()))
 		}
 	}
@@ -355,6 +366,27 @@ func (ds *DevStore) Get(_ context.Context, name string) (*models.SourceRepositor
 	return repo, nil
 }
 
+func (ds *DevStore) All(_ context.Context) iter.Seq2[*models.SourceRepository, error] {
+	return func(yield func(*models.SourceRepository, error) bool) {
+		ds.mu.RLock()
+		repos := make([]*models.SourceRepository, 0, len(ds.sourceRepos))
+		for _, r := range ds.sourceRepos {
+			repos = append(repos, r)
+		}
+		ds.mu.RUnlock()
+
+		slices.SortFunc(repos, func(a, b *models.SourceRepository) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+
+		for _, r := range repos {
+			if !yield(r, nil) {
+				return
+			}
+		}
+	}
+}
+
 // =========================================================================
 // models.VulnerabilitySearchStore Implementation
 // =========================================================================
@@ -495,8 +527,6 @@ func (ds *DevStore) Search(_ context.Context, query models.VulnerabilitySearchQu
 				Vulnerabilities: []*models.ListedVulnerability{},
 			}, nil
 		}
-	} else if query.Page > 1 {
-		startIndex = (query.Page - 1) * pageSize
 	}
 
 	if startIndex >= len(listed) {
@@ -522,7 +552,7 @@ func (ds *DevStore) Search(_ context.Context, query models.VulnerabilitySearchQu
 	}
 
 	// Exact ID match prioritization on page 1
-	if query.AfterTime.IsZero() && query.Page <= 1 && q != "" && len(pageItems) > 1 {
+	if query.AfterTime.IsZero() && q != "" && len(pageItems) > 1 {
 		for i, v := range pageItems {
 			if strings.EqualFold(v.ID, query.Query) {
 				if i > 0 {
@@ -627,29 +657,109 @@ func (ds *DevStore) EcosystemCounts(_ context.Context) ([]models.EcosystemCount,
 }
 
 // =========================================================================
-// models.LinterStore & models.TriageStore Implementation
+// models.LinterStore, models.ImportFindingsStore & models.TriageStore
 // =========================================================================
 
-func (ds *DevStore) ListSources(_ context.Context) ([]string, error) {
-	return []string{"cve-osv", "ghsa", "ubuntu", "debian", "suse"}, nil
+type devFindingEntry struct {
+	Code    string `json:"Code"`
+	Message string `json:"Message"`
 }
 
-type linterFindingsData struct {
-	Source   string   `json:"source"`
-	Findings []string `json:"findings"`
+func (ds *DevStore) buildMockLinterData() (map[string]map[string][]devFindingEntry, []*models.ImportFinding) {
+	now := time.Now().UTC()
+	entries, err := os.ReadDir(ds.dataDir)
+	if err != nil {
+		return nil, nil
+	}
+
+	bySource := make(map[string]map[string][]devFindingEntry)
+	var importFindings []*models.ImportFinding
+	ageOffsets := []time.Duration{6 * time.Hour, 72 * time.Hour, 14 * 24 * time.Hour, 45 * 24 * time.Hour}
+
+	for i, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
+		vuln, meta, readErr := readRecordFromFile(filepath.Join(ds.dataDir, entry.Name()))
+		if readErr != nil || vuln == nil || vuln.GetId() == "" {
+			continue
+		}
+
+		var findings []devFindingEntry
+		if len(vuln.GetAffected()) == 0 {
+			findings = append(findings, devFindingEntry{"REC:001", "Invalid Affected: affected field cannot be null or empty"})
+		}
+		if len(vuln.GetUpstream()) > 0 {
+			findings = append(findings, devFindingEntry{"REC:003", fmt.Sprintf("Invalid Upstream: upstream contains %q", vuln.GetUpstream()[0])})
+		}
+		if vuln.GetSummary() == "" {
+			findings = append(findings, devFindingEntry{"SCH:001", "Record does not conform to schema:\n - summary: Expected non-empty summary"})
+		}
+		if len(findings) == 0 {
+			continue
+		}
+
+		source := meta.Source
+		if source == "" || source == "test" {
+			source = "cve-osv"
+		}
+		if bySource[source] == nil {
+			bySource[source] = make(map[string][]devFindingEntry)
+		}
+		bySource[source]["tmp/tmp/"+vuln.GetId()+".json"] = findings
+		importFindings = append(importFindings, &models.ImportFinding{
+			BugID:       vuln.GetId(),
+			Source:      source,
+			FirstSeen:   now.Add(-ageOffsets[i%len(ageOffsets)]),
+			LastAttempt: now.Add(-time.Duration(i*15) * time.Minute),
+		})
+	}
+
+	return bySource, importFindings
+}
+
+func (ds *DevStore) ListSourceInfos(_ context.Context) ([]models.LinterSourceInfo, error) {
+	bySource, _ := ds.buildMockLinterData()
+	now := time.Now().UTC()
+	infos := make([]models.LinterSourceInfo, 0, len(bySource))
+	for s := range bySource {
+		infos = append(infos, models.LinterSourceInfo{
+			Source:  s,
+			Updated: now,
+		})
+	}
+	slices.SortFunc(infos, func(a, b models.LinterSourceInfo) int {
+		return strings.Compare(a.Source, b.Source)
+	})
+
+	return infos, nil
 }
 
 func (ds *DevStore) GetFindings(_ context.Context, source string) ([]byte, error) {
-	findings := linterFindingsData{
-		Source:   source,
-		Findings: []string{},
-	}
-	data, err := json.Marshal(findings)
-	if err != nil {
-		return nil, err
+	bySource, _ := ds.buildMockLinterData()
+	srcFindings, ok := bySource[source]
+	if !ok {
+		return nil, models.ErrNotFound
 	}
 
-	return data, nil
+	return json.Marshal(srcFindings)
+}
+
+func (ds *DevStore) ListAll(_ context.Context) ([]*models.ImportFinding, error) {
+	_, importFindings := ds.buildMockLinterData()
+	return importFindings, nil
+}
+
+func (ds *DevStore) ListLastAttempts(_ context.Context) (map[string]int64, error) {
+	_, importFindings := ds.buildMockLinterData()
+	out := make(map[string]int64, len(importFindings))
+	for _, f := range importFindings {
+		if f != nil && f.BugID != "" && !f.LastAttempt.IsZero() {
+			out[f.BugID] = f.LastAttempt.Unix()
+		}
+	}
+
+	return out, nil
 }
 
 func (ds *DevStore) GetFile(ctx context.Context, source, cveID string) ([]byte, error) {

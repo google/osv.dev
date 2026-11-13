@@ -130,8 +130,8 @@ func TestHandleImportREST(t *testing.T) {
 
 	ch := make(chan WorkItem, 10)
 
-	// Ensure that Last-Modified logic allows the fetching
-	lastModifiedHeader = "Mon, 02 Jan 2023 00:00:00 GMT" // Newer than lastUpdated
+	// Ensure that Last-Modified logic allows the fetching (and is later than maxModified)
+	lastModifiedHeader = "Mon, 02 Jan 2023 12:00:00 GMT"
 	err := handleImportREST(ctx, ch, config, sourceRepo)
 	if err != nil {
 		t.Fatalf("handleImportREST failed: %v", err)
@@ -152,16 +152,27 @@ func TestHandleImportREST(t *testing.T) {
 	if records[0].urlPath != "CVE-NEWER.json" {
 		t.Errorf("Expected urlPath=CVE-NEWER.json, got %s", records[0].urlPath)
 	}
+
+	wantLastUpdated := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+	if sourceRepo.REST.LastUpdated == nil || !sourceRepo.REST.LastUpdated.Equal(wantLastUpdated) {
+		t.Errorf("LastUpdated = %v, want %v", sourceRepo.REST.LastUpdated, wantLastUpdated)
+	}
+	wantHTTPLastModified := time.Date(2023, 1, 2, 12, 0, 0, 0, time.UTC)
+	if sourceRepo.REST.HTTPLastModified == nil || !sourceRepo.REST.HTTPLastModified.Equal(wantHTTPLastModified) {
+		t.Errorf("HTTPLastModified = %v, want %v", sourceRepo.REST.HTTPLastModified, wantHTTPLastModified)
+	}
 }
 
 func TestHandleImportREST_HEAD_NoChanges(t *testing.T) {
 	ctx := t.Context()
-	lastUpdated := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	// Simulate the common case where index upload Last-Modified (12:00) is newer than
+	// the latest advisory modified timestamp stored in LastUpdated (00:00).
+	lastUpdated := time.Date(2023, 1, 2, 0, 0, 0, 0, time.UTC)
+	httpLastModified := time.Date(2023, 1, 2, 12, 0, 0, 0, time.UTC)
 
-	// Server returns a Last-Modified older than LastUpdated
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodHead {
-			w.Header().Set("Last-Modified", "Sat, 31 Dec 2022 00:00:00 GMT")
+			w.Header().Set("Last-Modified", "Mon, 02 Jan 2023 12:00:00 GMT")
 			w.WriteHeader(http.StatusOK)
 
 			return
@@ -178,8 +189,9 @@ func TestHandleImportREST_HEAD_NoChanges(t *testing.T) {
 		Name: "test-rest-repo",
 		Type: models.SourceRepositoryTypeREST,
 		REST: &models.SourceRepoREST{
-			URL:         ts.URL,
-			LastUpdated: &lastUpdated,
+			URL:              ts.URL,
+			LastUpdated:      &lastUpdated,
+			HTTPLastModified: &httpLastModified,
 		},
 	}
 

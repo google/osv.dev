@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -95,6 +96,32 @@ func TestDevStore_SourceRepository(t *testing.T) {
 			t.Errorf("expected ErrNotFound, got %v", err)
 		}
 	})
+}
+
+func TestDevStore_Linter(t *testing.T) {
+	t.Parallel()
+
+	dataDir := filepath.Join(".", "testdata")
+	store, err := NewDevStore(dataDir, filepath.Join(dataDir, "sources.yaml"))
+	if err != nil {
+		t.Fatalf("failed to initialize DevStore: %v", err)
+	}
+	ctx := context.Background()
+
+	infos, err := store.ListSourceInfos(ctx)
+	if err != nil || len(infos) == 0 {
+		t.Fatalf("ListSourceInfos() = (%d, %v), want non-empty", len(infos), err)
+	}
+	if raw, err := store.GetFindings(ctx, infos[0].Source); err != nil || !json.Valid(raw) {
+		t.Fatalf("GetFindings(%q) invalid json or err: %v", infos[0].Source, err)
+	}
+	if lastAttempts, err := store.ListLastAttempts(ctx); err != nil || len(lastAttempts) == 0 {
+		t.Fatalf("ListLastAttempts() = (%d, %v), want non-empty", len(lastAttempts), err)
+	}
+	// Colon-containing IDs map to underscore-sanitized filenames (SUSE-SU-2023_3313-1.json).
+	if vuln, err := store.GetFull(ctx, "SUSE-SU-2023:3313-1"); err != nil || vuln.GetId() != "SUSE-SU-2023:3313-1" {
+		t.Errorf("GetFull(SUSE-SU-2023:3313-1) = (%v, %v), want matching record", vuln.GetId(), err)
+	}
 }
 
 func TestDevStore_Relations(t *testing.T) {
@@ -270,30 +297,6 @@ func TestDevStore_Search(t *testing.T) {
 		}
 		if len(res.Vulnerabilities[0].Packages) == 0 || res.Vulnerabilities[0].Packages[0].Repo != "https://github.com/example/awesome-repo" {
 			t.Errorf("expected package Repo to be populated, got %v", res.Vulnerabilities[0].Packages)
-		}
-	})
-
-	t.Run("Search with legacy page parameter", func(t *testing.T) {
-		t.Parallel()
-		page1, err := store.Search(ctx, models.VulnerabilitySearchQuery{
-			PageSize: 10,
-			Page:     1,
-		})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		page2, err := store.Search(ctx, models.VulnerabilitySearchQuery{
-			PageSize: 10,
-			Page:     2,
-		})
-		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if len(page1.Vulnerabilities) != 10 || len(page2.Vulnerabilities) != 10 {
-			t.Fatalf("expected 10 items on page 1 and page 2, got %d and %d", len(page1.Vulnerabilities), len(page2.Vulnerabilities))
-		}
-		if page1.Vulnerabilities[0].ID == page2.Vulnerabilities[0].ID {
-			t.Errorf("expected page 2 to have different items from page 1")
 		}
 	})
 

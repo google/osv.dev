@@ -45,7 +45,7 @@ func removeVariants(eco string) string {
 
 func normalizeRepo(repoURL string) string {
 	// Normalize the repo_url for use with GIT AffectedVersions entities.
-	// Removes the scheme/protocol, the .git extension, and trailing slashes.
+	// Lowercases the URL and removes the scheme/protocol, the .git extension, and trailing slashes.
 	if repoURL == "" {
 		return ""
 	}
@@ -54,6 +54,10 @@ func normalizeRepo(repoURL string) string {
 		return repoURL
 	}
 	normalized := parsed.Host + parsed.Path
+	// Always make the repo lowercase. Major git hosts (e.g. GitHub, GitLab) are
+	// already case-insensitive, and even on case-sensitive hosts it is unlikely
+	// our data has two distinct repos differing only by case.
+	normalized = strings.ToLower(normalized)
 	normalized = strings.TrimRight(normalized, "/")
 	normalized = strings.TrimSuffix(normalized, ".git")
 

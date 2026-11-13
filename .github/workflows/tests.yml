@@ -1,0 +1,244 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ master ]
+  workflow_dispatch:
+
+concurrency:
+  # Pushing new changes to a branch will cancel any in-progress CI runs
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Restrict jobs in this workflow to have no permissions by default; permissions
+# should be granted per job as needed using a dedicated `permissions` block
+permissions: {}
+
+jobs:
+  changes:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ steps.filter.outputs.go }}
+      vulnfeeds: ${{ steps.filter.outputs.vulnfeeds }}
+      bindings: ${{ steps.filter.outputs.bindings }}
+      python: ${{ steps.filter.outputs.python }}
+      sourcerepo: ${{ steps.filter.outputs.sourcerepo }}
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check for relevant file changes
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            go:
+              - 'go/**'
+              - 'bindings/go/**'
+              - 'osv/osv-schema'
+              - '.github/workflows/tests.yml'
+            vulnfeeds:
+              - 'vulnfeeds/**'
+              - 'osv/osv-schema'
+              - '.github/workflows/tests.yml'
+            bindings:
+              - 'bindings/**'
+              - 'osv/osv-schema'
+              - '.github/workflows/tests.yml'
+            python:
+              - 'osv/**'
+              - 'pyproject.toml'
+              - 'poetry.lock'
+              - 'run_tests.sh'
+              - 'go/internal/database/datastore/**'
+              - 'go/cmd/gitter/**'
+              - '.github/workflows/tests.yml'
+            sourcerepo:
+              - 'source.yaml'
+              - 'source_test.yaml'
+              - 'tools/sourcerepo-sync/**'
+              - '.github/workflows/tests.yml'
+
+  go-tests:
+    name: Go Tests
+    permissions:
+      contents: read
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go/go.mod
+          cache-dependency-path: go/go.sum
+      - name: Install Firestore Emulator
+        run: |
+          if ! apt-cache show google-cloud-cli-firestore-emulator >/dev/null 2>&1; then
+            curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
+            sudo apt-get update
+          fi
+          sudo apt-get install -y google-cloud-cli google-cloud-cli-firestore-emulator
+      - name: Run Go tests
+        working-directory: go
+        run: ./run_tests.sh
+
+  vulnfeeds-tests:
+    name: Vulnfeeds Tests
+    permissions:
+      contents: read
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.vulnfeeds == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: vulnfeeds/go.mod
+          cache-dependency-path: vulnfeeds/go.sum
+      - name: Run vulnfeeds tests
+        working-directory: vulnfeeds
+        run: ./run_tests.sh
+
+  bindings-tests:
+    name: Bindings Tests
+    permissions:
+      contents: read
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.bindings == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: bindings/go/go.mod
+          cache-dependency-path: bindings/go/go.sum
+      - name: Run bindings tests
+        working-directory: bindings
+        run: ./run_tests.sh
+
+  python-tests:
+    name: Python Tests
+    permissions:
+      contents: read
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Install poetry
+        run: pip install poetry==2.3.3
+      - name: Set up poetry
+        run: poetry sync
+      - name: Set up Go
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go/go.mod
+          cache-dependency-path: go/go.sum
+      - name: Install Firestore Emulator
+        run: |
+          if ! apt-cache show google-cloud-cli-firestore-emulator >/dev/null 2>&1; then
+            curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
+            echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee /etc/apt/sources.list.d/google-cloud-sdk.list
+            sudo apt-get update
+          fi
+          sudo apt-get install -y google-cloud-cli google-cloud-cli-firestore-emulator
+      - name: Run Python tests
+        env:
+          CLOUDBUILD: "1"
+        run: ./run_tests.sh
+
+  sourcerepo-sync-tests:
+    name: Source Repo Sync Tests
+    permissions:
+      contents: read
+    needs: changes
+    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.sourcerepo == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.13'
+      - name: Install poetry
+        run: pip install poetry==2.3.3
+      - name: Set up poetry
+        run: poetry sync
+      - name: Run sourcerepo-sync tests
+        working-directory: tools/sourcerepo-sync
+        env:
+          CLOUDBUILD: "1"
+        run: bash -ex ./run_tests.sh
+
+  tests-pass:
+    name: All Tests Passed
+    permissions: {}
+    needs:
+      - changes
+      - go-tests
+      - vulnfeeds-tests
+      - bindings-tests
+      - python-tests
+      - sourcerepo-sync-tests
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Status
+        env:
+          NEEDS_JSON: ${{ toJson(needs) }}
+        run: |
+          if jq --exit-status 'all(.result == "success" or .result == "skipped")' <<< "$NEEDS_JSON"; then
+            echo "All test jobs passed or were skipped."
+            exit 0
+          else
+            echo "One or more test jobs failed."
+            exit 1
+          fi

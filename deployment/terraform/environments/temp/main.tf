@@ -45,7 +45,6 @@ resource "google_sql_database_instance" "experiment" {
   }
 
   deletion_protection = false
-  depends_on          = [google_service_networking_connection.private_vpc_connection]
 }
 
 resource "google_sql_database" "osv" {
@@ -89,30 +88,6 @@ resource "google_secret_manager_secret_iam_member" "cloud_run_readonly_secret_ac
 output "private_ip_address" {
   description = "Private IP address of the Cloud SQL instance for POSTGRES_HOST."
   value       = google_sql_database_instance.experiment.private_ip_address
-}
-
-
-resource "google_project_service" "service_networking" {
-  project            = var.project_id
-  service            = "servicenetworking.googleapis.com"
-  disable_on_destroy = false
-}
-
-resource "google_compute_global_address" "private_ip_address" {
-  project       = var.project_id
-  name          = "google-managed-services-default"
-  purpose       = "VPC_PEERING"
-  address_type  = "INTERNAL"
-  prefix_length = 16
-  network       = data.google_compute_network.default.id
-}
-
-resource "google_service_networking_connection" "private_vpc_connection" {
-  network                 = data.google_compute_network.default.id
-  service                 = "servicenetworking.googleapis.com"
-  reserved_peering_ranges = [google_compute_global_address.private_ip_address.name]
-
-  depends_on = [google_project_service.service_networking]
 }
 
 data "google_compute_network" "default" {

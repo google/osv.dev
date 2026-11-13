@@ -52,19 +52,6 @@ resource "google_cloud_run_v2_service" "api_backend_batch" {
   }
 }
 
-variable "_api_descriptor_file" {
-  # This isn't actually sensitive, but it's outputted as a massive base64 string which really floods the plan output.
-  sensitive = true
-  type      = string
-  default   = "api/api_descriptor.pb"
-}
-
-variable "gcs_log_dir" {
-  type        = string
-  description = "GCS directory to store cloud build logs."
-  default     = ""
-}
-
 resource "google_endpoints_service" "grpc_service" {
   project      = var.project_id
   service_name = var.api_url
@@ -82,7 +69,6 @@ resource "google_project_service" "grpc_service_api" {
   project = var.project_id
   service = google_endpoints_service.grpc_service.service_name
 }
-
 
 data "external" "esp_version" {
   program = ["bash", "${path.module}/scripts/esp_full_version", "${var.esp_version}"]
@@ -120,7 +106,6 @@ data "google_container_registry_image" "api" {
   )
   depends_on = [null_resource.grpc_proxy_image]
 }
-
 
 resource "google_cloud_run_service" "api" {
   project  = var.project_id

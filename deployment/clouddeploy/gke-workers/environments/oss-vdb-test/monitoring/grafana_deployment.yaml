@@ -20,42 +20,38 @@ spec:
     spec:
       containers:
       - name: grafana
-        image: grafana/grafana:11.5.10@sha256:4d1b2146de6488324c4e880be2028620259c414406e36a9ac2160485f8fd3259
+        image: ghcr.io/credativ/plutono:v7.5.52@sha256:5e5c86066c5adc0e7fa06f33eeb3396ac6f98cf1f387253c681fb7783c610f5e
         imagePullPolicy: IfNotPresent
         ports:
         - name: http
           containerPort: 3000
         env:
-        - name: GF_SECURITY_ALLOW_EMBEDDING
+        - name: PL_SECURITY_ALLOW_EMBEDDING
           value: "true"
-        - name: GF_AUTH_ANONYMOUS_ENABLED
+        - name: PL_AUTH_ANONYMOUS_ENABLED
           value: "false"
-        - name: GF_AUTH_BASIC_ENABLED
+        - name: PL_AUTH_BASIC_ENABLED
           value: "false"
-        - name: GF_AUTH_DISABLE_LOGIN_FORM
+        - name: PL_AUTH_DISABLE_LOGIN_FORM
           value: "true"
-        - name: GF_AUTH_JWT_ENABLED
+        - name: PL_AUTH_DISABLE_SIGNOUT_MENU
           value: "true"
-        - name: GF_AUTH_JWT_HEADER_NAME
-          value: "X-Goog-IAP-JWT-Assertion"
-        - name: GF_AUTH_JWT_EMAIL_CLAIM
-          value: "email"
-        - name: GF_AUTH_JWT_USERNAME_CLAIM
-          value: "email"
-        - name: GF_AUTH_JWT_JWK_SET_URL
-          value: "https://www.gstatic.com/iap/verify/public_key-jwk"
-        - name: GF_AUTH_JWT_EXPECT_CLAIMS
-          value: '{"iss": "https://cloud.google.com/iap"}'
-        - name: GF_AUTH_JWT_AUTO_SIGN_UP
+        - name: PL_AUTH_PROXY_ENABLED
           value: "true"
-        - name: GF_USERS_AUTO_ASSIGN_ORG
+        - name: PL_AUTH_PROXY_HEADER_NAME
+          value: "X-Goog-Authenticated-User-Email"
+        - name: PL_AUTH_PROXY_HEADER_PROPERTY
+          value: "username"
+        - name: PL_AUTH_PROXY_AUTO_SIGN_UP
           value: "true"
-        - name: GF_USERS_AUTO_ASSIGN_ORG_ROLE
+        - name: PL_USERS_AUTO_ASSIGN_ORG
+          value: "true"
+        - name: PL_USERS_AUTO_ASSIGN_ORG_ROLE
           value: "Viewer"
-        - name: GF_SERVER_ROOT_URL
+        - name: PL_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH
+          value: "/etc/plutono/dashboards/home.json"
+        - name: PL_SERVER_ROOT_URL
           value: "https://monitoring.test.osv.dev"
-        - name: GF_INSTALL_PLUGINS
-          value: "googlecloud-logging-datasource 1.8.1"
         resources:
           requests:
             cpu: 250m
@@ -81,16 +77,16 @@ spec:
           failureThreshold: 2
         volumeMounts:
         - name: datasources
-          mountPath: /etc/grafana/provisioning/datasources
+          mountPath: /etc/plutono/provisioning/datasources
           readOnly: true
         - name: dashboards-prov
-          mountPath: /etc/grafana/provisioning/dashboards
+          mountPath: /etc/plutono/provisioning/dashboards
           readOnly: true
         - name: dashboards
-          mountPath: /etc/grafana/dashboards
+          mountPath: /etc/plutono/dashboards
           readOnly: true
         - name: storage
-          mountPath: /var/lib/grafana
+          mountPath: /var/lib/plutono
       - name: gmp-frontend
         image: gke.gcr.io/prometheus-engine/frontend:v0.18.2-gke.1@sha256:35ab356d969255dd7694ae371bf0991b97907451b4c7e1574b58a096d3be5977
         args:

@@ -4,19 +4,20 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vulnerability Linter Report</title>
-    <link rel="icon" href="https://google.github.io/osv.dev/assets/icon.png" type="image/x-icon" />
+    <title>{{ if .Title }}{{ .Title }}{{ else }}Vulnerability Linter Report{{ end }}</title>
+    <link rel="icon" type="image/png" href="/static/img/favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="/static/img/favicon-16x16.png" sizes="16x16" />
     <link href="https://fonts.googleapis.com/css?family=Overpass" rel="stylesheet" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
-    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
 </head>
 
-<body>
+<body data-api-url="{{ .APIURL }}">
     <div class="container">
         <header>
             <div id="header-left">
-                <img src="https://raw.githubusercontent.com/google/osv-scanner/refs/heads/main/docs/images/osv-scanner-OSV-logo-darkmode.png"
-                    alt="OSV-Scanner Logo" class="logo" />
+                <img src="/static/img/logo.png"
+                    srcset="/static/img/logo.png, /static/img/logo@4x.png 4x"
+                    alt="OSV Logo" class="logo" />
                 <div class="vl"></div>
                 <h1>Open Source Vulnerabilities</h1>
                 <div id="global-loader" class="loader">
@@ -76,7 +77,7 @@
                                     <th>Bug ID</th>
                                     <th>Findings</th>
                                     <th id="modified-header">
-                                        Modified <i class="material-icons">unfold_more</i>
+                                        Modified <i class="material-icons">expand_more</i>
                                     </th>
                                 </tr>
                             </thead>

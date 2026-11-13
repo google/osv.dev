@@ -452,6 +452,10 @@
         {
           "id": "GO-2026-6809",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6859",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     }
@@ -795,6 +799,10 @@
         {
           "id": "GO-2026-6809",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6859",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -1129,6 +1137,10 @@
         },
         {
           "id": "GO-2026-6809",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6859",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -1472,6 +1484,10 @@
         },
         {
           "id": "GO-2026-6809",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6859",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -2738,6 +2754,10 @@
         },
         {
           "id": "DEBIAN-CVE-2020-3810",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-109518",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -4947,6 +4967,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-107496",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-14456",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -5147,7 +5171,23 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-88822",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-88823",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-9076",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-95691",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-95692",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -6287,6 +6327,10 @@
         {
           "id": "GO-2026-6809",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6859",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -6349,6 +6393,50 @@
         },
         {
           "id": "GO-2026-6602",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6848",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6849",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6850",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6851",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6852",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6853",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6854",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6855",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6856",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6857",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6858",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]

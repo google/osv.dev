@@ -256,23 +256,23 @@ pre {
 .tooltip {
   position: relative;
   display: inline-block;
-  width: 650px;
+  width: 100%;
 }
 
 .tooltip .tooltiptext {
   color: $osv-white;
   background: $osv-tooltip-bg;
   visibility: hidden;
-  width: 120px;
-  text-align: center;
+  width: max-content;
   padding: 5px;
   border-radius: $osv-border-radius-small;
 
-  max-width: 700px;
+  max-width: calc(100% - 2em);
   line-height: 16px;
 
+  position: absolute;
   top: -5px;
-  left: 105%;
+  margin-left: 8px;
   z-index: 1;
 
   opacity: 0;
@@ -1637,6 +1637,10 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
           text-decoration: none;
           color: inherit;
         }
+
+        &:nth-last-of-type(-n+3) .tooltip {
+          right: 0;
+        }
       }
 
       .ecosystem-count {
@@ -1657,7 +1661,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
           color: $osv-white;
           position: absolute;
           background: $osv-tooltip-bg;
-          max-width: 250px;
+          width: 250px;
           line-height: 16px;
           padding: 5px;
           border-radius: $osv-border-radius-small;

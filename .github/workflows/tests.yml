@@ -56,14 +56,17 @@ jobs:
               - 'go/**'
               - 'bindings/go/**'
               - 'osv/osv-schema'
+              - 'codecov.yml'
               - '.github/workflows/tests.yml'
             vulnfeeds:
               - 'vulnfeeds/**'
               - 'osv/osv-schema'
+              - 'codecov.yml'
               - '.github/workflows/tests.yml'
             bindings:
               - 'bindings/**'
               - 'osv/osv-schema'
+              - 'codecov.yml'
               - '.github/workflows/tests.yml'
             python:
               - 'osv/**'
@@ -108,6 +111,12 @@ jobs:
       - name: Run Go tests
         working-directory: go
         run: ./run_tests.sh
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: go/coverage.out
+          flags: go
 
   vulnfeeds-tests:
     name: Vulnfeeds Tests
@@ -130,6 +139,12 @@ jobs:
       - name: Run vulnfeeds tests
         working-directory: vulnfeeds
         run: ./run_tests.sh
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: vulnfeeds/coverage.out
+          flags: vulnfeeds
 
   bindings-tests:
     name: Bindings Tests
@@ -152,6 +167,12 @@ jobs:
       - name: Run bindings tests
         working-directory: bindings
         run: ./run_tests.sh
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: bindings/go/coverage.out
+          flags: bindings
 
   python-tests:
     name: Python Tests

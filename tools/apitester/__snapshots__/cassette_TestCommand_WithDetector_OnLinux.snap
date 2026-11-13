@@ -1,54 +1,24 @@
 
 [Test/cassette_TestCommand_WithDetector_OnLinux/TestCommand_WithDetector_OnLinux/ssh_version_errors - 1]
 {
-  "results": [
-    {
-      "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
-        "version": "2.0.4"
-      },
-      "vulns": []
-    }
-  ]
+  "code": 2,
+  "message": "\n\u003chtml\u003e\u003chead\u003e\n\u003cmeta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\"\u003e\n\u003ctitle\u003e500 Server Error\u003c/title\u003e\n\u003c/head\u003e\n\u003cbody text=#000000 bgcolor=#ffffff\u003e\n\u003ch1\u003eError: Server Error\u003c/h1\u003e\n\u003ch2\u003eThe server encountered an error and could not complete your request.\u003cp\u003ePlease try again in 30 seconds.\u003c/h2\u003e\n\u003ch2\u003e\u003c/h2\u003e\n\u003c/body\u003e\u003c/html\u003e\n"
 }
 
 ---
 
 [Test/cassette_TestCommand_WithDetector_OnLinux/TestCommand_WithDetector_OnLinux/ssh_version_is_after_last_vuln_version - 1]
 {
-  "results": [
-    {
-      "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
-        "version": "2.0.4"
-      },
-      "vulns": []
-    }
-  ]
+  "code": 2,
+  "message": "\n\u003chtml\u003e\u003chead\u003e\n\u003cmeta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\"\u003e\n\u003ctitle\u003e500 Server Error\u003c/title\u003e\n\u003c/head\u003e\n\u003cbody text=#000000 bgcolor=#ffffff\u003e\n\u003ch1\u003eError: Server Error\u003c/h1\u003e\n\u003ch2\u003eThe server encountered an error and could not complete your request.\u003cp\u003ePlease try again in 30 seconds.\u003c/h2\u003e\n\u003ch2\u003e\u003c/h2\u003e\n\u003c/body\u003e\u003c/html\u003e\n"
 }
 
 ---
 
 [Test/cassette_TestCommand_WithDetector_OnLinux/TestCommand_WithDetector_OnLinux/ssh_version_is_before_first_vuln_version - 1]
 {
-  "results": [
-    {
-      "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
-        "version": "2.0.4"
-      },
-      "vulns": []
-    }
-  ]
+  "code": 2,
+  "message": "\n\u003chtml\u003e\u003chead\u003e\n\u003cmeta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\"\u003e\n\u003ctitle\u003e500 Server Error\u003c/title\u003e\n\u003c/head\u003e\n\u003cbody text=#000000 bgcolor=#ffffff\u003e\n\u003ch1\u003eError: Server Error\u003c/h1\u003e\n\u003ch2\u003eThe server encountered an error and could not complete your request.\u003cp\u003ePlease try again in 30 seconds.\u003c/h2\u003e\n\u003ch2\u003e\u003c/h2\u003e\n\u003c/body\u003e\u003c/html\u003e\n"
 }
 
 ---

@@ -17,6 +17,7 @@ require (
 	github.com/google/osv-scalibr v0.5.3
 	github.com/knqyf263/go-cpe v0.0.0-20261015082322-2cb8736448ff
 	github.com/ossf/osv-schema/bindings/go v0.0.0-20261026052736-6410c13304f9
+	github.com/package-url/packageurl-go v0.1.7
 	github.com/redis/go-redis/v9 v9.23.0
 	github.com/sethvargo/go-retry v0.5.0
 	go.opentelemetry.io/contrib/detectors/gcp v1.47.0

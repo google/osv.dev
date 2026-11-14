@@ -1,187 +1,24 @@
 
 [Test/cassette_TestCommand_CallAnalysis/TestCommand_CallAnalysis/Run_with_govulncheck - 1]
 {
-  "results": [
-    {
-      "query": {
-        "package": {
-          "name": "github.com/gogo/protobuf",
-          "ecosystem": "Go"
-        },
-        "version": "1.3.1"
-      },
-      "vulns": [
-        {
-          "id": "GHSA-c3h9-896r-86jm",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2021-0053",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "query": {
-        "package": {
-          "name": "github.com/ipfs/go-bitfield",
-          "ecosystem": "Go"
-        },
-        "version": "1.0.0"
-      },
-      "vulns": [
-        {
-          "id": "GHSA-2h6c-j3gf-xp9r",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "GO-2023-1558",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    },
-    {
-      "query": {
-        "package": {
-          "name": "golang.org/x/image",
-          "ecosystem": "Go"
-        },
-        "version": "0.4.0"
-      },
-      "vulns": [
-        {
-          "id": "GHSA-44p7-9xx4-hf2g",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-9phm-fm57-rhg8",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-j3p8-6mrq-6g7h",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "GHSA-q675-qj96-32m9",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GHSA-qgc7-mgm3-q253",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "GHSA-x92r-3vfx-4cv3",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "GO-2023-1572",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2023-1989",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2023-1990",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2024-2937",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2026-4815",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2026-4961",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2026-4962",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2026-5031",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2026-5032",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2026-5061",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2026-5062",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2026-5066",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2026-6222",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    }
-  ]
+  "code": 2,
+  "message": "\n\u003chtml\u003e\u003chead\u003e\n\u003cmeta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\"\u003e\n\u003ctitle\u003e500 Server Error\u003c/title\u003e\n\u003c/head\u003e\n\u003cbody text=#000000 bgcolor=#ffffff\u003e\n\u003ch1\u003eError: Server Error\u003c/h1\u003e\n\u003ch2\u003eThe server encountered an error and could not complete your request.\u003cp\u003ePlease try again in 30 seconds.\u003c/h2\u003e\n\u003ch2\u003e\u003c/h2\u003e\n\u003c/body\u003e\u003c/html\u003e\n"
 }
 
 ---
 
 [Test/cassette_TestCommand_CallAnalysis/TestCommand_CallAnalysis/Run_with_govulncheck_all_uncalled - 1]
 {
-  "results": [
-    {
-      "query": {
-        "package": {
-          "name": "github.com/gogo/protobuf",
-          "ecosystem": "Go"
-        },
-        "version": "1.3.1"
-      },
-      "vulns": [
-        {
-          "id": "GHSA-c3h9-896r-86jm",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2021-0053",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    }
-  ]
+  "code": 2,
+  "message": "\n\u003chtml\u003e\u003chead\u003e\n\u003cmeta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\"\u003e\n\u003ctitle\u003e500 Server Error\u003c/title\u003e\n\u003c/head\u003e\n\u003cbody text=#000000 bgcolor=#ffffff\u003e\n\u003ch1\u003eError: Server Error\u003c/h1\u003e\n\u003ch2\u003eThe server encountered an error and could not complete your request.\u003cp\u003ePlease try again in 30 seconds.\u003c/h2\u003e\n\u003ch2\u003e\u003c/h2\u003e\n\u003c/body\u003e\u003c/html\u003e\n"
 }
 
 ---
 
 [Test/cassette_TestCommand_CallAnalysis/TestCommand_CallAnalysis/Run_with_govulncheck_all_uncalled_but_enabled_all-vulns_flag - 1]
 {
-  "results": [
-    {
-      "query": {
-        "package": {
-          "name": "github.com/gogo/protobuf",
-          "ecosystem": "Go"
-        },
-        "version": "1.3.1"
-      },
-      "vulns": [
-        {
-          "id": "GHSA-c3h9-896r-86jm",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "GO-2021-0053",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
-      ]
-    }
-  ]
+  "code": 2,
+  "message": "\n\u003chtml\u003e\u003chead\u003e\n\u003cmeta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\"\u003e\n\u003ctitle\u003e500 Server Error\u003c/title\u003e\n\u003c/head\u003e\n\u003cbody text=#000000 bgcolor=#ffffff\u003e\n\u003ch1\u003eError: Server Error\u003c/h1\u003e\n\u003ch2\u003eThe server encountered an error and could not complete your request.\u003cp\u003ePlease try again in 30 seconds.\u003c/h2\u003e\n\u003ch2\u003e\u003c/h2\u003e\n\u003c/body\u003e\u003c/html\u003e\n"
 }
 
 ---

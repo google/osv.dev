@@ -93,6 +93,19 @@ resource "google_storage_bucket_iam_member" "worker_android_import" {
   member = "serviceAccount:${module.osv_pipeline.worker_service_account_email}"
 }
 
+# Staging website OAuth & session secrets mounted in deployment/clouddeploy/osv-website/run-staging.yaml
+resource "google_secret_manager_secret_iam_member" "frontend_website_secrets" {
+  for_each = toset([
+    "flask-secret-key",
+    "google-oauth-client-secret",
+  ])
+
+  project   = "oss-vdb-test"
+  secret_id = each.value
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${module.osv_test.frontend_service_account_email}"
+}
+
 module "k8s_cron_alert" {
   for_each                         = local.kube_manifests
   source                           = "../../modules/k8s_cron_alert"
@@ -115,11 +128,6 @@ import {
 import {
   to = module.osv_pipeline.google_service_networking_connection.private_vpc_connection
   id = "projects/oss-vdb-test/global/networks/default:servicenetworking.googleapis.com"
-}
-
-import {
-  to = module.osv_test.google_service_account.frontend_sa
-  id = "projects/oss-vdb-test/serviceAccounts/osv-frontend@oss-vdb-test.iam.gserviceaccount.com"
 }
 
 output "website_dns_records" {

@@ -54,6 +54,7 @@ module "osv" {
   vulnerabilities_export_bucket = module.osv_pipeline.vulnerabilities_export_bucket_name
   failed_tasks_topic_name       = module.osv_pipeline.failed_tasks_topic_name
   datastore_database_id         = module.osv_pipeline.datastore_database_id
+  website_ingress               = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 
   public_import_logs_bucket     = "osv-public-import-logs"
   cve_osv_conversion_bucket     = "cve-osv-conversion"
@@ -77,6 +78,7 @@ module "osv_api" {
   esp_version                    = "2.57.1"
   gcs_log_dir                    = "gs://oss-vdb-tf/apply-logs"
   frontend_service_account_email = module.osv.frontend_service_account_email
+  service_account_email          = module.osv.frontend_service_account_email
 
   postgres_primary_instance_name = module.osv_pipeline.postgres_instance_name
   postgres_region                = module.osv_pipeline.postgres_region

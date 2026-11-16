@@ -13,11 +13,13 @@ import (
 	"log/slog"
 	"os"
 	"path"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"cloud.google.com/go/storage"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -334,6 +336,80 @@ func HandleDeletion(ctx context.Context, outBkt *storage.BucketHandle, osvOutput
 			if err := obj.Delete(ctx); err != nil {
 				logger.Error("Failed to delete object", slog.String("name", objName), slog.Any("err", err))
 			}
+		}
+	}
+}
+
+// HandleWithdrawnDeletions deletes objects in outBkt under osvOutputPath whose IDs are in withdrawnIDs,
+// skipping any record that has a manual override in overridesBkt.
+func HandleWithdrawnDeletions(ctx context.Context, outBkt, overridesBkt *storage.BucketHandle, osvOutputPath string, withdrawnIDs []string) {
+	if outBkt == nil || len(withdrawnIDs) == 0 {
+		return
+	}
+
+	currentYear := time.Now().Year()
+	var breakdowns []string
+	for year := parallelStartYear; year <= currentYear; year++ {
+		breakdowns = append(breakdowns, fmt.Sprintf("CVE-%d-", year))
+	}
+	bucketObjects, err := gcs.ListObjectsFast(ctx, outBkt, osvOutputPath, breakdowns)
+	if err != nil {
+		logger.Error("Failed to list bucket objects for withdrawn deletion check, skipping deletion.", slog.Any("err", err))
+		return
+	}
+
+	withdrawnPaths := make(map[string]string, len(withdrawnIDs))
+	for _, id := range withdrawnIDs {
+		filename := id + ".json"
+		withdrawnPaths[path.Join(osvOutputPath, filename)] = filename
+	}
+
+	g, gCtx := errgroup.WithContext(ctx)
+	g.SetLimit(32)
+
+	for _, objName := range bucketObjects {
+		filename, ok := withdrawnPaths[objName]
+		if !ok {
+			continue
+		}
+
+		g.Go(func() error {
+			if overridesBkt != nil {
+				overrideObj := overridesBkt.Object(path.Join(overrideFolder, filename))
+				_, err := overrideObj.Attrs(gCtx)
+				if err == nil {
+					logger.Info("Skipping withdrawn deletion due to override", slog.String("name", objName))
+					return nil
+				}
+				if !errors.Is(err, storage.ErrObjectNotExist) {
+					logger.Error("Failed to check override before withdrawn deletion, skipping object", slog.String("name", objName), slog.Any("err", err))
+					return nil
+				}
+			}
+
+			logger.Info("Deleting withdrawn CVE from bucket", slog.String("name", objName))
+			if err := outBkt.Object(objName).Delete(gCtx); err != nil && !errors.Is(err, storage.ErrObjectNotExist) {
+				logger.Error("Failed to delete withdrawn object", slog.String("name", objName), slog.Any("err", err))
+			}
+
+			return nil
+		})
+	}
+
+	_ = g.Wait()
+}
+
+// DeleteLocalFiles removes files in osvOutputPath matching any ID in withdrawnIDs.
+func DeleteLocalFiles(osvOutputPath string, withdrawnIDs []string) {
+	for _, id := range withdrawnIDs {
+		filePath := filepath.Join(osvOutputPath, id+".json")
+		err := os.Remove(filePath)
+		if err == nil {
+			logger.Info("Deleted local withdrawn file", slog.String("path", filePath))
+			continue
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			logger.Error("Failed to delete local withdrawn file", slog.String("path", filePath), slog.Any("err", err))
 		}
 	}
 }

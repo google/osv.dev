@@ -135,8 +135,12 @@ func readVulnerability(ctx context.Context, client *storage.Client, fullPath str
 	return &vuln, nil
 }
 
+func isWithdrawn(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability) bool {
+	return (cve5.GetWithdrawn() != nil) || (nvd.GetWithdrawn() != nil)
+}
+
 func combineIntoOSV(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability) *osvschema.Vulnerability {
-	if (cve5.GetWithdrawn() != nil) || (nvd.GetWithdrawn() != nil) {
+	if isWithdrawn(cve5, nvd) {
 		return nil
 	}
 
@@ -150,7 +154,7 @@ func combineIntoOSV(cve5 *osvschema.Vulnerability, nvd *osvschema.Vulnerability)
 	return nvd
 }
 
-func readAndCombineWorker(ctx context.Context, client *storage.Client, workChan <-chan *CVEWorkItem, vulnChan chan<- *osvschema.Vulnerability) {
+func readAndCombineWorker(ctx context.Context, client *storage.Client, workChan <-chan *CVEWorkItem, vulnChan chan<- *osvschema.Vulnerability, withdrawnChan chan<- string) {
 	for work := range workChan {
 		var cve5, nvd *osvschema.Vulnerability
 		var cve5Err, nvdErr error
@@ -177,6 +181,14 @@ func readAndCombineWorker(ctx context.Context, client *storage.Client, workChan 
 		readVulnsWg.Wait()
 
 		if cve5Err != nil || nvdErr != nil {
+			continue
+		}
+
+		if isWithdrawn(cve5, nvd) {
+			if withdrawnChan != nil {
+				withdrawnChan <- string(work.ID)
+			}
+
 			continue
 		}
 
@@ -294,6 +306,7 @@ func main() {
 	logger.Info("Starting processing channels and workers")
 	vulnChan := make(chan *osvschema.Vulnerability, *numWorkers)
 	uploadVulnsChan := make(chan *osvschema.Vulnerability, *numWorkers)
+	withdrawnChan := make(chan string, *numWorkers)
 	workChan := make(chan *CVEWorkItem, *numWorkers)
 
 	// Start VulnWorkers (Upload side)
@@ -330,11 +343,19 @@ func main() {
 		close(uploadVulnsChan)
 	})
 
+	var withdrawnIDs []string
+	var collectWithdrawnWg sync.WaitGroup
+	collectWithdrawnWg.Go(func() {
+		for id := range withdrawnChan {
+			withdrawnIDs = append(withdrawnIDs, id)
+		}
+	})
+
 	// Start ReadAndCombineWorkers (Read side)
 	var readAndCombineWg sync.WaitGroup
 	for range *numWorkers {
 		readAndCombineWg.Go(func() {
-			readAndCombineWorker(ctx, client, workChan, vulnChan)
+			readAndCombineWorker(ctx, client, workChan, vulnChan, withdrawnChan)
 		})
 	}
 
@@ -351,10 +372,15 @@ func main() {
 	// Wait for reads to finish
 	readAndCombineWg.Wait()
 	close(vulnChan)
+	close(withdrawnChan)
 
-	// Wait for collector and uploads to finish
+	// Wait for collectors and uploads to finish
 	collectValidIDsWg.Wait()
+	collectWithdrawnWg.Wait()
 	uploadVulnsWg.Wait()
+	if gcsHelper != nil {
+		gcsHelper.CloseAndWait()
+	}
 
 	logger.Info("Successfully processed OSV files", slog.Uint64("count", validCount.Load()))
 	if outBkt == nil && gcsHelper == nil {
@@ -362,8 +388,14 @@ func main() {
 	}
 
 	// Handle Deletion
-	if *syncDeletions && *uploadToGCS {
-		writer.HandleDeletion(ctx, outBkt, *osvOutputPath, validIDs)
+	if *uploadToGCS {
+		if *syncDeletions {
+			writer.HandleDeletion(ctx, outBkt, *osvOutputPath, validIDs)
+		} else {
+			writer.HandleWithdrawnDeletions(ctx, outBkt, overridesBkt, *osvOutputPath, withdrawnIDs)
+		}
+	} else {
+		writer.DeleteLocalFiles(*osvOutputPath, withdrawnIDs)
 	}
 }
 

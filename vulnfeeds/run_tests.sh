@@ -1,9 +1,9 @@
-#!/bin/bash
+#!/bin/bash -ex
 
-echo !!!
-echo !!! FYI external IP is: $(curl -s https://ipinfo.io/ip)
-echo !!!
+if [ -n "$CI" ]; then
+  go test ./... -coverprofile=coverage.out
+else
+  go test ./...
+fi
 
-set -e
 
-go test ./...

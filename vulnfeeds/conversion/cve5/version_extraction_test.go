@@ -336,6 +336,83 @@ func TestFindInverseAffectedRanges(t *testing.T) {
 				conversion.BuildVersionRange("4.0.0", "", "4.5.2"),
 			},
 		},
+		{
+			name: "linux mainline affected with earlier backport fixes does not shift branches",
+			affected: models.Affected{
+				DefaultStatus: "affected",
+				Versions: []models.Versions{
+					{Status: "affected", Version: "6.1", VersionType: "semver"},
+					{Status: "unaffected", Version: "0", LessThan: "6.1", VersionType: "semver"},
+					{Status: "unaffected", Version: "5.15.148", LessThanOrEqual: "5.15.*", VersionType: "semver"},
+					{Status: "unaffected", Version: "6.1.75", LessThanOrEqual: "6.1.*", VersionType: "semver"},
+					{Status: "unaffected", Version: "6.6.14", LessThanOrEqual: "6.6.*", VersionType: "semver"},
+					{Status: "unaffected", Version: "6.7.2", LessThanOrEqual: "6.7.*", VersionType: "semver"},
+					{Status: "unaffected", Version: "6.8", LessThanOrEqual: "*", VersionType: "semver"},
+				},
+			},
+			versionType: strategies.VersionRangeTypeSemver,
+			cnaAssigner: "Linux",
+			want: []*osvschema.Range{
+				conversion.BuildVersionRange("0", "", "5.15.148"),
+				conversion.BuildVersionRange("5.16.0", "", "6.1.75"),
+				conversion.BuildVersionRange("6.2.0", "", "6.6.14"),
+				conversion.BuildVersionRange("6.7.0", "", "6.7.2"),
+			},
+		},
+		{
+			name: "linux duplicate unaffected entries on same wildcard branch keeps latest fix",
+			affected: models.Affected{
+				DefaultStatus: "affected",
+				Versions: []models.Versions{
+					{Status: "unaffected", Version: "5.4.229", LessThanOrEqual: "5.4.*", VersionType: "semver"},
+					{Status: "unaffected", Version: "5.4.235", LessThanOrEqual: "5.4.*", VersionType: "semver"},
+					{Status: "unaffected", Version: "5.10.163", LessThanOrEqual: "5.10.*", VersionType: "semver"},
+				},
+			},
+			versionType: strategies.VersionRangeTypeSemver,
+			cnaAssigner: "Linux",
+			want: []*osvschema.Range{
+				conversion.BuildVersionRange("0", "", "5.4.235"),
+				conversion.BuildVersionRange("5.5.0", "", "5.10.163"),
+			},
+		},
+		{
+			name: "linux bounded unaffected gap between affected ranges",
+			affected: models.Affected{
+				DefaultStatus: "affected",
+				Versions: []models.Versions{
+					{Status: "affected", Version: "6.6", VersionType: "semver"},
+					{Status: "affected", Version: "6.9", VersionType: "semver"},
+					{Status: "unaffected", Version: "0", LessThan: "6.6", VersionType: "semver"},
+					{Status: "unaffected", Version: "6.6.4", LessThanOrEqual: "6.6.*", VersionType: "semver"},
+					{Status: "unaffected", Version: "6.7", LessThan: "6.9", VersionType: "semver"},
+					{Status: "unaffected", Version: "6.11.11", LessThanOrEqual: "6.11.*", VersionType: "semver"},
+					{Status: "unaffected", Version: "6.12", LessThanOrEqual: "*", VersionType: "semver"},
+				},
+			},
+			versionType: strategies.VersionRangeTypeSemver,
+			cnaAssigner: "Linux",
+			want: []*osvschema.Range{
+				conversion.BuildVersionRange("6.6.0", "", "6.6.4"),
+				conversion.BuildVersionRange("6.9.0", "", "6.11.11"),
+			},
+		},
+		{
+			name: "linux 3-part wildcard prefix for 2.6.x branch",
+			affected: models.Affected{
+				DefaultStatus: "affected",
+				Versions: []models.Versions{
+					{Status: "unaffected", Version: "2.6.39.4", LessThanOrEqual: "2.6.39.*", VersionType: "semver"},
+					{Status: "unaffected", Version: "3.0.10", LessThanOrEqual: "3.0.*", VersionType: "semver"},
+				},
+			},
+			versionType: strategies.VersionRangeTypeSemver,
+			cnaAssigner: "Linux",
+			want: []*osvschema.Range{
+				conversion.BuildVersionRange("0", "", "2.6.39.4"),
+				conversion.BuildVersionRange("2.6.40.0", "", "3.0.10"),
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -952,5 +1029,249 @@ func TestExtractVersions_Curl_WithoutGitRanges(t *testing.T) {
 
 	if len(metrics.Notes) == 0 {
 		t.Errorf("expected notes to be populated from default extractor")
+	}
+}
+
+func TestExtractVersions_Linux_MixedGitAndSemver(t *testing.T) {
+	const linuxRepo = "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git"
+
+	tests := []struct {
+		name         string
+		affected     []models.Affected
+		wantAffected []*osvschema.Affected
+	}{
+		{
+			name: "backported semver in git block is routed to ECOSYSTEM instead of GIT (CVE-2026-99276)",
+			affected: []models.Affected{
+				{
+					Vendor:        "Linux",
+					Product:       "Linux",
+					Repo:          linuxRepo,
+					DefaultStatus: "unaffected",
+					Versions: []models.Versions{
+						{
+							Version:     "d7fd1fa8be5d3752dc0c78349eb7a0f86ffc1642",
+							LessThan:    "4e4e8b76cc5f2f53a6f7f128fd5171e50b868190",
+							Status:      "affected",
+							VersionType: "git",
+						},
+						{
+							Version:     "d7fd1fa8be5d3752dc0c78349eb7a0f86ffc1642",
+							LessThan:    "b4bae7c2bb07ec8d83f5b17e649f7b72bf1fb1bf",
+							Status:      "affected",
+							VersionType: "git",
+						},
+						{
+							Version:     "e7fb6b0adca9ff3ee145217b4be6bd61ffdbbd6c",
+							LessThan:    "2e8c094bbcf6b249e13fd4c735db9fd6d11986be",
+							Status:      "affected",
+							VersionType: "git",
+						},
+						{
+							Version:     "7.2.8",
+							LessThan:    "7.3",
+							Status:      "affected",
+							VersionType: "semver",
+						},
+					},
+				},
+				{
+					Vendor:        "Linux",
+					Product:       "Linux",
+					Repo:          linuxRepo,
+					DefaultStatus: "affected",
+					Versions: []models.Versions{
+						{Version: "7.3", Status: "affected", VersionType: "semver"},
+						{Version: "0", LessThan: "7.3", Status: "unaffected", VersionType: "semver"},
+						{Version: "7.3.2", LessThanOrEqual: "7.3.*", Status: "unaffected", VersionType: "semver"},
+						{Version: "7.4", LessThanOrEqual: "*", Status: "unaffected", VersionType: "semver"},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: linuxRepo,
+							Events: []*osvschema.Event{
+								{Introduced: "d7fd1fa8be5d3752dc0c78349eb7a0f86ffc1642"},
+								{Fixed: "4e4e8b76cc5f2f53a6f7f128fd5171e50b868190"},
+								{Fixed: "b4bae7c2bb07ec8d83f5b17e649f7b72bf1fb1bf"},
+							},
+						},
+						{
+							Type: osvschema.Range_GIT,
+							Repo: linuxRepo,
+							Events: []*osvschema.Event{
+								{Introduced: "e7fb6b0adca9ff3ee145217b4be6bd61ffdbbd6c"},
+								{Fixed: "2e8c094bbcf6b249e13fd4c735db9fd6d11986be"},
+							},
+						},
+					},
+				},
+				{
+					Package: &osvschema.Package{Ecosystem: "Linux", Name: "Kernel"},
+					Ranges: []*osvschema.Range{
+						{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "7.2.8"}, {Fixed: "7.3"}}},
+						{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "7.3.0"}, {Fixed: "7.3.2"}}},
+					},
+				},
+			},
+		},
+		{
+			name: "zero-introduced semver ranges in git block do not pollute GIT or widen inverse branches (CVE-2026-100080)",
+			affected: []models.Affected{
+				{
+					Vendor:        "Linux",
+					Product:       "Linux",
+					Repo:          linuxRepo,
+					DefaultStatus: "unaffected",
+					Versions: []models.Versions{
+						{
+							Version:     "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2",
+							LessThan:    "a3e77da9f843e4ab93917d30c314f0283e28c124",
+							Status:      "affected",
+							VersionType: "git",
+						},
+						{
+							Version:     "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2",
+							LessThan:    "213ba5bd81b7e97ac6e6190b8f3bc6ba76123625",
+							Status:      "affected",
+							VersionType: "git",
+						},
+						{Version: "0", LessThan: "5.10.274", Status: "affected", VersionType: "semver"},
+						{Version: "0", LessThan: "5.15.225", Status: "affected", VersionType: "semver"},
+						{Version: "0", LessThan: "6.1.192", Status: "affected", VersionType: "semver"},
+					},
+				},
+				{
+					Vendor:        "Linux",
+					Product:       "Linux",
+					Repo:          linuxRepo,
+					DefaultStatus: "affected",
+					Versions: []models.Versions{
+						{Version: "5.10.274", LessThanOrEqual: "5.10.*", Status: "unaffected", VersionType: "semver"},
+						{Version: "5.15.225", LessThanOrEqual: "5.15.*", Status: "unaffected", VersionType: "semver"},
+						{Version: "6.1.192", LessThanOrEqual: "6.1.*", Status: "unaffected", VersionType: "semver"},
+						{Version: "6.2", LessThanOrEqual: "*", Status: "unaffected", VersionType: "semver"},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: linuxRepo,
+							Events: []*osvschema.Event{
+								{Introduced: "1da177e4c3f41524e886b7f1b8a0c1fc7321cac2"},
+								{Fixed: "a3e77da9f843e4ab93917d30c314f0283e28c124"},
+								{Fixed: "213ba5bd81b7e97ac6e6190b8f3bc6ba76123625"},
+							},
+						},
+					},
+				},
+				{
+					Package: &osvschema.Package{Ecosystem: "Linux", Name: "Kernel"},
+					Ranges: []*osvschema.Range{
+						{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "5.10.274"}}},
+						{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "5.11.0"}, {Fixed: "5.15.225"}}},
+						{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "5.16.0"}, {Fixed: "6.1.192"}}},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple backports with mainline introduction reconcile to tight disjoint intervals (CVE-2023-52457)",
+			affected: []models.Affected{
+				{
+					Vendor:        "Linux",
+					Product:       "Linux",
+					Repo:          linuxRepo,
+					DefaultStatus: "unaffected",
+					Versions: []models.Versions{
+						{
+							Version:     "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+							LessThan:    "f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5",
+							Status:      "affected",
+							VersionType: "git",
+						},
+						{Version: "5.4.225", LessThan: "5.4.268", Status: "affected", VersionType: "semver"},
+						{Version: "5.10.156", LessThan: "5.10.209", Status: "affected", VersionType: "semver"},
+						{Version: "5.15.80", LessThan: "5.15.148", Status: "affected", VersionType: "semver"},
+						{Version: "6.0.10", LessThan: "6.1", Status: "affected", VersionType: "semver"},
+					},
+				},
+				{
+					Vendor:        "Linux",
+					Product:       "Linux",
+					Repo:          linuxRepo,
+					DefaultStatus: "affected",
+					Versions: []models.Versions{
+						{Version: "6.1", Status: "affected", VersionType: "semver"},
+						{Version: "0", LessThan: "6.1", Status: "unaffected", VersionType: "semver"},
+						{Version: "5.4.268", LessThanOrEqual: "5.4.*", Status: "unaffected", VersionType: "semver"},
+						{Version: "5.10.209", LessThanOrEqual: "5.10.*", Status: "unaffected", VersionType: "semver"},
+						{Version: "5.15.148", LessThanOrEqual: "5.15.*", Status: "unaffected", VersionType: "semver"},
+						{Version: "6.1.75", LessThanOrEqual: "6.1.*", Status: "unaffected", VersionType: "semver"},
+						{Version: "6.6.14", LessThanOrEqual: "6.6.*", Status: "unaffected", VersionType: "semver"},
+						{Version: "6.7.2", LessThanOrEqual: "6.7.*", Status: "unaffected", VersionType: "semver"},
+						{Version: "6.8", LessThanOrEqual: "*", Status: "unaffected", VersionType: "semver"},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: linuxRepo,
+							Events: []*osvschema.Event{
+								{Introduced: "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2"},
+								{Fixed: "f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5"},
+							},
+						},
+					},
+				},
+				{
+					Package: &osvschema.Package{Ecosystem: "Linux", Name: "Kernel"},
+					Ranges: []*osvschema.Range{
+						{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "5.4.225"}, {Fixed: "5.4.268"}}},
+						{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "5.10.156"}, {Fixed: "5.10.209"}}},
+						{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "5.15.80"}, {Fixed: "5.15.148"}}},
+						{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "6.0.10"}, {Fixed: "6.1"}}},
+						{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "6.1.0"}, {Fixed: "6.1.75"}}},
+						{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "6.2.0"}, {Fixed: "6.6.14"}}},
+						{Type: osvschema.Range_ECOSYSTEM, Events: []*osvschema.Event{{Introduced: "6.7.0"}, {Fixed: "6.7.2"}}},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cve := models.CVE5{
+				Metadata: models.CVE5Metadata{
+					CVEID:             "CVE-2026-99999",
+					AssignerShortName: "Linux",
+				},
+			}
+			cve.Containers.CNA.Affected = tc.affected
+
+			metrics := &models.ConversionMetrics{CVEID: "CVE-2026-99999", CNA: "Linux"}
+			v := vulns.Vulnerability{
+				Vulnerability: &osvschema.Vulnerability{Id: "CVE-2026-99999"},
+			}
+
+			extractor := GetVersionExtractor("Linux")
+			extractor.ExtractVersions(cve, &v, metrics, []string{linuxRepo}, &git.InMemoryRepoTagsCache{}, nil)
+			conversion.GroupAffectedRanges(v.Affected)
+
+			if diff := cmp.Diff(tc.wantAffected, v.Affected, protocmp.Transform()); diff != "" {
+				t.Errorf("Linux ExtractVersions + GroupAffectedRanges mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

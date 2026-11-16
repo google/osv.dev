@@ -30,7 +30,7 @@ steps:
   dir:  deployment/terraform/environments/oss-vdb
   id:   oss-vdb init
 - name: gcr.io/oss-vdb/terraform
-  args: ['plan', '-no-color']
+  args: ['plan', '-no-color', '-var=impersonate_service_account=']
   dir:  deployment/terraform/environments/oss-vdb
   id:   oss-vdb plan
 

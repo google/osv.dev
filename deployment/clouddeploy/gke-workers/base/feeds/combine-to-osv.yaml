@@ -3,15 +3,15 @@ kind: CronJob
 metadata:
   name: combine-to-osv
   labels:
-    cronLastSuccessfulTimeMins: "2160"
+    cronLastSuccessfulTimeMins: "180"
 spec:
   timeZone: Australia/Sydney
-  schedule: "30 13,21 * * *"
+  schedule: "45 * * * *"
   concurrencyPolicy: Forbid
   failedJobsHistoryLimit: 3
   jobTemplate:
     spec:
-      activeDeadlineSeconds: 7200
+      activeDeadlineSeconds: 3600
       template:
         spec:
           containers:

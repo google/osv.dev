@@ -4,38 +4,15 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
 )
 
-func negatedPrefix(regex string) (string, bool) {
-	// We have a bunch of ignore patterns in the form "^(?!DB_ID-).*$"
-	// This is silly, since we're already enforcing prefix matches
-	// This is a check to see if we can skip those ignore patterns
-	// (since go doesn't support negative lookaheads)
-	// TODO(michaelkedar): Remove this function + regexes from source repos
-	const prefix = "^(?!"
-	const suffix = ").*$"
-	if strings.HasPrefix(regex, prefix) && strings.HasSuffix(regex, suffix) {
-		return strings.TrimSuffix(strings.TrimPrefix(regex, prefix), suffix), true
-	}
-
-	return "", false
-}
-
 func compileIgnorePatterns(sourceRepo *models.SourceRepository) []*regexp.Regexp {
 	compiledIgnorePatterns := make([]*regexp.Regexp, 0, len(sourceRepo.IgnorePatterns))
 	for _, pattern := range sourceRepo.IgnorePatterns {
-		// There's a bunch on negative lookaheads in the ignore patterns that check if the file begins with an ID prefix
-		// We can remove those patterns since we're already checking for prefix matches
-		if prefix, ok := negatedPrefix(pattern); ok {
-			if slices.Contains(sourceRepo.IDPrefixes, prefix) {
-				continue
-			}
-		}
 		compiledPattern, err := regexp.Compile(pattern)
 		if err != nil {
 			logger.Warn("Failed to compile ignore pattern",

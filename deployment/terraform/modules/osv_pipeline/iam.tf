@@ -119,3 +119,16 @@ resource "google_project_iam_member" "deployment_cloudsql_roles" {
   member  = "serviceAccount:deployment@oss-vdb.iam.gserviceaccount.com"
 }
 
+# GKE cluster-scoped RBAC and Cloud Deploy execution permissions for gke-workers
+resource "google_project_iam_member" "deployment_clouddeploy_roles" {
+  for_each = toset([
+    "roles/container.admin",
+    "roles/clouddeploy.jobRunner",
+    "roles/logging.logWriter",
+  ])
+
+  project = var.project_id
+  role    = each.value
+  member  = "serviceAccount:deployment@oss-vdb.iam.gserviceaccount.com"
+}
+

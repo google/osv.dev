@@ -65,3 +65,10 @@ resource "google_service_account_iam_member" "frontend_deployer_act_as" {
   role               = "roles/iam.serviceAccountUser"
   member             = each.value
 }
+
+# Cloud Deploy permissions to roll out osv-website and osv-api Cloud Run revisions
+resource "google_project_iam_member" "deployment_run_admin" {
+  project = var.project_id
+  role    = "roles/run.admin"
+  member  = "serviceAccount:deployment@oss-vdb.iam.gserviceaccount.com"
+}

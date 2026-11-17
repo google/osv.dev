@@ -28,6 +28,13 @@ module "osv_pipeline" {
   postgres_availability_type = "ZONAL"
 }
 
+# Kept scoped to private-osv (not shared osv_pipeline) so deployment@oss-vdb cannot actAs privileged SAs in oss-vdb
+resource "google_project_iam_member" "deployment_service_account_user" {
+  project = "private-osv"
+  role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:deployment@oss-vdb.iam.gserviceaccount.com"
+}
+
 
 terraform {
   backend "gcs" {

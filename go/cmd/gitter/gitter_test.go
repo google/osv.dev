@@ -145,6 +145,24 @@ func TestPrepareURL(t *testing.T) {
 			expectErr: false,
 		},
 		{
+			name:      "Apache GitBox URL with .git, reroute to GitHub mirror",
+			url:       "https://gitbox.apache.org/repos/asf/commons-io.git",
+			expected:  "https://github.com/apache/commons-io.git",
+			expectErr: false,
+		},
+		{
+			name:      "Apache GitBox URL without .git and mixed case, reroute to GitHub mirror",
+			url:       "https://GitBox.apache.org/repos/asf/Tomcat/",
+			expected:  "https://github.com/apache/tomcat.git",
+			expectErr: false,
+		},
+		{
+			name:      "Apache GitBox URL without repository name is not rerouted",
+			url:       "https://gitbox.apache.org/repos/asf/",
+			expected:  "https://gitbox.apache.org/repos/asf",
+			expectErr: false,
+		},
+		{
 			name:      "Empty URL",
 			url:       "",
 			expected:  "",

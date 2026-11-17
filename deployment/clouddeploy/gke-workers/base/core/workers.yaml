@@ -41,13 +41,18 @@ spec:
             value: failed-tasks
           - name: NOTIFY_PYPI
             value: "false"
+          # Soft memory limit for the Go runtime, ~90% of limits.memory, so the GC
+          # works harder before the container gets OOM-killed.
+          # Keep in sync with limits.memory below.
+          - name: GOMEMLIMIT
+            value: "3600MiB"
         ports:
         - name: metrics
           containerPort: 9090
         resources:
           requests:
-            cpu: 1
-            memory: "10G"
+            cpu: "0.9"
+            memory: "1.2Gi"
           limits:
-            cpu: 2
-            memory: "13G"
+            cpu: "2"
+            memory: "4Gi"

@@ -624,8 +624,8 @@ steps:
 timeout: 7200s
 # Also set in Cloud Build:
 serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
-logsBucket: gs://oss-vdb-tf/apply-logs
 options:
+  logging: CLOUD_LOGGING_ONLY
   machineType: E2_HIGHCPU_32
   env:
   - BUILDKIT_PROGRESS=plain

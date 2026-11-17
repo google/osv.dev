@@ -145,6 +145,11 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 		if shouldIgnore(id.String(), sourceRepo.IDPrefixes, compiledIgnorePatterns) {
 			return true
 		}
+		if !isValidID(id.String()) {
+			logger.ErrorContext(ctx, "Invalid vulnerability id", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()))
+
+			return true
+		}
 		path := id.String() + sourceRepo.Extension
 		pool := sourceRepo.WorkPool
 		if !hasUpdateTime {
@@ -163,6 +168,7 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 			},
 			SourceRepository:       sourceRepo.Name,
 			SourcePath:             path,
+			IDPrefixes:             sourceRepo.IDPrefixes,
 			CompareAgainstDatabase: hasUpdateTime,
 			Format:                 RecordFormatJSON,
 			KeyPath:                sourceRepo.KeyPath,
@@ -440,6 +446,11 @@ func handleReconcileREST(ctx context.Context, ch chan<- WorkItem, config Config,
 			return true
 		}
 		if shouldIgnore(id.String(), sourceRepo.IDPrefixes, compiledIgnorePatterns) {
+			return true
+		}
+		if !isValidID(id.String()) {
+			logger.ErrorContext(ctx, "Invalid vulnerability id in reconcile", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()))
+
 			return true
 		}
 

@@ -414,6 +414,7 @@ func checkReconcile(
 		SourceRecord:           sourceRecord,
 		SourceRepository:       sourceRepo.Name,
 		SourcePath:             path,
+		IDPrefixes:             sourceRepo.IDPrefixes,
 		Format:                 format,
 		KeyPath:                sourceRepo.KeyPath,
 		Strict:                 sourceRepo.Strictness,
@@ -549,6 +550,7 @@ type WorkItem struct {
 
 	SourceRepository       string
 	SourcePath             string
+	IDPrefixes             []string
 	Format                 RecordFormat
 	KeyPath                string
 	Strict                 bool
@@ -695,6 +697,16 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 
 		return
 	}
+
+	if !isValidID(vulnProto.GetId()) || !hasValidPrefix(vulnProto.GetId(), item.IDPrefixes) {
+		logger.ErrorContext(ctx, "Invalid vulnerability id",
+			slog.String("source", sourceRepoName),
+			slog.String("path", sourcePath),
+			slog.String("id", vulnProto.GetId()))
+
+		return
+	}
+
 	// Skip if the record is older than the last update time
 	modified := vulnProto.GetModified().AsTime()
 	if !item.IsReimport && item.CompareAgainstDatabase {

@@ -547,7 +547,7 @@ func run(webwmlRepo, securityTrackerRepo, outputDir, outputBucket string, upload
 			gcsPrefix := gcsOutputPrefix(outputDir, advType)
 			logger.Info("Uploading to GCS", "bucket", outputBucket, "prefix", gcsPrefix, "type", advType)
 			ctx := context.Background()
-			writer.UploadVulnsToGCS(ctx, "debian-osv-"+strings.ToLower(string(advType)), uploadToGCS, outputBucket, "", numWorkers, gcsPrefix, vulns, doDeletions)
+			writer.UploadVulnsToGCS(ctx, "Debian "+string(advType), uploadToGCS, outputBucket, "", numWorkers, gcsPrefix, vulns, doDeletions)
 		} else {
 			advOutputDir := filepath.Join(outputDir, strings.ToLower(string(advType)))
 			if err := os.MkdirAll(advOutputDir, 0755); err != nil {

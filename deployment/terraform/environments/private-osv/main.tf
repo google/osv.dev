@@ -1,9 +1,16 @@
+variable "deployment_service_account_email" {
+  type        = string
+  description = "CI/CD deployment service account email."
+  default     = "deployment@oss-vdb.iam.gserviceaccount.com"
+}
+
 module "osv_pipeline" {
   source = "../../modules/osv_pipeline"
 
   project_id                                 = "private-osv"
   datastore_name                             = "(default)"
   worker_service_account_id                  = "worker-private"
+  deployment_service_account_email           = var.deployment_service_account_email
   vulnerabilities_export_bucket              = "private-osv-vulnerabilities"
   affected_commits_backups_bucket            = "private-osv-affected-commits-backups"
   pubsub_topic_name                          = "osv-work"
@@ -30,9 +37,10 @@ module "osv_pipeline" {
 
 # Kept scoped to private-osv (not shared osv_pipeline) so deployment@oss-vdb cannot actAs privileged SAs in oss-vdb
 resource "google_project_iam_member" "deployment_service_account_user" {
+  count   = var.deployment_service_account_email != "" ? 1 : 0
   project = "private-osv"
   role    = "roles/iam.serviceAccountUser"
-  member  = "serviceAccount:deployment@oss-vdb.iam.gserviceaccount.com"
+  member  = "serviceAccount:${var.deployment_service_account_email}"
 }
 
 

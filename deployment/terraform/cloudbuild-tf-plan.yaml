@@ -20,7 +20,7 @@ steps:
   dir:  deployment/terraform/environments/oss-vdb-test
   id:   oss-vdb-test init
 - name: gcr.io/oss-vdb/terraform
-  args: ['plan', '-no-color']
+  args: ['plan', '-lock=false', '-no-color']
   dir:  deployment/terraform/environments/oss-vdb-test
   id:   oss-vdb-test plan
 
@@ -30,7 +30,7 @@ steps:
   dir:  deployment/terraform/environments/oss-vdb
   id:   oss-vdb init
 - name: gcr.io/oss-vdb/terraform
-  args: ['plan', '-no-color', '-var=impersonate_service_account=']
+  args: ['plan', '-lock=false', '-no-color', '-var=impersonate_service_account=']
   dir:  deployment/terraform/environments/oss-vdb
   id:   oss-vdb plan
 

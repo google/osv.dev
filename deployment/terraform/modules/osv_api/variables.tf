@@ -20,12 +20,6 @@ variable "_api_descriptor_file" {
   default   = "api/api_descriptor.pb"
 }
 
-variable "gcs_log_dir" {
-  type        = string
-  description = "GCS directory to store cloud build logs."
-  default     = ""
-}
-
 variable "postgres_primary_instance_name" {
   type        = string
   description = "Name of the primary Cloud SQL PostgreSQL instance to replicate from and create the read-only user on."

@@ -277,7 +277,7 @@
   db_prefix: ['DHI-']
   accepted_ecosystems: ['Docker Hardened Images']
   ignore_git: True
-  human_link: 'https://scout.docker.com/v/{{ BUG_ID }}'
+  human_link: 'https://scout.docker.com/v/{{ .ID }}'
   link: 'https://github.com/docker-hardened-images/advisories/blob/main/'
   editable: False
   strict_validation: True

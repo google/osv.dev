@@ -28,7 +28,8 @@ flowchart LR
   `PodMonitoring` that scrapes the `metrics` port every 15s on pods whose `name` label is one of
   `worker-private`, `workers-reimport`, `workers-cves`, `recoverer`, `gitter`, or `custommetrics`.
 - **kube-state-metrics**: [`base/ksm/`](../../../base/ksm/) deploys KSM to every environment.
-  Its `ClusterPodMonitoring` keeps only `kube_(cronjob|pod|job|deployment)*` series to keep
+  Its `osv-kube-state-metrics` `ClusterPodMonitoring` keeps only `kube_(cronjob|job)*` series to
+  avoid duplicating `pod` and `deployment` metrics already collected by GKE's managed KSM and to keep
   costs down.
 - **Grafana**: [`grafana_deployment.yaml`](grafana_deployment.yaml) runs
   [Plutono](https://github.com/credativ/plutono), an Apache 2.0 fork of Grafana 7.5.

@@ -27,6 +27,7 @@ import (
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/pubsub/v2"
 	osvdatastore "github.com/google/osv.dev/go/internal/database/datastore"
+	domainmodels "github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/google/osv.dev/go/osv/models"
@@ -51,19 +52,25 @@ type Update struct {
 }
 
 type Updater struct {
-	Ch        chan Update
-	wg        sync.WaitGroup
-	dsClient  *datastore.Client
-	gcsClient clients.CloudStorage
-	publisher clients.Publisher
+	Ch          chan Update
+	wg          sync.WaitGroup
+	dsClient    *datastore.Client
+	gcsClient   clients.CloudStorage
+	publisher   clients.Publisher
+	pgVulnStore domainmodels.VulnerabilityStore
 }
 
 func NewUpdater(ctx context.Context, dsClient *datastore.Client, gcsClient clients.CloudStorage, publisher clients.Publisher) *Updater {
+	return NewUpdaterWithPostgres(ctx, dsClient, gcsClient, publisher, nil)
+}
+
+func NewUpdaterWithPostgres(ctx context.Context, dsClient *datastore.Client, gcsClient clients.CloudStorage, publisher clients.Publisher, pgVulnStore domainmodels.VulnerabilityStore) *Updater {
 	u := &Updater{
-		Ch:        make(chan Update),
-		dsClient:  dsClient,
-		gcsClient: gcsClient,
-		publisher: publisher,
+		Ch:          make(chan Update),
+		dsClient:    dsClient,
+		gcsClient:   gcsClient,
+		publisher:   publisher,
+		pgVulnStore: pgVulnStore,
 	}
 	u.wg.Go(func() {
 		u.run(ctx)
@@ -224,6 +231,43 @@ ConsumerLoop:
 		if _, err := tx.Commit(); err != nil {
 			logger.Error("failed to commit transaction", slog.String("id", id), slog.Any("err", err))
 			continue
+		}
+
+		// Update PostgreSQL regardless of whether the GCS write below hits a generation
+		// mismatch (which delegates GCS repair to recoverer), since PostgreSQL Mutate
+		// runs its own optimistic-concurrency retry loop.
+		if u.pgVulnStore != nil {
+			_, err := u.pgVulnStore.Mutate(ctx, id, func(pgVuln *osvschema.Vulnerability) (bool, error) {
+				pgChanged := false
+				for _, upd := range updates {
+					switch upd.Field {
+					case updateFieldAlias:
+						if slices.Compare(pgVuln.GetAliases(), upd.Value) != 0 {
+							pgVuln.Aliases = upd.Value
+							pgChanged = true
+						}
+					case updateFieldUpstream:
+						if slices.Compare(pgVuln.GetUpstream(), upd.Value) != 0 {
+							pgVuln.Upstream = upd.Value
+							pgChanged = true
+						}
+					case updateFieldRelated:
+						if slices.Compare(pgVuln.GetRelated(), upd.Value) != 0 {
+							pgVuln.Related = upd.Value
+							pgChanged = true
+						}
+					}
+				}
+				if !pgChanged {
+					return false, nil
+				}
+				pgVuln.Modified = timestamppb.New(modified)
+
+				return true, nil
+			})
+			if err != nil && !errors.Is(err, domainmodels.ErrNotFound) {
+				logger.Error("failed to update vuln in postgres", slog.String("id", id), slog.Any("err", err))
+			}
 		}
 
 		// Update GCS

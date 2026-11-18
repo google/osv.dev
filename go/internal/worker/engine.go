@@ -2,6 +2,8 @@ package worker
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -116,11 +118,27 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 		enriched.Modified = enriched.GetWithdrawn()
 	}
 
+	var rawSHA256 []byte
+	if task.SHA256 != "" {
+		if decoded, err := hex.DecodeString(task.SHA256); err == nil {
+			rawSHA256 = decoded
+		}
+	}
+	if len(rawSHA256) == 0 && len(task.RawJSON) > 0 {
+		sum := sha256.Sum256(task.RawJSON)
+		rawSHA256 = sum[:]
+	}
+
 	if err := e.Stores.Vulnerability.Write(ctx, models.WriteRequest{
 		ID:              enriched.GetId(),
 		Source:          task.SourceID,
 		Path:            task.PathInSource,
 		Raw:             task.Vuln,
+		RawJSON:         task.RawJSON,
+		RawSHA256:       rawSHA256,
+		FetchedAt:       task.ReceivedTime,
+		GitCommitHash:   task.GitCommitHash,
+		GCSGeneration:   task.GCSGeneration,
 		Enriched:        enriched,
 		AffectedCommits: commits,
 	}); err != nil {

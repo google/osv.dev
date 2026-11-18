@@ -41,6 +41,19 @@ spec:
             value: failed-tasks
           - name: NOTIFY_PYPI
             value: "false"
+          - name: POSTGRES_PORT
+            value: "6432"
+          - name: POSTGRES_USER
+            value: "osv-worker"
+          - name: POSTGRES_DB
+            value: "osv"
+          - name: POSTGRES_SSLMODE
+            value: "require"
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: osv-db-worker-password
+                key: password
         ports:
         - name: metrics
           containerPort: 9090

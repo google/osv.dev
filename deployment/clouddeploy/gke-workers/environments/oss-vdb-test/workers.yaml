@@ -12,6 +12,8 @@ spec:
             value: oss-vdb-test
           - name: OSV_VULNERABILITIES_BUCKET
             value: osv-test-vulnerabilities
+          - name: POSTGRES_HOST
+            value: "172.24.1.3"
         resources:
           requests:
             cpu: "0.9"

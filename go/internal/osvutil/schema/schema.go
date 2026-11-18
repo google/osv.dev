@@ -112,3 +112,15 @@ func ReplaceJSONNullEscapes(data []byte) []byte {
 		off = pos + 6
 	}
 }
+
+// SanitizeJSON replaces invalid UTF-8 sequences, raw NUL (0x00) bytes, and
+// unescaped JSON \u0000 escape sequences with U+FFFD so the JSON is valid for
+// both protojson and PostgreSQL TEXT/JSONB columns.
+func SanitizeJSON(data []byte) []byte {
+	data = bytes.ToValidUTF8(data, []byte("\uFFFD"))
+	if bytes.IndexByte(data, 0) >= 0 {
+		data = bytes.ReplaceAll(data, []byte{0}, []byte("\uFFFD"))
+	}
+
+	return ReplaceJSONNullEscapes(data)
+}

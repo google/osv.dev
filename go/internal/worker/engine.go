@@ -162,6 +162,9 @@ func (e *Engine) isSemanticallyDifferent(vuln1, vuln2 *osvschema.Vulnerability) 
 // semanticallyIgnoredFields cleared. Nested messages and lists are shared with
 // vuln rather than copied, so the result must only be read, never modified.
 func withoutSemanticallyIgnoredFields(vuln *osvschema.Vulnerability) *osvschema.Vulnerability {
+	if vuln == nil {
+		return nil
+	}
 	src := vuln.ProtoReflect()
 	dst := (&osvschema.Vulnerability{}).ProtoReflect()
 	src.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {

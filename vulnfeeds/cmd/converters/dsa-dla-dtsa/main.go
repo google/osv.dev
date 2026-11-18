@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -490,8 +491,8 @@ func main() {
 
 	flag.Parse()
 
-	if *outputDir == "" {
-		logger.Error("Output directory is required")
+	if *outputDir == "" && !*uploadToGCS {
+		logger.Error("Output directory is required when not uploading to GCS")
 		logger.Close()
 		os.Exit(1) //nolint:gocritic
 	}
@@ -501,6 +502,10 @@ func main() {
 		logger.Close()
 		os.Exit(1)
 	}
+}
+
+func gcsOutputPrefix(outputDir string, advType AdvisoryType) string {
+	return path.Join(outputDir, strings.ToLower(string(advType))+"-osv")
 }
 
 func run(webwmlRepo, securityTrackerRepo, outputDir, outputBucket string, uploadToGCS, doDeletions bool, numWorkers int) error {
@@ -529,7 +534,6 @@ func run(webwmlRepo, securityTrackerRepo, outputDir, outputBucket string, upload
 	}
 
 	advisoryTypes := []AdvisoryType{AdvisoryTypeDSA, AdvisoryTypeDLA, AdvisoryTypeDTSA}
-	var allVulnerabilities []*osvschema.Vulnerability
 
 	for _, advType := range advisoryTypes {
 		logger.Info("Converting advisories", "type", advType)
@@ -539,9 +543,12 @@ func run(webwmlRepo, securityTrackerRepo, outputDir, outputBucket string, upload
 			return fmt.Errorf("error converting type %s: %w", advType, err)
 		}
 
-		allVulnerabilities = append(allVulnerabilities, vulns...)
-
-		if !uploadToGCS {
+		if uploadToGCS {
+			gcsPrefix := gcsOutputPrefix(outputDir, advType)
+			logger.Info("Uploading to GCS", "bucket", outputBucket, "prefix", gcsPrefix, "type", advType)
+			ctx := context.Background()
+			writer.UploadVulnsToGCS(ctx, "debian-osv-"+strings.ToLower(string(advType)), uploadToGCS, outputBucket, "", numWorkers, gcsPrefix, vulns, doDeletions)
+		} else {
 			advOutputDir := filepath.Join(outputDir, strings.ToLower(string(advType)))
 			if err := os.MkdirAll(advOutputDir, 0755); err != nil {
 				return fmt.Errorf("failed to create output dir %s: %w", advOutputDir, err)
@@ -569,11 +576,7 @@ func run(webwmlRepo, securityTrackerRepo, outputDir, outputBucket string, upload
 		}
 	}
 
-	if uploadToGCS {
-		logger.Info("Uploading to GCS", "bucket", outputBucket)
-		ctx := context.Background()
-		writer.UploadVulnsToGCS(ctx, "debian-osv", uploadToGCS, outputBucket, "", numWorkers, outputDir, allVulnerabilities, doDeletions)
-	} else {
+	if !uploadToGCS {
 		logger.Info("Skipping GCS upload")
 	}
 

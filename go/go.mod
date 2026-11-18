@@ -1,6 +1,6 @@
 module github.com/google/osv.dev/go
 
-go 1.27.1
+go 1.27.3
 
 replace osv.dev/bindings/go => ../bindings/go
 
@@ -23,7 +23,7 @@ require (
 	github.com/klauspost/compress v1.20.3
 	github.com/microcosm-cc/bluemonday v1.0.27
 	github.com/nikolalohinski/gonja/v2 v2.9.1
-	github.com/ossf/osv-schema/bindings/go v0.0.0-20261026052736-6410c13304f9
+	github.com/ossf/osv-schema/bindings/go v0.0.0-20261112022147-972b058557d9
 	github.com/package-url/packageurl-go v0.1.7
 	github.com/pandatix/go-cvss v0.6.4
 	github.com/prometheus/client_golang v1.25.0
@@ -40,8 +40,8 @@ require (
 	go.opentelemetry.io/otel/trace v1.47.0
 	go.yaml.in/yaml/v4 v4.0.0-rc.6
 	golang.org/x/oauth2 v0.37.0
-	golang.org/x/sync v0.24.0
-	golang.org/x/text v0.43.0
+	golang.org/x/sync v0.25.0
+	golang.org/x/text v0.44.0
 	google.golang.org/api v0.306.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20260928230214-8a89bd6388cc
 	google.golang.org/grpc v1.84.0
@@ -123,10 +123,10 @@ require (
 	go.opentelemetry.io/proto/otlp v1.11.0 // indirect
 	go.uber.org/atomic v1.12.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
-	golang.org/x/crypto v0.58.0 // indirect
+	golang.org/x/crypto v0.59.0 // indirect
 	golang.org/x/exp v0.0.0-20260508232706-74f9aab9d74a // indirect
 	golang.org/x/net v0.62.0 // indirect
-	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
 	google.golang.org/genproto v0.0.0-20260715232425-e75dac1f907d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20261019180522-ce908d29299b // indirect

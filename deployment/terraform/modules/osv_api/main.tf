@@ -8,6 +8,7 @@ resource "google_cloud_run_service" "api_backend" {
 
   template {
     spec {
+      service_account_name = var.service_account_email
       containers {
         image = "us-docker.pkg.dev/cloudrun/container/hello:latest" # Placeholder image.
       }
@@ -35,6 +36,7 @@ resource "google_cloud_run_v2_service" "api_backend_batch" {
   location = "us-central1"
 
   template {
+    service_account = var.service_account_email
     containers {
       image = "us-docker.pkg.dev/cloudrun/container/hello:latest" # Placeholder image.
     }
@@ -52,17 +54,20 @@ resource "google_cloud_run_v2_service" "api_backend_batch" {
   }
 }
 
-variable "_api_descriptor_file" {
-  # This isn't actually sensitive, but it's outputted as a massive base64 string which really floods the plan output.
-  sensitive = true
-  type      = string
-  default   = "api/api_descriptor.pb"
+resource "google_cloud_run_service_iam_member" "frontend_api_backend_invoker" {
+  project  = var.project_id
+  location = google_cloud_run_service.api_backend.location
+  service  = google_cloud_run_service.api_backend.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${var.frontend_service_account_email}"
 }
 
-variable "gcs_log_dir" {
-  type        = string
-  description = "GCS directory to store cloud build logs."
-  default     = ""
+resource "google_cloud_run_service_iam_member" "frontend_api_backend_batch_invoker" {
+  project  = var.project_id
+  location = google_cloud_run_v2_service.api_backend_batch.location
+  service  = google_cloud_run_v2_service.api_backend_batch.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${var.frontend_service_account_email}"
 }
 
 resource "google_endpoints_service" "grpc_service" {
@@ -82,7 +87,6 @@ resource "google_project_service" "grpc_service_api" {
   project = var.project_id
   service = google_endpoints_service.grpc_service.service_name
 }
-
 
 data "external" "esp_version" {
   program = ["bash", "${path.module}/scripts/esp_full_version", "${var.esp_version}"]
@@ -121,7 +125,6 @@ data "google_container_registry_image" "api" {
   depends_on = [null_resource.grpc_proxy_image]
 }
 
-
 resource "google_cloud_run_service" "api" {
   project  = var.project_id
   name     = "osv-grpc-v1"
@@ -129,6 +132,7 @@ resource "google_cloud_run_service" "api" {
 
   template {
     spec {
+      service_account_name = var.service_account_email
       containers {
         image = data.google_container_registry_image.api.image_url
         ports {

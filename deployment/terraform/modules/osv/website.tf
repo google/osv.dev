@@ -3,6 +3,7 @@ resource "google_cloud_run_v2_service" "website" {
   project  = var.project_id
   name     = "osv-website"
   location = "us-west2"
+  ingress  = var.website_ingress
 
   template {
     containers {
@@ -20,12 +21,6 @@ resource "google_cloud_run_v2_service" "website" {
     ]
     prevent_destroy = true
   }
-}
-
-resource "google_project_iam_member" "website_secret_accessor" {
-  project = var.project_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
 }
 
 # Allow unauthenticated access

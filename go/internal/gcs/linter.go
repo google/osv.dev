@@ -37,34 +37,50 @@ func NewLinterStore(bucket *storage.BucketHandle, prefix string) *LinterStore {
 	}
 }
 
-// ListSources lists all source directories with linter findings under the prefix.
-func (s *LinterStore) ListSources(ctx context.Context) ([]string, error) {
+// parseLinterResultObjectName extracts the source name from an object path matching
+// "<prefix><source>/result.json", returning ("", false) for non-matching paths.
+func parseLinterResultObjectName(prefix, objName string) (string, bool) {
+	if !strings.HasPrefix(objName, prefix) {
+		return "", false
+	}
+	rel := strings.TrimPrefix(objName, prefix)
+	source, file, ok := strings.Cut(rel, "/")
+	if !ok || file != "result.json" || source == "" || source == "." || source == ".." {
+		return "", false
+	}
+
+	return source, true
+}
+
+// ListSourceInfos lists all source result.json objects under the prefix along with their GCS metadata.
+func (s *LinterStore) ListSourceInfos(ctx context.Context) ([]models.LinterSourceInfo, error) {
 	it := s.bucket.Objects(ctx, &storage.Query{
-		Prefix:    s.prefix,
-		Delimiter: "/",
+		Prefix: s.prefix,
 	})
 
-	var sources []string
+	var infos []models.LinterSourceInfo
 	for {
 		attrs, err := it.Next()
 		if errors.Is(err, iterator.Done) {
 			break
 		}
 		if err != nil {
-			return nil, fmt.Errorf("failed to list linter sources: %w", err)
+			return nil, fmt.Errorf("failed to list linter source infos: %w", err)
 		}
-		if attrs.Prefix != "" {
-			src := strings.TrimPrefix(attrs.Prefix, s.prefix)
-			src = strings.TrimSuffix(src, "/")
-			if src != "" {
-				sources = append(sources, src)
-			}
+		if src, ok := parseLinterResultObjectName(s.prefix, attrs.Name); ok {
+			infos = append(infos, models.LinterSourceInfo{
+				Source:     src,
+				Updated:    attrs.Updated,
+				Generation: attrs.Generation,
+			})
 		}
 	}
 
-	slices.Sort(sources)
+	slices.SortFunc(infos, func(a, b models.LinterSourceInfo) int {
+		return strings.Compare(a.Source, b.Source)
+	})
 
-	return sources, nil
+	return infos, nil
 }
 
 // GetFindings downloads the result.json findings file for the specified source.

@@ -162,6 +162,7 @@ type SourceRepository struct {
 	DirectoryPath           string                      `datastore:"directory_path"`
 	LastSyncedHash          string                      `datastore:"last_synced_hash"`
 	LastUpdateDate          *time.Time                  `datastore:"last_update_date"`
+	RESTHTTPLastModified    *time.Time                  `datastore:"rest_http_last_modified,omitempty"`
 	IgnorePatterns          []string                    `datastore:"ignore_patterns"`
 	Editable                bool                        `datastore:"editable"`
 	Extension               string                      `datastore:"extension"`

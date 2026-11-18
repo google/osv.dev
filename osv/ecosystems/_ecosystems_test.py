@@ -226,3 +226,23 @@ class EcosystemTest(unittest.TestCase):
     # Nested TuxCare returns None (no infinite recursion).
     self.assertIsNone(ecosystems.get('TuxCare:TuxCare'))
     self.assertIsNone(ecosystems.get('TuxCare:TuxCare:Red Hat'))
+
+  def test_tuxcare_rpm_inner_names(self):
+    """TuxCare CentOS, CentOS-Stream, OracleLinux and RHEL use RPM order."""
+    for name in ('TuxCare:CentOS:7', 'TuxCare:CentOS-Stream:8',
+                 'TuxCare:OracleLinux:7', 'TuxCare:RHEL:8'):
+      self.assertTrue(ecosystems.is_known(name), name)
+      self.assertIsNotNone(ecosystems.get(name), name)
+    # Only inside TuxCare: they are not OSV ecosystems on their own.
+    self.assertFalse(ecosystems.is_known('CentOS:7'))
+    self.assertIsNone(ecosystems.get('CentOS:7'))
+    self.assertFalse(ecosystems.is_known('TuxCare:TuxCare:CentOS:7'))
+
+    # CLSA-2025-1751271968 fixes openssl in 1:1.0.2k-26.el7_9.tuxcare.els4.
+    centos = ecosystems.get('TuxCare:CentOS:7')
+    self.assertLess(
+        centos.sort_key('1:1.0.2k-19.el7'),
+        centos.sort_key('1:1.0.2k-26.el7_9.tuxcare.els4'))
+    self.assertEqual(
+        centos.sort_key('1:1.0.2k-19.el7'),
+        ecosystems.get('Red Hat').sort_key('1:1.0.2k-19.el7'))

@@ -107,10 +107,10 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 		metrics.RecordWorkerTask(metrics.TaskStatusSuccess, action, workPool)
 		if deleted {
 			metrics.RecordUpstreamWithdrawal(task.SourceID)
-		} else {
-			metrics.RecordSourceRecordDiscovered(task.SourceID, time.Now())
+		} else if workPool != "reimport" {
+			metrics.RecordSourceRecordDiscovered(task.SourceID)
 		}
-		logTaskLatency(taskCtx, task)
+		logTaskLatency(taskCtx, task, workPool)
 		m.Ack()
 	}
 }
@@ -154,7 +154,7 @@ func (s *Subscriber) timeFromUnixSeconds(tsString string) (*time.Time, error) {
 	return &ts, nil
 }
 
-func logTaskLatency(ctx context.Context, task Task) {
+func logTaskLatency(ctx context.Context, task Task, workPool string) {
 	if task.ReceivedTime == nil {
 		return
 	}
@@ -169,7 +169,9 @@ func logTaskLatency(ctx context.Context, task Task) {
 	if task.SourceTime != nil {
 		srcLatency := now.Sub(*task.SourceTime)
 		logAttrs = append(logAttrs, slog.Int64("src_latency", int64(srcLatency.Seconds())))
-		metrics.RecordPublishedToAvailableLag(task.SourceID, srcLatency)
+		if workPool != "reimport" {
+			metrics.RecordPublishedToAvailableLag(task.SourceID, srcLatency)
+		}
 	}
 	logger.InfoContext(ctx, fmt.Sprintf("Task update (source_id=%s) latency %d", task.SourceID, latencySeconds), logAttrs...)
 }

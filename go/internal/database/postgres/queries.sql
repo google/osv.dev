@@ -4,7 +4,7 @@ FROM vulnerabilities
 WHERE id = ANY(@ids::text[]);
 
 -- name: GetVulnerabilityModified :many
-SELECT id, (data->>'modified')::timestamptz AS modified
+SELECT id, modified
 FROM vulnerabilities
 WHERE id = ANY(@ids::text[]);
 

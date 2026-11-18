@@ -21,15 +21,7 @@ data:
           timeInterval: 15s
       - name: Cloud Monitoring
         uid: cloud-monitoring
-        type: googlecloud-monitoring-datasource
-        access: proxy
-        editable: false
-        jsonData:
-          authenticationType: gce
-          defaultProject: oss-vdb-test
-      - name: Cloud Logging
-        uid: cloud-logging
-        type: googlecloud-logging-datasource
+        type: stackdriver
         access: proxy
         editable: false
         jsonData:

@@ -99,6 +99,23 @@ func TestCollectMetrics(t *testing.T) {
 				},
 			},
 			{
+				Name:       "pypa",
+				Type:       models.SourceRepositoryTypeGit,
+				IDPrefixes: []string{"PYSEC-"},
+				Git: &models.SourceRepoGit{
+					URL: "https://github.com/pypa/advisory-database",
+				},
+			},
+			{
+				Name:       "curl",
+				Type:       models.SourceRepositoryTypeREST,
+				IDPrefixes: []string{"CURL-"},
+				REST: &models.SourceRepoREST{
+					URL:         "https://curl.se/docs/vuln.json",
+					LastUpdated: &lastUpdated,
+				},
+			},
+			{
 				Name:       "android",
 				Type:       models.SourceRepositoryTypeBucket,
 				IDPrefixes: []string{"A-", "ASB-A", "PUB-A"},
@@ -135,7 +152,7 @@ func TestCollectMetrics(t *testing.T) {
 	}
 
 	_ = gcsMock.WriteObject(ctx, "all.zip", []byte("zip-bytes-12345"), nil)
-	_ = gcsMock.WriteObject(ctx, "modified_id.csv", []byte("2026-10-15T00:00:00Z,PyPI/GHSA-1111\n2026-10-15T00:00:00Z,npm/GHSA-1111\n2026-10-15T00:00:00Z,PyPI/GHSA-2222\n"), nil)
+	_ = gcsMock.WriteObject(ctx, "modified_id.csv", []byte("2026-10-15T06:00:00Z,PyPI/PYSEC-2026-1\n2026-10-15T00:00:00Z,PyPI/GHSA-1111\n2026-10-15T00:00:00Z,npm/GHSA-1111\n2026-10-14T12:00:00Z,PyPI/GHSA-2222\n"), nil)
 	_ = gcsMock.WriteObject(ctx, "ecosystems.txt", []byte("PyPI\n"), nil)
 	_ = gcsMock.WriteObject(ctx, "PyPI/all.zip", []byte("pypi-zip"), nil)
 	_ = gcsMock.WriteObject(ctx, "PyPI/modified_id.csv", []byte("2026-10-15T00:00:00Z,GHSA-1111\n2026-10-15T00:00:00Z,GHSA-2222\n"), nil)
@@ -159,7 +176,9 @@ func TestCollectMetrics(t *testing.T) {
 	metricsText := string(body)
 
 	wantMetrics := []string{
-		`osv_importer_last_new_record_timestamp_seconds{source="ghsa"} 1.7920656e+09`,
+		`osv_importer_last_new_record_timestamp_seconds{source="ghsa"} 1.7920224e+09`,
+		`osv_importer_last_new_record_timestamp_seconds{source="pypa"} 1.792044e+09`,
+		`osv_importer_last_new_record_timestamp_seconds{source="curl"} 1.7920656e+09`,
 		`osv_recordchecker_drift{type="gcs_missing_or_stale"} 3`,
 		`osv_recordchecker_invalid_records{source="ghsa"} 2`,
 		`osv_recordchecker_invalid_records{source="android"} 1`,
@@ -167,7 +186,7 @@ func TestCollectMetrics(t *testing.T) {
 		`osv_deleter_refused_deletions{source="ghsa"} 42`,
 		`osv_data_quality_findings{rule_code="RNG:001",severity="error",source="ghsa"} 1`,
 		`osv_data_quality_findings{rule_code="PKG:001",severity="error",source="android"} 1`,
-		`osv_dataset_total_vulnerabilities{ecosystem="all"} 2`,
+		`osv_dataset_total_vulnerabilities{ecosystem="all"} 3`,
 		`osv_dataset_total_vulnerabilities{ecosystem="PyPI"} 2`,
 		`osv_export_zip_size_bytes{ecosystem="all"} 15`,
 	}

@@ -47,7 +47,7 @@ func TestList_RenderPage(t *testing.T) {
 			wantLoc:    "/list?q=requests",
 		},
 		{
-			name:       "Turbo-Frame load with page parameter returns OK",
+			name:       "Turbo-Frame load with legacy page parameter returns OK (empty page)",
 			url:        "/list?q=requests&page=2",
 			headers:    map[string]string{"Turbo-Frame": "vulnerability-table-page2"},
 			wantStatus: http.StatusOK,

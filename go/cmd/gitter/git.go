@@ -175,6 +175,9 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 				// If still failing or recovery wasn't attempted, check if we should reclone as a fallback
 				if err != nil {
 					var reason string
+					// isNotFoundError (404) is intentionally omitted here so that
+					// if an upstream repository is deleted, the local clone is removed as well, and further attempts to reclone will 404.
+					// This ensures we respect the upstream's decision to delete or private the repo, instead of serving stale content indefinitely.
 					switch {
 					case isAuthError(err):
 						reason = "401 Unauthorized / auth error"

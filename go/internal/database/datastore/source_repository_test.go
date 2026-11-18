@@ -106,7 +106,8 @@ func TestSourceRepositoryStore_Update(t *testing.T) {
 				Type: models.SourceRepositoryTypeREST,
 				REST: &models.SourceRepoREST{
 					URL:                     "http://rest.url",
-					LastUpdated:             &testTime2,
+					LastUpdated:             &testTime,
+					HTTPLastModified:        &testTime2,
 					IgnoreLastImportTime:    true,
 					IgnoreDeletionThreshold: true,
 				},
@@ -115,7 +116,8 @@ func TestSourceRepositoryStore_Update(t *testing.T) {
 				Name:                    "test-rest-repo",
 				Type:                    models.SourceRepositoryTypeREST,
 				RESTAPIURL:              "http://rest.url",
-				LastUpdateDate:          &testTime2,
+				LastUpdateDate:          &testTime,
+				RESTHTTPLastModified:    &testTime2,
 				IgnoreLastImportTime:    true,
 				IgnoreDeletionThreshold: true,
 			},
@@ -250,6 +252,29 @@ func TestSourceRepositoryStore_Get(t *testing.T) {
 	}
 	if diff := cmp.Diff(bucketRepo, gotBucket, cmpopts.EquateEmpty()); diff != "" {
 		t.Errorf("Get() Bucket repo mismatch (-want +got):\n%s", diff)
+	}
+
+	testTime2 := time.Date(2023, 10, 27, 0, 0, 0, 0, time.UTC)
+	restRepo := &models.SourceRepository{
+		Name: "test-rest-repo",
+		Type: models.SourceRepositoryTypeREST,
+		REST: &models.SourceRepoREST{
+			URL:              "http://rest.url",
+			LastUpdated:      &testTime,
+			HTTPLastModified: &testTime2,
+		},
+		GitAnalysis: &models.GitAnalysisConfig{},
+	}
+	if err := store.Update(ctx, restRepo.Name, restRepo); err != nil {
+		t.Fatalf("Failed to setup REST test data: %v", err)
+	}
+
+	gotREST, err := store.Get(ctx, "test-rest-repo")
+	if err != nil {
+		t.Fatalf("Failed to get REST repo: %v", err)
+	}
+	if diff := cmp.Diff(restRepo, gotREST, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("Get() REST repo mismatch (-want +got):\n%s", diff)
 	}
 }
 

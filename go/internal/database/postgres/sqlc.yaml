@@ -1,7 +1,7 @@
 version: "2"
 sql:
   - engine: "postgresql"
-    schema: "../../../../db_test"
+    schema: "migrations"
     queries: "queries.sql"
     gen:
       go:
@@ -11,6 +11,11 @@ sql:
         overrides:
           - db_type: "timestamptz"
             go_type: "time.Time"
+          - db_type: "timestamptz"
+            nullable: true
+            go_type:
+              type: "time.Time"
+              pointer: true
           - db_type: "jsonb"
             go_type:
               type: "[]byte"

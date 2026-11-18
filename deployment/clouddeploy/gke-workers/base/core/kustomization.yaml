@@ -1,6 +1,7 @@
 resources:
 - backup.yaml
 - exporter.yaml
+- exporter-deleter.yaml
 - gitter.yaml
 - importer.yaml
 - importer-deleter.yaml

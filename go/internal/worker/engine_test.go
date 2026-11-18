@@ -232,3 +232,131 @@ func TestPipeline_EndToEnd_PortedFromPython(t *testing.T) {
 		t.Errorf("Expected modified date to be after %v, got %v", existingModified, enriched.GetModified().AsTime())
 	}
 }
+
+func mustNewStruct(t *testing.T, m map[string]any) *structpb.Struct {
+	t.Helper()
+	s, err := structpb.NewStruct(m)
+	if err != nil {
+		t.Fatalf("Failed to construct struct: %v", err)
+	}
+
+	return s
+}
+
+func TestIsSemanticallyDifferent(t *testing.T) {
+	cvesMap := func(t *testing.T, cveID string) *structpb.Struct {
+		t.Helper()
+		return mustNewStruct(t, map[string]any{
+			"cves_map": map[string]any{"cves": []any{map[string]any{"id": cveID}}},
+		})
+	}
+	baseVuln := func(t *testing.T) *osvschema.Vulnerability {
+		t.Helper()
+		return &osvschema.Vulnerability{
+			Id:            "USN-0000-1",
+			SchemaVersion: "1.7.0",
+			Summary:       "summary",
+			Published:     timestamppb.New(time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)),
+			Modified:      timestamppb.New(time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC)),
+			Upstream:      []string{"CVE-2026-0001"},
+			Affected: []*osvschema.Affected{
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "Ubuntu:22.04:LTS",
+						Name:      "linux",
+						Purl:      "pkg:deb/ubuntu/linux?arch=source&distro=jammy",
+					},
+					Versions:         []string{"1.0", "2.0"},
+					DatabaseSpecific: cvesMap(t, "CVE-2026-0001"),
+				},
+			},
+		}
+	}
+
+	tests := []struct {
+		name   string
+		mutate func(t *testing.T, v *osvschema.Vulnerability)
+		want   bool
+	}{
+		{
+			name:   "identical",
+			mutate: func(*testing.T, *osvschema.Vulnerability) {},
+			want:   false,
+		},
+		{
+			name: "only ignored fields differ",
+			mutate: func(_ *testing.T, v *osvschema.Vulnerability) {
+				v.Modified = timestamppb.New(time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC))
+				v.Published = nil
+				v.SchemaVersion = "1.0.0"
+			},
+			want: false,
+		},
+		{
+			name: "empty and unset lists are equal",
+			mutate: func(_ *testing.T, v *osvschema.Vulnerability) {
+				v.Aliases = []string{}
+			},
+			want: false,
+		},
+		{
+			name: "summary differs",
+			mutate: func(_ *testing.T, v *osvschema.Vulnerability) {
+				v.Summary = "other summary"
+			},
+			want: true,
+		},
+		{
+			name: "purl differs",
+			mutate: func(_ *testing.T, v *osvschema.Vulnerability) {
+				v.Affected[0].Package.Purl = "pkg:deb/ubuntu/linux@1.0?arch=source&distro=jammy"
+			},
+			want: true,
+		},
+		{
+			name: "versions order differs",
+			mutate: func(_ *testing.T, v *osvschema.Vulnerability) {
+				v.Affected[0].Versions = []string{"2.0", "1.0"}
+			},
+			want: true,
+		},
+		{
+			name: "nested database_specific differs",
+			mutate: func(t *testing.T, v *osvschema.Vulnerability) {
+				t.Helper()
+				v.Affected[0].DatabaseSpecific = cvesMap(t, "CVE-2026-9999")
+			},
+			want: true,
+		},
+		{
+			name: "withdrawn added",
+			mutate: func(_ *testing.T, v *osvschema.Vulnerability) {
+				v.Withdrawn = timestamppb.New(time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC))
+			},
+			want: true,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			vuln1 := baseVuln(t)
+			vuln2 := baseVuln(t)
+			tc.mutate(t, vuln2)
+
+			e := &Engine{}
+			if got := e.isSemanticallyDifferent(vuln1, vuln2); got != tc.want {
+				t.Errorf("isSemanticallyDifferent() = %v, want %v", got, tc.want)
+			}
+			if got := e.isSemanticallyDifferent(vuln2, vuln1); got != tc.want {
+				t.Errorf("isSemanticallyDifferent() with swapped args = %v, want %v", got, tc.want)
+			}
+
+			// The comparison must not modify either input.
+			wantVuln2 := baseVuln(t)
+			tc.mutate(t, wantVuln2)
+			if !proto.Equal(vuln1, baseVuln(t)) || !proto.Equal(vuln2, wantVuln2) {
+				t.Errorf("isSemanticallyDifferent() modified its inputs")
+			}
+		})
+	}
+}

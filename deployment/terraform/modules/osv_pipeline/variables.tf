@@ -10,6 +10,36 @@ variable "datastore_name" {
   default     = "(default)"
 }
 
+variable "postgres_instance_name" {
+  type        = string
+  description = "The name of the primary Cloud SQL PostgreSQL instance."
+  default     = "osv-db"
+}
+
+variable "postgres_region" {
+  type        = string
+  description = "The GCP region for the primary Cloud SQL PostgreSQL instance."
+  default     = "us-central1"
+}
+
+variable "postgres_tier" {
+  type        = string
+  description = "The machine tier for the primary Cloud SQL Enterprise Plus instance."
+  default     = "db-perf-optimized-N-2"
+}
+
+variable "postgres_availability_type" {
+  type        = string
+  description = "The availability type for the primary Cloud SQL instance (REGIONAL or ZONAL)."
+  default     = "ZONAL"
+}
+
+variable "postgres_ipv4_enabled" {
+  type        = bool
+  description = "Whether to assign a public IPv4 address to the primary Cloud SQL instance (for Cloud SQL Auth Proxy access from outside the VPC)."
+  default     = true
+}
+
 # Identity & Security
 variable "worker_service_account_id" {
   type        = string

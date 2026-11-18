@@ -38,16 +38,6 @@ variable "osv_dev_sitemap_bucket" {
   description = "Name of bucket to store the osv.dev sitemap."
 }
 
-variable "api_url" {
-  type        = string
-  description = "URL to serve the OSV API on. Domain ownership and DNS settings has to be set up manually."
-}
-
-variable "esp_version" {
-  type        = string
-  description = "ESP version to use for OSV API frontend image."
-}
-
 variable "website_domain" {
   type        = string
   description = "Domain to serve the OSV website on. Domain ownership and DNS settings must be manually configured."
@@ -81,5 +71,26 @@ variable "indexer_subscription" {
   type        = string
   description = "Name of indexer Pub/Sub subscription."
   default     = "indexer-work-sub"
+}
+
+variable "vulnerabilities_export_bucket" {
+  type        = string
+  description = "Name of bucket storing exported vulnerability protos and JSONs."
+}
+
+variable "failed_tasks_topic_name" {
+  type        = string
+  description = "Name of the failed-tasks Pub/Sub topic."
+}
+
+variable "datastore_database_id" {
+  type        = string
+  description = "The resource ID of the Datastore database."
+}
+
+variable "website_ingress" {
+  type        = string
+  description = "Optional Cloud Run ingress setting for osv-website."
+  default     = null
 }
 

@@ -10,6 +10,7 @@ spec:
         run.googleapis.com/network-interfaces: '[{"network":"default","subnetwork":"default"}]'
         run.googleapis.com/vpc-access-egress: private-ranges-only
     spec:
+      serviceAccountName: osv-frontend@oss-vdb.iam.gserviceaccount.com
       containers:
       - image: osv-server
         ports:
@@ -25,9 +26,9 @@ spec:
         - name: OSV_NORMALIZE_MATCH_NAMES
           value: "true"
         - name: POSTGRES_SHADOW_RATE
-          value: "0.2"
+          value: "0.0"
         - name: POSTGRES_HOST
-          value: "10.25.0.3"
+          value: "10.25.1.7"
         - name: POSTGRES_PORT
           value: "6432"
         - name: POSTGRES_USER
@@ -39,7 +40,7 @@ spec:
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: postgres-readonly-password
+              name: osv-db-readonly-password
               key: latest
         resources:
           limits:

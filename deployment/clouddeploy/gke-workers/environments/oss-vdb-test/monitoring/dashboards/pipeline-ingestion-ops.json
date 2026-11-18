@@ -3,23 +3,20 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": {
-          "type": "grafana",
-          "uid": "-- Grafana --"
-        },
+        "datasource": "-- Plutono --",
         "enable": true,
         "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
         "name": "Annotations & Alerts",
         "type": "dashboard"
       }
     ]
   },
   "editable": false,
-  "fiscalYearStartMonth": 0,
+  "gnetId": null,
   "graphTooltip": 1,
   "id": null,
   "links": [],
-  "liveNow": false,
   "panels": [
     {
       "collapsed": false,
@@ -34,10 +31,7 @@
       "type": "row"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "gmp"
-      },
+      "datasource": "GMP (Prometheus)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -86,29 +80,20 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "11.5.0",
+      "pluginVersion": "7.5.52",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "sum(pubsub_googleapis_com:subscription_num_undelivered_messages{subscription_id=~\"default|.*tasks.*\"}) or sum(pubsub_googleapis_com:subscription_num_undelivered_messages{subscription_id=\"default\"})",
-          "instant": true,
+          "refId": "A",
           "legendFormat": "Default Tasks Backlog",
-          "range": false,
-          "refId": "A"
+          "instant": true
         }
       ],
       "title": "Default Tasks Backlog",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "gmp"
-      },
+      "datasource": "GMP (Prometheus)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -157,29 +142,20 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "11.5.0",
+      "pluginVersion": "7.5.52",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "sum(pubsub_googleapis_com:subscription_num_undelivered_messages{subscription_id=~\".*reimport.*\"})",
-          "instant": true,
+          "refId": "A",
           "legendFormat": "Reimport Backlog",
-          "range": false,
-          "refId": "A"
+          "instant": true
         }
       ],
       "title": "Reimport Queue Backlog",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "gmp"
-      },
+      "datasource": "GMP (Prometheus)",
       "description": "Current age of the single oldest unacknowledged message across Pub/Sub subscriptions (labeled with its subscription_id). Drops immediately once the message is acknowledged or expires.",
       "fieldConfig": {
         "defaults": {
@@ -229,29 +205,20 @@
         },
         "textMode": "value_and_name"
       },
-      "pluginVersion": "11.5.0",
+      "pluginVersion": "7.5.52",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "topk(1, max by (subscription_id) (pubsub_googleapis_com:subscription_oldest_unacked_message_age))",
-          "instant": true,
+          "refId": "A",
           "legendFormat": "{{subscription_id}}",
-          "range": false,
-          "refId": "A"
+          "instant": true
         }
       ],
       "title": "Oldest Unacked Message Age",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "gmp"
-      },
+      "datasource": "GMP (Prometheus)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -292,19 +259,13 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "11.5.0",
+      "pluginVersion": "7.5.52",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "sum(kube_deployment_status_replicas_available{deployment=~\"workers.*\"}) or sum(kube_deployment_status_replicas_available{deployment=\"workers\"})",
-          "instant": true,
+          "refId": "A",
           "legendFormat": "Active Workers",
-          "range": false,
-          "refId": "A"
+          "instant": true
         }
       ],
       "title": "Worker Pool Active Replicas",
@@ -323,144 +284,194 @@
       "type": "row"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "gmp"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "lineWidth": 2
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
         "y": 6
       },
+      "hiddenSeries": false,
       "id": 5,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
       },
-      "pluginVersion": "11.5.0",
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "sum by (subscription_id) (pubsub_googleapis_com:subscription_num_undelivered_messages)",
-          "legendFormat": "{{subscription_id}}",
-          "range": true,
-          "refId": "A"
+          "refId": "A",
+          "legendFormat": "{{subscription_id}}"
         }
       ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
       "title": "Pub/Sub Queue Depth by Topic / Subscription",
-      "type": "timeseries"
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "gmp"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": true,
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "lineWidth": 2
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
         "y": 6
       },
+      "hiddenSeries": false,
       "id": 6,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
       },
-      "pluginVersion": "11.5.0",
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "sum(rate(pubsub_googleapis_com:topic_send_message_operation_count{topic_id=~\"tasks|reimport|cves\"}[5m]))",
-          "legendFormat": "Intake Rate (Tasks In)",
-          "range": true,
-          "refId": "A"
+          "refId": "A",
+          "legendFormat": "Intake Rate (Tasks In)"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "sum(rate(osv_worker_tasks_processed_total[5m]))",
-          "legendFormat": "Drain Rate (Worker Tasks Out)",
-          "range": true,
-          "refId": "B"
+          "refId": "B",
+          "legendFormat": "Drain Rate (Worker Tasks Out)"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "sum(rate(osv_worker_tasks_processed_total[5m])) - sum(rate(pubsub_googleapis_com:topic_send_message_operation_count{topic_id=~\"tasks|reimport|cves\"}[5m]))",
-          "legendFormat": "Net Drain Speed (Tasks/s)",
-          "range": true,
-          "refId": "C"
+          "refId": "C",
+          "legendFormat": "Net Drain Speed (Tasks/s)"
         }
       ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
       "title": "Intake vs. Drain Velocity (Queue Drain Speed)",
-      "type": "timeseries"
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "ops",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
       "collapsed": false,
@@ -475,172 +486,214 @@
       "type": "row"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "gmp"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 2
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 10
-              },
-              {
-                "color": "red",
-                "value": 30
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 0,
         "y": 15
       },
+      "hiddenSeries": false,
       "id": 7,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
       },
-      "pluginVersion": "11.5.0",
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "histogram_quantile(0.50, sum by(le) (rate(osv_worker_record_latency_seconds_bucket[5m])))",
-          "legendFormat": "p50 Latency",
-          "range": true,
-          "refId": "A"
+          "refId": "A",
+          "legendFormat": "p50 Latency"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "histogram_quantile(0.90, sum by(le) (rate(osv_worker_record_latency_seconds_bucket[5m])))",
-          "legendFormat": "p90 Latency",
-          "range": true,
-          "refId": "B"
+          "refId": "B",
+          "legendFormat": "p90 Latency"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "histogram_quantile(0.95, sum by(le) (rate(osv_worker_record_latency_seconds_bucket[5m])))",
-          "legendFormat": "p95 Latency",
-          "range": true,
-          "refId": "C"
+          "refId": "C",
+          "legendFormat": "p95 Latency"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "histogram_quantile(0.99, sum by(le) (rate(osv_worker_record_latency_seconds_bucket[5m])))",
-          "legendFormat": "p99 Latency",
-          "range": true,
-          "refId": "D"
+          "refId": "D",
+          "legendFormat": "p99 Latency"
         }
       ],
+      "thresholds": [
+        {
+          "colorMode": "warning",
+          "fill": false,
+          "line": true,
+          "op": "gt",
+          "value": 10
+        },
+        {
+          "colorMode": "critical",
+          "fill": false,
+          "line": true,
+          "op": "gt",
+          "value": 30
+        }
+      ],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
       "title": "Worker Task Latency Distribution (Task Receive to Finish)",
-      "type": "timeseries"
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "s",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "gmp"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "lineWidth": 2
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 12,
         "x": 12,
         "y": 15
       },
+      "hiddenSeries": false,
       "id": 8,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
       },
-      "pluginVersion": "11.5.0",
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "sum by (action, status) (rate(osv_worker_tasks_processed_total[5m]))",
-          "legendFormat": "{{action}} ({{status}})",
-          "range": true,
-          "refId": "A"
+          "refId": "A",
+          "legendFormat": "{{action}} ({{status}})"
         }
       ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
       "title": "Worker Tasks Processed per Second by Action & Status",
-      "type": "timeseries"
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "ops",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
       "collapsed": false,
@@ -655,203 +708,284 @@
       "type": "row"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "gmp"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "lineWidth": 2
-          },
-          "unit": "ops"
-        },
-        "overrides": []
-      },
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 0,
         "y": 24
       },
+      "hiddenSeries": false,
       "id": 9,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
       },
-      "pluginVersion": "11.5.0",
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "sum by (error_type, recoverable) (rate(osv_worker_failed_tasks_total[5m]))",
-          "legendFormat": "{{error_type}} (recoverable={{recoverable}})",
-          "range": true,
-          "refId": "A"
+          "refId": "A",
+          "legendFormat": "{{error_type}} (recoverable={{recoverable}})"
         }
       ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
       "title": "Worker Task Failures by Error Type & Recoverability",
-      "type": "timeseries"
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "ops",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "gmp"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "lineWidth": 2
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 8,
         "y": 24
       },
+      "hiddenSeries": false,
       "id": 10,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
       },
-      "pluginVersion": "11.5.0",
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "sum by (status) (osv_reconciler_records_reconciled)",
-          "legendFormat": "Reconciled ({{status}})",
-          "range": true,
-          "refId": "A"
+          "refId": "A",
+          "legendFormat": "Reconciled ({{status}})"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "sum by (status) (rate(osv_worker_tasks_processed_total{work_pool=\"reimport\"}[5m]))",
-          "legendFormat": "Reimport Pool / s ({{status}})",
-          "range": true,
-          "refId": "B"
+          "refId": "B",
+          "legendFormat": "Reimport Pool / s ({{status}})"
         }
       ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
       "title": "Importer Reconciler & Reimport Pool Status",
-      "type": "timeseries"
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "gmp"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "drawStyle": "line",
-            "fillOpacity": 15,
-            "lineWidth": 2
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
       "gridPos": {
         "h": 8,
         "w": 8,
         "x": 16,
         "y": 24
       },
+      "hiddenSeries": false,
       "id": 11,
-      "options": {
-        "legend": {
-          "calcs": [
-            "mean",
-            "lastNotNull",
-            "max"
-          ],
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
       },
-      "pluginVersion": "11.5.0",
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "sum by (source) (increase(osv_deleter_upstream_withdrawals_total[1h]))",
-          "legendFormat": "Withdrawals (1h): {{source}}",
-          "range": true,
-          "refId": "A"
+          "refId": "A",
+          "legendFormat": "Withdrawals (1h): {{source}}"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "gmp"
-          },
-          "editorMode": "code",
           "expr": "sum by (source) (osv_deleter_refused_deletions)",
-          "legendFormat": "Safety Refusals: {{source}}",
-          "range": true,
-          "refId": "B"
+          "refId": "B",
+          "legendFormat": "Safety Refusals: {{source}}"
         }
       ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
       "title": "Upstream Withdrawals & Safety Refusals",
-      "type": "timeseries"
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
     },
     {
       "collapsed": false,
@@ -866,45 +1000,26 @@
       "type": "row"
     },
     {
-      "datasource": {
-        "type": "googlecloud-logging-datasource",
-        "uid": "cloud-logging"
-      },
+      "datasource": null,
       "gridPos": {
-        "h": 10,
+        "h": 7,
         "w": 24,
         "x": 0,
         "y": 33
       },
       "id": 12,
       "options": {
-        "dedupStrategy": "none",
-        "enableLogDetails": true,
-        "prettifyLogMessage": false,
-        "showCommonLabels": false,
-        "showLabels": false,
-        "showTime": true,
-        "sortOrder": "Descending",
-        "wrapLogMessage": false
+        "content": "### Cloud Logging Triage Links (`severity >= ERROR`)\nInline Cloud Logging panels require Grafana >= 8.5 (`googlecloud-logging-datasource`); use the pre-filtered Google Cloud Logs Explorer links below for live stack traces and `ref_id` inspection:\n\n- [**All Pipeline Error Logs** (`worker-*`, `recoverer`, `importer`, `importer-deleter`)](https://console.cloud.google.com/logs/query;query=resource.type%3D%22k8s_container%22%0Aresource.labels.container_name%3D~%22%5E%28worker-private%7Cworkers-reimport%7Cworkers-cves%7Crecoverer%7Cimporter%7Cimporter-deleter%29%24%22%0Aseverity%3E%3DERROR?project=oss-vdb-test)\n- [**Worker Pool Errors Only** (`worker-private`, `workers-reimport`, `workers-cves`)](https://console.cloud.google.com/logs/query;query=resource.type%3D%22k8s_container%22%0Aresource.labels.container_name%3D~%22%5E%28worker-private%7Cworkers-reimport%7Cworkers-cves%29%24%22%0Aseverity%3E%3DERROR?project=oss-vdb-test)\n- [**Importer & Deleter Errors** (`importer`, `importer-deleter`)](https://console.cloud.google.com/logs/query;query=resource.type%3D%22k8s_container%22%0Aresource.labels.container_name%3D~%22%5E%28importer%7Cimporter-deleter%29%24%22%0Aseverity%3E%3DERROR?project=oss-vdb-test)\n- [**Recoverer Errors** (`recoverer`)](https://console.cloud.google.com/logs/query;query=resource.type%3D%22k8s_container%22%0Aresource.labels.container_name%3D~%22%5E%28recoverer%29%24%22%0Aseverity%3E%3DERROR?project=oss-vdb-test)\n\n```text\nresource.type=\"k8s_container\"\nresource.labels.container_name=~\"^(worker-private|workers-reimport|workers-cves|recoverer|importer|importer-deleter)$\"\nseverity>=ERROR\n```",
+        "mode": "markdown"
       },
-      "pluginVersion": "11.5.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "googlecloud-logging-datasource",
-            "uid": "cloud-logging"
-          },
-          "projectId": "oss-vdb-test",
-          "queryText": "resource.type=\"k8s_container\"\nresource.labels.container_name=~\"^(worker-private|workers-reimport|workers-cves|recoverer|importer|importer-deleter)$\"\nseverity>=ERROR",
-          "refId": "A"
-        }
-      ],
-      "title": "Failed Worker, Importer & Recoverer Error Logs",
-      "type": "logs"
+      "pluginVersion": "7.5.52",
+      "title": "Failed Worker, Importer & Recoverer Error Logs (Cloud Logging Explorer)",
+      "type": "text"
     }
   ],
   "refresh": "30s",
-  "schemaVersion": 39,
+  "schemaVersion": 27,
+  "style": "dark",
   "tags": [
     "osv",
     "pipeline",

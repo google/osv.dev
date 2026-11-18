@@ -231,11 +231,15 @@ func checkInvalidRepoCache(ctx context.Context, repoURL string) (int, bool) {
 }
 
 // cacheInvalidRepo records a negative response (404, 403, or 429) in the cache.
-func cacheInvalidRepo(repoURL string, statusCode int) {
+func cacheInvalidRepo(ctx context.Context, repoURL string, statusCode int, err error) {
 	if statusCode == http.StatusNotFound {
 		metrics.RecordGitterDataError(metrics.GitterErrorBadRepoURL)
 	}
 	if statusCode == http.StatusNotFound || statusCode == http.StatusForbidden || statusCode == http.StatusTooManyRequests {
+		logger.WarnContext(ctx, "Caching invalid repository",
+			slog.Int("status", statusCode),
+			slog.Any("error", err),
+		)
 		invalidRepoCache.SetWithTTL(repoURL, statusCode, 1, invalidRepoTTL)
 	}
 }
@@ -385,6 +389,7 @@ func writeResponse(w http.ResponseWriter, req *http.Request, msg proto.Message) 
 		out, err = proto.Marshal(msg)
 	}
 	if err != nil {
+		http.Error(w, fmt.Sprintf("Error marshaling response: %v", err), http.StatusInternalServerError)
 		return err
 	}
 
@@ -542,7 +547,7 @@ func gitHandler(w http.ResponseWriter, req *http.Request) {
 	// Fetch repo first
 	if _, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: forceUpdate, SkipReqConcurrencySemaphore: true}); err != nil {
 		statusCode = errorToHTTPStatusCode(err)
-		cacheInvalidRepo(repoURL, statusCode)
+		cacheInvalidRepo(ctx, repoURL, statusCode, err)
 		http.Error(w, fmt.Sprintf("Error fetching blob: %v", err), statusCode)
 
 		return
@@ -573,7 +578,6 @@ func gitHandler(w http.ResponseWriter, req *http.Request) {
 	if _, err := io.Copy(w, bytes.NewReader(fileData)); err != nil {
 		logger.ErrorContext(ctx, "Error copying file", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, "Error copying file", statusCode)
 
 		return
 	}
@@ -617,7 +621,7 @@ func cacheHandler(w http.ResponseWriter, req *http.Request) {
 
 	if _, err := LoadRepo(ctx, repoURL, FetchOptions{ForceUpdate: body.GetForceUpdate(), SkipReqConcurrencySemaphore: true}); err != nil {
 		statusCode = errorToHTTPStatusCode(err)
-		cacheInvalidRepo(repoURL, statusCode)
+		cacheInvalidRepo(ctx, repoURL, statusCode, err)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -692,7 +696,7 @@ func affectedCommitsHandler(w http.ResponseWriter, req *http.Request) {
 	repo, err := LoadRepo(ctx, repoURL, FetchOptions{ForceUpdate: body.GetForceUpdate(), SkipReqConcurrencySemaphore: false})
 	if err != nil {
 		statusCode = errorToHTTPStatusCode(err)
-		cacheInvalidRepo(repoURL, statusCode)
+		cacheInvalidRepo(ctx, repoURL, statusCode, err)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -751,7 +755,6 @@ func affectedCommitsHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing affected commits response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing affected commits response: %v", err), statusCode)
 	}
 }
 
@@ -814,7 +817,7 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 			logger.DebugContext(ctx, "Local repo found, using show-ref")
 			if _, errFetch := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: false, SkipReqConcurrencySemaphore: false}); errFetch != nil {
 				statusCode = errorToHTTPStatusCode(errFetch)
-				cacheInvalidRepo(repoURL, statusCode)
+				cacheInvalidRepo(ctx, repoURL, statusCode, errFetch)
 				http.Error(w, fmt.Sprintf("Error fetching repository: %v", errFetch), statusCode)
 
 				return
@@ -848,7 +851,7 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 			})
 			if errLsRemote != nil {
 				statusCode = errorToHTTPStatusCode(errLsRemote)
-				cacheInvalidRepo(repoURL, statusCode)
+				cacheInvalidRepo(ctx, repoURL, statusCode, errLsRemote)
 				http.Error(w, fmt.Sprintf("Error listing remote tags: %v", errLsRemote), statusCode)
 
 				return
@@ -870,7 +873,6 @@ func tagsHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing tags response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing tags response: %v", err), statusCode)
 	}
 }
 
@@ -908,7 +910,7 @@ func fileDiffsHandler(w http.ResponseWriter, req *http.Request) {
 	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: true, SkipReqConcurrencySemaphore: true})
 	if err != nil {
 		statusCode = errorToHTTPStatusCode(err)
-		cacheInvalidRepo(repoURL, statusCode)
+		cacheInvalidRepo(ctx, repoURL, statusCode, err)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -945,7 +947,6 @@ func fileDiffsHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing diff response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing diff response: %v", err), statusCode)
 	}
 }
 
@@ -989,7 +990,7 @@ func fileContentHandler(w http.ResponseWriter, req *http.Request) {
 	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: false, SkipReqConcurrencySemaphore: true})
 	if err != nil {
 		statusCode = errorToHTTPStatusCode(err)
-		cacheInvalidRepo(repoURL, statusCode)
+		cacheInvalidRepo(ctx, repoURL, statusCode, err)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -1018,7 +1019,6 @@ func fileContentHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing file content response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing file content response: %v", err), statusCode)
 	}
 }
 
@@ -1071,7 +1071,7 @@ func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
 	repo, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: true, SkipReqConcurrencySemaphore: false})
 	if err != nil {
 		statusCode = errorToHTTPStatusCode(err)
-		cacheInvalidRepo(repoURL, statusCode)
+		cacheInvalidRepo(ctx, repoURL, statusCode, err)
 		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
 
 		return
@@ -1126,6 +1126,5 @@ func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing commit diffs response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error writing commit diffs response: %v", err), statusCode)
 	}
 }

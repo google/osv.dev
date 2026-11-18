@@ -2,6 +2,8 @@ package cve5
 
 import (
 	"net/http"
+	"slices"
+	"strings"
 
 	c "github.com/google/osv.dev/vulnfeeds/conversion"
 	"github.com/google/osv.dev/vulnfeeds/conversion/cve5/strategies"
@@ -20,7 +22,9 @@ type LinuxVersionExtractor struct {
 
 var _ VersionExtractor = &LinuxVersionExtractor{}
 
-// handleAffected takes an array of models.Affected and handles how to extract them
+// handleAffected takes an array of models.Affected and handles how to extract them.
+// A single CNA Affected block in Linux CVEs can contain both git commit ranges and
+// semver release ranges, so extracted ranges are partitioned individually by range type.
 func (l *LinuxVersionExtractor) handleAffected(v *vulns.Vulnerability, affected []models.Affected, metrics *models.ConversionMetrics) bool {
 	if len(l.Strategies) == 0 {
 		l.Strategies = strategies.Linux()
@@ -28,32 +32,188 @@ func (l *LinuxVersionExtractor) handleAffected(v *vulns.Vulnerability, affected 
 
 	hasGit := false
 	gotVersions := false
+	var directEcoRanges []*osvschema.Range
+	var inverseEcoRanges []*osvschema.Range
+	var inverseUnaffectedBefore string
+
 	for _, cveAff := range affected {
+		if cveAff.DefaultStatus == "affected" {
+			if b := extractZeroUnaffectedUpperBound(cveAff); b != "" {
+				if inverseUnaffectedBefore == "" || strategies.CompareSemverLike(b, inverseUnaffectedBefore) < 0 {
+					inverseUnaffectedBefore = b
+				}
+			}
+		}
+
 		versionRangesWithMetadata := ExtractAffectedRanges(cveAff, l.Strategies, metrics)
 		if len(versionRangesWithMetadata) == 0 {
 			continue
 		}
 
-		isGit := versionRangesWithMetadata[0].Range.GetType() == osvschema.Range_GIT
-		versionRanges := make([]*osvschema.Range, 0, len(versionRangesWithMetadata))
+		var gitRanges []*osvschema.Range
+		var ecoRanges []*osvschema.Range
 		for _, r := range versionRangesWithMetadata {
-			versionRanges = append(versionRanges, r.Range)
-		}
-		if isGit && hasGit {
-			continue
+			if r.Range.GetType() == osvschema.Range_GIT && c.IsDirectGitRange(r) {
+				gitRanges = append(gitRanges, r.Range)
+			} else {
+				ecoRanges = append(ecoRanges, r.Range)
+			}
 		}
 
-		gotVersions = true
-
-		if isGit {
+		if len(gitRanges) > 0 && !hasGit {
 			hasGit = true
+			gotVersions = true
+			aff := createLinuxAffected(gitRanges, true, cveAff.Repo)
+			metrics.AddSource(models.VersionSourceAffected)
+			c.AddAffected(v, aff, metrics)
 		}
-		aff := createLinuxAffected(versionRanges, isGit, cveAff.Repo)
+
+		if len(ecoRanges) > 0 {
+			gotVersions = true
+			if cveAff.DefaultStatus == "affected" {
+				inverseEcoRanges = append(inverseEcoRanges, ecoRanges...)
+			} else {
+				directEcoRanges = append(directEcoRanges, ecoRanges...)
+			}
+		}
+	}
+
+	mergedEcoRanges := mergeLinuxEcosystemRanges(directEcoRanges, inverseEcoRanges, inverseUnaffectedBefore)
+	if len(mergedEcoRanges) > 0 {
+		aff := createLinuxAffected(mergedEcoRanges, false, "")
 		metrics.AddSource(models.VersionSourceAffected)
 		c.AddAffected(v, aff, metrics)
 	}
 
 	return gotVersions
+}
+
+// extractZeroUnaffectedUpperBound inspects a defaultStatus=="affected" block for an entry
+// of the form {version: "0", lessThan: X, status: "unaffected"} and returns normalized X.
+func extractZeroUnaffectedUpperBound(cveAff models.Affected) string {
+	for _, vers := range cveAff.Versions {
+		if vers.Status == "unaffected" && vers.Version == "0" && vers.LessThan != "" && vers.LessThan != "*" {
+			if strings.Count(vers.LessThan, ".") == 1 {
+				return vers.LessThan + ".0"
+			}
+
+			return vers.LessThan
+		}
+	}
+
+	return ""
+}
+
+func rangeIntroFixed(r *osvschema.Range) (intro, fixed string, ok bool) {
+	evts := r.GetEvents()
+	if len(evts) != 2 {
+		return "", "", false
+	}
+	intro = evts[0].GetIntroduced()
+	fixed = evts[1].GetFixed()
+	if intro == "" || fixed == "" {
+		return "", "", false
+	}
+
+	return intro, fixed, true
+}
+
+func compareLinuxIntro(a, b string) int {
+	if a == "0" && b == "0" {
+		return 0
+	}
+	if a == "0" {
+		return -1
+	}
+	if b == "0" {
+		return 1
+	}
+
+	return strategies.CompareSemverLike(a, b)
+}
+
+// mergeLinuxEcosystemRanges reconciles direct semver ranges (from defaultStatus=="unaffected"
+// blocks) with inverse semver ranges (from defaultStatus=="affected" blocks):
+//   - When explicit non-"0" backport intervals are present in directRanges and the inverse block
+//     declares [0, X) unaffected, an inverse interval spanning across X ([intro < X < fixed)) is
+//     clamped to [X, fixed) so earlier EOL backport intervals (e.g. [6.0.10, 6.1)) stay disjoint.
+//   - When both blocks emit an [introduced, fixed) range with the same fixed endpoint (e.g.
+//     direct [0, 5.15.225) vs inverse [5.11.0, 5.15.225) in CVE-2026-100080, or direct backport
+//     [5.4.225, 5.4.268) vs inverse [0, 5.4.268) in CVE-2023-52457), the tighter (larger)
+//     introduced bound is kept instead of duplicating or widening the branch range.
+func mergeLinuxEcosystemRanges(directRanges, inverseRanges []*osvschema.Range, unaffectedBefore string) []*osvschema.Range {
+	if len(directRanges) == 0 {
+		return inverseRanges
+	}
+	if len(inverseRanges) == 0 {
+		return directRanges
+	}
+
+	hasNonZeroDirect := false
+	for _, r := range directRanges {
+		if intro, _, ok := rangeIntroFixed(r); ok && intro != "0" {
+			hasNonZeroDirect = true
+			break
+		}
+	}
+
+	adjustedInverse := make([]*osvschema.Range, 0, len(inverseRanges))
+	for _, r := range inverseRanges {
+		intro, fixed, ok := rangeIntroFixed(r)
+		if ok && hasNonZeroDirect && unaffectedBefore != "" &&
+			compareLinuxIntro(intro, unaffectedBefore) < 0 &&
+			strategies.CompareSemverLike(unaffectedBefore, fixed) < 0 {
+			adjustedInverse = append(adjustedInverse, c.BuildVersionRange(unaffectedBefore, "", fixed))
+			continue
+		}
+		adjustedInverse = append(adjustedInverse, r)
+	}
+
+	var combined []*osvschema.Range
+	combined = append(combined, adjustedInverse...)
+
+	for _, dr := range directRanges {
+		dIntro, dFixed, ok := rangeIntroFixed(dr)
+		if !ok {
+			combined = append(combined, dr)
+			continue
+		}
+
+		matchedFixedIdx := -1
+		for i, cr := range combined {
+			_, cFixed, cOk := rangeIntroFixed(cr)
+			if cOk && strategies.CompareSemverLike(dFixed, cFixed) == 0 {
+				matchedFixedIdx = i
+				break
+			}
+		}
+
+		if matchedFixedIdx >= 0 {
+			cIntro, cFixed, _ := rangeIntroFixed(combined[matchedFixedIdx])
+			if compareLinuxIntro(dIntro, cIntro) > 0 {
+				combined[matchedFixedIdx] = c.BuildVersionRange(dIntro, "", cFixed)
+			}
+
+			continue
+		}
+
+		combined = append(combined, dr)
+	}
+
+	slices.SortStableFunc(combined, func(a, b *osvschema.Range) int {
+		aIntro, aFixed, aOk := rangeIntroFixed(a)
+		bIntro, bFixed, bOk := rangeIntroFixed(b)
+		if !aOk || !bOk {
+			return 0
+		}
+		if cmp := compareLinuxIntro(aIntro, bIntro); cmp != 0 {
+			return cmp
+		}
+
+		return strategies.CompareSemverLike(aFixed, bFixed)
+	})
+
+	return combined
 }
 
 // ExtractVersions for LinuxVersionExtractor.
@@ -82,9 +242,12 @@ func createLinuxAffected(versionRanges []*osvschema.Range, isGit bool, repo stri
 	for _, vr := range versionRanges {
 		if isGit {
 			vr.Type = osvschema.Range_GIT
-			vr.Repo = repo
+			if vr.GetRepo() == "" {
+				vr.Repo = repo
+			}
 		} else {
 			vr.Type = osvschema.Range_ECOSYSTEM
+			vr.Repo = ""
 		}
 		aff.Ranges = append(aff.Ranges, vr)
 	}

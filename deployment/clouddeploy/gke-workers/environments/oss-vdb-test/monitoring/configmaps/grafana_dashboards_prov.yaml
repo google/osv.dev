@@ -14,6 +14,7 @@ data:
         folder: ''
         type: file
         disableDeletion: false
+        updateIntervalSeconds: 10
         editable: false
         options:
-          path: /etc/grafana/dashboards
+          path: /etc/plutono/dashboards

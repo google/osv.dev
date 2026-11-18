@@ -29,3 +29,5 @@ steps:
     - 'BUILD_ID=$BUILD_ID'
 
 timeout: 7200s
+options:
+  logging: CLOUD_LOGGING_ONLY

@@ -2215,3 +2215,26 @@ func TestParseCommitsLogInvalidUTF8(t *testing.T) {
 		t.Errorf("truncated patch contains invalid UTF-8: %q", commits[0].Patch)
 	}
 }
+
+func TestParseCommitsLogEmptyCommit(t *testing.T) {
+	ctx := t.Context()
+	rawBytes := []byte("\x1e---COMMIT-METADATA---\n" +
+		"abcd1234abcd1234abcd1234abcd1234abcd1234\n" +
+		"1700000000\n" +
+		"chore: empty commit\n" +
+		"\x00---COMMIT-DIFF---\n")
+
+	commits := parseCommitsLog(ctx, rawBytes, DefaultMaxCommitPatchBytes)
+	if len(commits) != 1 {
+		t.Fatalf("expected 1 commit for empty-diff commit, got %d", len(commits))
+	}
+	if commits[0].Commit != "abcd1234abcd1234abcd1234abcd1234abcd1234" {
+		t.Errorf("unexpected commit hash: %s", commits[0].Commit)
+	}
+	if len(commits[0].FilesChanged) != 0 {
+		t.Errorf("expected no changed files, got %d", len(commits[0].FilesChanged))
+	}
+	if commits[0].Patch != "" {
+		t.Errorf("expected empty patch, got %q", commits[0].Patch)
+	}
+}

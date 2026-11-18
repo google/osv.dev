@@ -119,7 +119,10 @@ func run() error {
 	// Set up and run the subscriber
 	sub := psClient.Subscriber(pubsubSubscription)
 	sub.ReceiveSettings.MaxOutstandingMessages = *numWorkers
-	sub.ReceiveSettings.MaxOutstandingBytes = -1 // no limit - we can give lots of memory to these machines
+	// Flow control is by message count: Pub/Sub's byte count is of the compressed
+	// message data (at most 10MB each), which can expand by hundreds of times once
+	// decoded and processed, so a byte limit wouldn't usefully bound memory.
+	sub.ReceiveSettings.MaxOutstandingBytes = -1
 	sub.ReceiveSettings.MaxExtension = 6 * time.Hour
 	sub.ReceiveSettings.MaxDurationPerAckExtension = 10 * time.Minute
 	subscriber := worker.Subscriber{

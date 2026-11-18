@@ -76,10 +76,9 @@ const (
 	// Delimiters for metadata/diff extraction in ListCommits.
 	commitMetadataMarker = "\x1e" + commitMetadataTag + "\n"
 	commitDiffMarker     = "\x00" + commitDiffTag + "\n"
+	// Maximum number of concurrent workers for patch ID calculation.
+	maxPatchIDWorkers = 16
 )
-
-// Number of workers for patch ID calculation
-var workers = 16
 
 // NewRepository initializes a new Repository struct from a URL.
 // If the repository is cloned locally, repoPath is set. Otherwise it remains empty.
@@ -326,24 +325,24 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 // calculatePatchIDs calculates patch IDs only for the specific commits provided.
 // Commits should be passed in order if possible. Processing linear commits sequentially improves performance slightly (in the 'git show' commands).
 func (r *Repository) calculatePatchIDs(ctx context.Context, commits []int) error {
+	if len(commits) == 0 {
+		return nil
+	}
+
 	logger.DebugContext(ctx, "Starting patch ID calculation")
 	start := time.Now()
 
-	// Number of workers
-	if len(commits) < workers {
-		workers = len(commits)
-	}
-
-	chunkSize := len(commits) / workers
+	numWorkers := min(len(commits), maxPatchIDWorkers)
+	chunkSize := len(commits) / numWorkers
 
 	errg, ctx := errgroup.WithContext(ctx)
 
 	// Splitting the commits into chunks for parallel processing while maintaining commit order
-	for i := range workers {
+	for i := range numWorkers {
 		start := i * chunkSize
 		end := start + chunkSize
 		// Last worker takes the remainder
-		if i == workers-1 {
+		if i == numWorkers-1 {
 			end = len(commits)
 		}
 
@@ -1414,8 +1413,7 @@ func parseCommitsLog(ctx context.Context, output []byte, maxPatchBytes int) []*C
 	commits := make([]*CommitDiff, 0, len(records))
 
 	for _, r := range records {
-		r = bytes.TrimSpace(r)
-		if len(r) == 0 {
+		if len(bytes.TrimSpace(r)) == 0 {
 			continue
 		}
 
@@ -1468,6 +1466,7 @@ func parseCommitMetadata(meta []byte) (*CommitDiff, error) {
 
 // parseCommitDiff parses raw file status entries and unified diff patch.
 func parseCommitDiff(diffContent []byte, maxPatchBytes int) ([]*FileChange, string, bool) {
+	diffContent = bytes.TrimSpace(diffContent)
 	var filesChanged []*FileChange
 	var patch string
 	var patchTruncated bool

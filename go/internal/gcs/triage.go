@@ -29,13 +29,13 @@ var gcsSources = map[string]sourceConfig{
 	"test-nvd":          {Bucket: "osv-test-cve-osv-conversion", PathTemplate: "nvd-osv/%s.json"},
 	"test-cve5":         {Bucket: "osv-test-cve-osv-conversion", PathTemplate: "cve5/%s.json"},
 	"test-osv":          {Bucket: "osv-test-cve-osv-conversion", PathTemplate: "osv-output/%s.json"},
-	"test-nvd-metrics":  {Bucket: "osv-test-cve-osv-conversion", PathTemplate: "nvd-osv/%s.metrics.json"},
-	"test-cve5-metrics": {Bucket: "osv-test-cve-osv-conversion", PathTemplate: "cve5/%s.metrics.json"},
+	"test-nvd-metrics":  {Bucket: "osv-test-cve-osv-conversion", PathTemplate: "metadata/nvd/metrics/%s.metrics.json"},
+	"test-cve5-metrics": {Bucket: "osv-test-cve-osv-conversion", PathTemplate: "metadata/cve5/metrics/%s.metrics.json"},
 	"prod-nvd":          {Bucket: "cve-osv-conversion", PathTemplate: "nvd-osv/%s.json"},
 	"prod-cve5":         {Bucket: "cve-osv-conversion", PathTemplate: "cve5/%s.json"},
 	"prod-osv":          {Bucket: "cve-osv-conversion", PathTemplate: "osv-output/%s.json"},
-	"prod-nvd-metrics":  {Bucket: "cve-osv-conversion", PathTemplate: "nvd-osv/%s.metrics.json"},
-	"prod-cve5-metrics": {Bucket: "cve-osv-conversion", PathTemplate: "cve5/%s.metrics.json"},
+	"prod-nvd-metrics":  {Bucket: "cve-osv-conversion", PathTemplate: "metadata/nvd/metrics/%s.metrics.json"},
+	"prod-cve5-metrics": {Bucket: "cve-osv-conversion", PathTemplate: "metadata/cve5/metrics/%s.metrics.json"},
 }
 
 // TriageStore implements models.TriageStore for reading CVE data from GCS and upstream APIs.

@@ -10,6 +10,7 @@ import (
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/storage"
 	"github.com/google/osv.dev/go/internal/models"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/iterator"
 )
 
@@ -178,17 +179,121 @@ func (s *ImportFindingsStore) ListAllFromSource(ctx context.Context, source stri
 }
 
 func (s *ImportFindingsStore) ListAll(ctx context.Context) ([]*models.ImportFinding, error) {
-	query := datastore.NewQuery("ImportFinding")
-	var entities []*ImportFinding
-	if _, err := s.dsClient.GetAll(ctx, query, &entities); err != nil {
-		return nil, fmt.Errorf("failed to fetch all import findings: %w", err)
-	}
-	findings := make([]*models.ImportFinding, len(entities))
-	for i, entity := range entities {
-		findings[i] = entity.toModel()
+	return s.listAll(ctx, 5000)
+}
+
+func (s *ImportFindingsStore) listAll(ctx context.Context, pageSize int) ([]*models.ImportFinding, error) {
+	var findings []*models.ImportFinding
+	var cursor *datastore.Cursor
+
+	for {
+		q := datastore.NewQuery("ImportFinding").Limit(pageSize)
+		if cursor != nil {
+			q = q.Start(*cursor)
+		}
+
+		it := s.dsClient.Run(ctx, q)
+		count := 0
+		for {
+			var entity ImportFinding
+			key, err := it.Next(&entity)
+			if errors.Is(err, iterator.Done) {
+				break
+			}
+			if err != nil {
+				return nil, fmt.Errorf("failed to fetch all import findings: %w", err)
+			}
+			if entity.BugID == "" && key != nil {
+				entity.BugID = key.Name
+			}
+			findings = append(findings, entity.toModel())
+			count++
+		}
+
+		if count < pageSize {
+			break
+		}
+		nextCursor, err := it.Cursor()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get datastore cursor for import findings: %w", err)
+		}
+		cursor = &nextCursor
 	}
 
 	return findings, nil
+}
+
+func (s *ImportFindingsStore) ListTimestamps(ctx context.Context) (map[string]int64, map[string]int64, error) {
+	return s.listTimestamps(ctx, 5000)
+}
+
+func (s *ImportFindingsStore) listTimestamps(ctx context.Context, pageSize int) (map[string]int64, map[string]int64, error) {
+	var lastAttempts, firstSeen map[string]int64
+	g, gCtx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		var err error
+		lastAttempts, err = s.listTimestampProjection(gCtx, "last_attempt", pageSize)
+
+		return err
+	})
+	g.Go(func() error {
+		var err error
+		firstSeen, err = s.listTimestampProjection(gCtx, "first_seen", pageSize)
+
+		return err
+	})
+	if err := g.Wait(); err != nil {
+		return nil, nil, err
+	}
+
+	return lastAttempts, firstSeen, nil
+}
+
+func (s *ImportFindingsStore) listTimestampProjection(ctx context.Context, field string, pageSize int) (map[string]int64, error) {
+	timestamps := make(map[string]int64)
+	var cursor *datastore.Cursor
+
+	for {
+		q := datastore.NewQuery("ImportFinding").Project(field).Limit(pageSize)
+		if cursor != nil {
+			q = q.Start(*cursor)
+		}
+
+		it := s.dsClient.Run(ctx, q)
+		count := 0
+		for {
+			var proj struct {
+				LastAttempt time.Time `datastore:"last_attempt"`
+				FirstSeen   time.Time `datastore:"first_seen"`
+			}
+			key, err := it.Next(&proj)
+			if errors.Is(err, iterator.Done) {
+				break
+			}
+			if err != nil {
+				return nil, fmt.Errorf("failed to fetch import finding %s projections: %w", field, err)
+			}
+			ts := proj.LastAttempt
+			if field == "first_seen" {
+				ts = proj.FirstSeen
+			}
+			if key != nil && key.Name != "" && !ts.IsZero() {
+				timestamps[key.Name] = ts.Unix()
+			}
+			count++
+		}
+
+		if count < pageSize {
+			break
+		}
+		nextCursor, err := it.Cursor()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get datastore cursor for import finding %s projections: %w", field, err)
+		}
+		cursor = &nextCursor
+	}
+
+	return timestamps, nil
 }
 
 func (f *ImportFinding) toModel() *models.ImportFinding {

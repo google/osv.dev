@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//nolint:dupl // dhi.go delegates to its lineage ecosystem the same way.
 package ecosystem
 
 import (
@@ -21,6 +20,16 @@ import (
 
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 )
+
+// tuxcareRPMInnerNames are the inner names TuxCare uses for distributions that
+// are not OSV ecosystems (e.g. "TuxCare:CentOS:7"). Their package versions
+// follow RPM ordering.
+var tuxcareRPMInnerNames = map[string]bool{
+	"CentOS":        true,
+	"CentOS-Stream": true,
+	"OracleLinux":   true,
+	"RHEL":          true,
+}
 
 // tuxcareEcosystem represents "TuxCare:<ecosystem>" advisories. It delegates
 // version handling to the inner ecosystem, resolved lazily via the Provider
@@ -47,6 +56,9 @@ func tuxcareFactory(p *Provider, suffix string) Ecosystem {
 // double-wrapping the resulting Version (which would fail to compare against
 // a singly-wrapped Version from the same inner ecosystem).
 func (e tuxcareEcosystem) resolve() (Ecosystem, error) {
+	if innerName, _, _ := strings.Cut(e.suffix, ":"); tuxcareRPMInnerNames[innerName] {
+		return rpmEcosystem{}, nil
+	}
 	inner, ok := e.p.Get(e.suffix)
 	if !ok {
 		return nil, fmt.Errorf("TuxCare: unknown inner ecosystem %q", e.suffix)

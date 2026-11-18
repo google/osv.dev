@@ -1,179 +1,267 @@
 import "./linter.scss";
 import "@github/clipboard-copy-element";
 
+const SINCE_LABELS = Object.freeze({
+  __proto__: null,
+  "": "Any time",
+  "24h": "New in last 24h",
+  "7d": "New in last 7 days",
+  "30d": "New in last 30 days",
+  "90d": "New in last 90 days",
+});
 
+const LEGACY_FINDING_TO_CODES = Object.freeze({
+  __proto__: null,
+  INVALID_JSON: ["SCH:001"],
+  INVALID_RECORD: ["REC:001"],
+  INVALID_ALIASES: ["REC:002"],
+  INVALID_UPSTREAM: ["REC:003"],
+  INVALID_RELATED: ["REC:004"],
+  INVALID_RANGE: ["RNG:001", "RNG:002"],
+  INVALID_PACKAGE: ["PKG:001"],
+  INVALID_VERSION: ["PKG:002"],
+  INVALID_PURL: ["PKG:003"],
+  INVALID_COMMIT: ["COMMIT:001"],
+  BAD_ALIASED_CVE: ["CVE:001"],
+  DELETED: ["DEL:001"],
+});
 
 document.addEventListener("DOMContentLoaded", function () {
-  let allIssues = [];
-  let issuesByHomeDb = {};
-  let filteredIssues = [];
-  let findingDetails = {};
+  const apiUrl = (document.body.dataset.apiUrl || "api.test.osv.dev").replace(/^https?:\/\//, "");
   let activeVulnData = {};
   let activeVulnValueMaps = {};
-  const issuesPerPage = 15;
+  let issuesPerPage = 25;
   let currentPage = 1;
+  let totalIssues = 0;
+  let sortField = "last_attempt";
   let sortDirection = "desc";
-  let dataLoadingComplete = false;
+  let activeQueryController = null;
+  let searchDebounceTimer = null;
+  let timestampRetryTimer = null;
+  let timestampRetryCount = 0;
+  const maxTimestampRetries = 6;
 
   const globalLoader = document.getElementById("global-loader");
   const searchInput = document.getElementById("search-input");
-  const modifiedHeader = document.getElementById("modified-header");
   const tabBarContainer = document.querySelector(".tab-bar-container");
   const tabSwitch = document.getElementById("tab-switch");
   const tabsContent = document.getElementById("tabs-content");
 
   const homeDbFilter = document.getElementById("homedb-filter");
-  const homeDbFilterSelected = document.getElementById(
-    "homedb-filter-selected"
-  );
-  const homeDbFilterOptions = document.getElementById(
-    "homedb-filter-options"
-  );
+  const homeDbFilterSelected = document.getElementById("homedb-filter-selected");
+  const homeDbFilterOptions = document.getElementById("homedb-filter-options");
+  const homeDbSearchInput = document.getElementById("homedb-search-input");
 
   const findingsFilter = document.getElementById("findings-filter");
-  const findingsFilterSelected = document.getElementById(
-    "findings-filter-selected"
-  );
-  const findingsFilterOptions = document.getElementById(
-    "findings-filter-options"
-  );
+  const findingsFilterSelected = document.getElementById("findings-filter-selected");
+  const findingsFilterOptions = document.getElementById("findings-filter-options");
+  const findingsSearchInput = document.getElementById("findings-search-input");
 
-  let selectedHomeDb = "";
-  let selectedFinding = "";
-  let urlHomeDbApplied = false;
+  const sinceFilter = document.getElementById("since-filter");
+  const sinceFilterSelected = document.getElementById("since-filter-selected");
+  const sinceFilterPanel = document.getElementById("since-filter-panel");
+
+  const activeChipsEl = document.getElementById("active-filter-chips");
+  const syncStatusEl = document.getElementById("timestamps-sync-status");
+  const resultsSummaryEl = document.getElementById("results-summary");
+  const pageSizeSelect = document.getElementById("page-size-select");
+
+  let selectedSources = new Set();
+  let sourceMode = "include";
+  let selectedCodes = new Set();
+  let selectedCategories = new Set();
+  let ruleMode = "include";
+  let selectedSince = "";
+  let latestFacets = {};
+
+  function splitCSV(val) {
+    return val ? val.split(",").map((s) => s.trim()).filter(Boolean) : [];
+  }
 
   function applyFiltersFromURL() {
     const params = new URLSearchParams(window.location.search);
-    const homeDb = params.get("homedb");
-    if (homeDb) {
-      selectedHomeDb = homeDb;
-    }
+    selectedSources = new Set(splitCSV(params.get("homedb") || params.get("source")));
+    sourceMode = params.get("source_mode") === "exclude" ? "exclude" : "include";
+
+    selectedCodes = new Set();
+    splitCSV(params.get("code")).forEach((c) => selectedCodes.add(c.toUpperCase()));
+    splitCSV(params.get("finding")).forEach((f) => {
+      const key = f.toUpperCase().replace(/^IMPORT_FINDING_TYPE_/, "");
+      (LEGACY_FINDING_TO_CODES[key] || [key]).forEach((c) => selectedCodes.add(c));
+    });
+    selectedCategories = new Set(splitCSV(params.get("cat") || params.get("category")).map((c) => c.toUpperCase()));
+    ruleMode = params.get("rule_mode") === "exclude" ? "exclude" : "include";
+    selectedSince = params.get("since") || "";
+    searchInput.value = params.get("q") || "";
+
+    const sort = params.get("sort");
+    if (["last_attempt", "first_seen", "bug_id", "finding_count"].includes(sort)) sortField = sort;
+    if (params.get("order") === "asc") sortDirection = "asc";
+    const page = parseInt(params.get("page") || "1", 10);
+    if (page > 0) currentPage = page;
+    const ps = parseInt(params.get("page_size") || "25", 10);
+    if ([15, 25, 50, 100].includes(ps)) issuesPerPage = ps;
+    pageSizeSelect.value = String(issuesPerPage);
   }
 
-  function updateURL(homeDb, replace = false) {
-    const params = new URLSearchParams(window.location.search);
-    if (homeDb) {
-      params.set("homedb", homeDb);
-    } else {
-      params.delete("homedb");
+  function buildQueryParams(sourceKey = "source") {
+    const params = new URLSearchParams();
+    if (selectedSources.size > 0) {
+      params.set(sourceKey, Array.from(selectedSources).join(","));
+      if (sourceMode === "exclude") params.set("source_mode", "exclude");
     }
-    const newURL = `${
-      window.location.pathname
-    }?${params.toString()}`.replace(/\?$/, "");
+    if (selectedCodes.size > 0) params.set("code", Array.from(selectedCodes).join(","));
+    if (selectedCategories.size > 0) params.set("cat", Array.from(selectedCategories).join(","));
+    if ((selectedCodes.size > 0 || selectedCategories.size > 0) && ruleMode === "exclude") {
+      params.set("rule_mode", "exclude");
+    }
+    if (selectedSince) params.set("since", selectedSince);
+    if (searchInput.value.trim()) params.set("q", searchInput.value.trim());
+    if (sortField !== "last_attempt") params.set("sort", sortField);
+    if (sortDirection !== "desc") params.set("order", sortDirection);
+    if (currentPage > 1) params.set("page", String(currentPage));
+    if (issuesPerPage !== 25) params.set("page_size", String(issuesPerPage));
+    return params;
+  }
 
-    if (replace) {
-      history.replaceState({ path: newURL }, "", newURL);
+  function updateURL() {
+    const qs = buildQueryParams("homedb").toString();
+    const newURL = qs ? `${window.location.pathname}?${qs}` : window.location.pathname;
+    history.replaceState({ path: newURL }, "", newURL);
+  }
+
+  function resetAndFetch() {
+    currentPage = 1;
+    fetchIssues();
+  }
+
+  function toggleSetFilter(set, value, checked) {
+    if (checked) {
+      set.add(value);
     } else {
-      history.pushState({ path: newURL }, "", newURL);
+      set.delete(value);
     }
+    resetAndFetch();
   }
 
   applyFiltersFromURL();
 
-  async function loadData() {
-    globalLoader.classList.add("visible");
-
-    // Get source names from github source_test.yaml file
-    const response = await fetch(
-      "https://raw.githubusercontent.com/google/osv.dev/master/source_test.yaml"
-    );
-    const yamlText = await response.text();
-    const sources = jsyaml.load(yamlText);
-    const sourceNames = sources.map((s) => s.name);
-
-    // Check if the home database from the URL is not in the source yaml list.
-    // If the queried home database is not in the source list, remove the invalid parameter from the URL.
-    if (selectedHomeDb && !sourceNames.includes(selectedHomeDb)) {
-      selectedHomeDb = "";
-      urlHomeDbApplied = true; // Prevent further checks
-      updateURL("", true);
+  async function fetchIssues(isTimestampRetry = false) {
+    clearTimeout(timestampRetryTimer);
+    if (!isTimestampRetry) {
+      timestampRetryCount = 0;
     }
+    if (activeQueryController) activeQueryController.abort();
+    const controller = new AbortController();
+    activeQueryController = controller;
+    globalLoader.classList.add("visible");
+    updateURL();
 
-    processAndDisplayData();
+    const qs = buildQueryParams("source").toString();
+    const queryURL = qs ? `/linter-findings/query?${qs}` : "/linter-findings/query";
 
-    const allPromises = [];
+    try {
+      const res = await fetch(queryURL, {
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        throw new Error(`Request failed (${res.status})`);
+      }
+      const data = await res.json();
+      if (controller.signal.aborted) return;
 
-    // Get the detailed linter results from GCS bucket
-    const linterPromise = (async () => {
-      try {
-        const rootRes = await fetch("/linter-findings/");
-        if (rootRes.ok) {
-          const activeSources = await rootRes.json();
-          const sourcesToFetch = sourceNames.filter((name) => activeSources.includes(name));
-          const linterPromises = sourcesToFetch.map((sourceName) => {
-            const url = `/linter-findings/${sourceName}`;
-            return fetch(url)
-              .then((res) => (res.ok ? res.json() : {}))
-              .catch((e) => {
-                  console.warn(`Failed to fetch linter source: ${sourceName}`, e);
-                  return {};
-              });
-          });
-          const linterResults = await Promise.all(linterPromises);
-          linterResults.forEach((data) => {
-            for (const path in data) {
-              const bugId = path.split("/").pop().replace(".json", "");
-              if (!findingDetails[bugId]) findingDetails[bugId] = [];
-              findingDetails[bugId].push(...data[path]);
-            }
-          });
+      const prevPage = currentPage;
+      totalIssues = data.total || 0;
+      currentPage = data.page || 1;
+      if (currentPage !== prevPage) {
+        updateURL();
+      }
+      latestFacets = data.facets || {};
+
+      if (data.timestamps_ready) {
+        syncStatusEl.hidden = true;
+        timestampRetryCount = 0;
+      } else {
+        syncStatusEl.hidden = false;
+        if (timestampRetryCount < maxTimestampRetries) {
+          const delayMs = Math.min(1500 * Math.pow(2, timestampRetryCount), 15000);
+          timestampRetryCount++;
+          syncStatusEl.textContent = "Syncing First Seen timestamps...";
+          timestampRetryTimer = setTimeout(() => fetchIssues(true), delayMs);
+        } else {
+          syncStatusEl.textContent = "First Seen timestamps still syncing (reload later)";
         }
-      } catch (e) {
-        console.error("Failed to fetch active linter sources", e);
       }
-    })();
-    allPromises.push(linterPromise);
 
-    // Get the import finding code from the API
-    const issuePromises = sourceNames.map((sourceName) => {
-      const url = `https://api.test.osv.dev/v1experimental/importfindings/${sourceName}`;
-      return fetch(url)
-        .then((res) => (res.ok ? res.json() : { invalid_records: [] }))
-        .then((data) => {
-          const records = data.invalid_records || [];
-          allIssues.push(...records);
-          records.forEach((issue) => {
-            if (!issuesByHomeDb[issue.source]) {
-              issuesByHomeDb[issue.source] = [];
-            }
-            issuesByHomeDb[issue.source].push(issue);
-          });
+      updateDynamicFilterCounts(latestFacets);
+      renderActiveChips();
+      displayIssues(data.issues || []);
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      console.error("Failed loading linter findings:", err);
+      const tableBody = document
+        .getElementById("issues-table")
+        .getElementsByTagName("tbody")[0];
+      tableBody.innerHTML = '<tr><td colspan="5">Failed to load issues.</td></tr>';
+      totalIssues = 0;
+      resultsSummaryEl.textContent = "";
+      setupPagination();
+    } finally {
+      if (activeQueryController === controller) {
+        globalLoader.classList.remove("visible");
+      }
+    }
+  }
 
-          if (selectedHomeDb && !urlHomeDbApplied && issuesByHomeDb[selectedHomeDb]) {
-            urlHomeDbApplied = true;
-          }
-
-          applyFilters();
-        })
-        .catch((error) =>
-          console.error("Error loading data from " + url, error)
-        );
+  function syncModeButtons() {
+    document.querySelectorAll(".mode-btn[data-filter='homedb']").forEach((b) => {
+      b.classList.toggle("active", b.dataset.mode === sourceMode);
     });
-    allPromises.push(...issuePromises);
+    document.querySelectorAll(".mode-btn[data-filter='findings']").forEach((b) => {
+      b.classList.toggle("active", b.dataset.mode === ruleMode);
+    });
+  }
 
-    // Wait for all data fetching to complete
-    Promise.allSettled(allPromises).then(() => {
-      dataLoadingComplete = true;
-      globalLoader.classList.remove("visible");
-      if (selectedHomeDb && !urlHomeDbApplied) {
-        selectedHomeDb = "";
-        updateURL("", true);
-      }
-      applyFilters(); // Final render
+  function syncSortHeaders() {
+    document.querySelectorAll("#issues-table th[data-sort]").forEach((th) => {
+      const icon = th.querySelector(".material-icons");
+      if (!icon) return;
+      icon.textContent = th.dataset.sort === sortField
+        ? (sortDirection === "asc" ? "expand_less" : "expand_more")
+        : "unfold_more";
     });
   }
 
   function processAndDisplayData() {
-    applyFilters();
+    syncModeButtons();
+    syncSortHeaders();
+    sinceFilterSelected.textContent = SINCE_LABELS[selectedSince] || selectedSince;
+    fetchIssues();
 
-    searchInput.addEventListener("input", applyFilters);
-    modifiedHeader.addEventListener("click", () => {
-      sortDirection = sortDirection === "asc" ? "desc" : "asc";
-      const icon = modifiedHeader.querySelector(".material-icons");
-      icon.textContent =
-        sortDirection === "asc" ? "expand_less" : "expand_more";
-      applyFilters();
+    searchInput.addEventListener("input", () => {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(resetAndFetch, 200);
     });
+
+    document.querySelectorAll("#issues-table th[data-sort]").forEach((th) => {
+      th.addEventListener("click", () => {
+        const nextField = th.dataset.sort;
+        if (sortField === nextField) {
+          sortDirection = sortDirection === "asc" ? "desc" : "asc";
+        } else {
+          sortField = nextField;
+          sortDirection = nextField === "bug_id" ? "asc" : "desc";
+        }
+        syncSortHeaders();
+        resetAndFetch();
+      });
+    });
+
+    pageSizeSelect.addEventListener("change", () => {
+      issuesPerPage = parseInt(pageSizeSelect.value, 10) || 25;
+      resetAndFetch();
+    });
+
     tabBarContainer.addEventListener("click", handleTabClick);
 
     tabSwitch.addEventListener("wheel", (e) => {
@@ -184,189 +272,270 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     tabSwitch.addEventListener("scroll", () => {
-      if (tabSwitch.scrollLeft > 0) {
-        tabBarContainer.classList.add("scrolled");
-      } else {
-        tabBarContainer.classList.remove("scrolled");
-      }
+      tabBarContainer.classList.toggle("scrolled", tabSwitch.scrollLeft > 0);
     });
 
     homeDbFilter.addEventListener("click", (e) => {
       e.stopPropagation();
-      toggleFilter("homedb");
+      toggleFilter("homedb", homeDbSearchInput);
     });
     findingsFilter.addEventListener("click", (e) => {
       e.stopPropagation();
-      toggleFilter("findings");
+      toggleFilter("findings", findingsSearchInput);
+    });
+    sinceFilter.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleFilter("since");
     });
 
-    homeDbFilterOptions.addEventListener("click", (e) => {
-      if (e.target.classList.contains("filter-option")) {
-        const { value, count } = e.target.dataset;
-        selectedHomeDb = value;
-        homeDbFilterSelected.textContent = `${value} (${count} issues)`;
-        urlHomeDbApplied = true;
-        updateURL(selectedHomeDb);
-        applyFilters();
-      }
-    });
+    homeDbSearchInput.addEventListener("input", () => updateDynamicFilterCounts(latestFacets));
+    findingsSearchInput.addEventListener("input", () => updateDynamicFilterCounts(latestFacets));
 
-    findingsFilterOptions.addEventListener("click", (e) => {
-      if (e.target.classList.contains("filter-option")) {
-        const { value, name, count } = e.target.dataset;
-        selectedFinding = value;
-        findingsFilterSelected.textContent = `${name} (${count} issues)`;
-        applyFilters();
-      }
-    });
-  }
-
-  function applyFilters() {
-    const searchTerm = searchInput.value.toLowerCase();
-
-    filteredIssues = allIssues.filter((issue) => {
-      const bugIdMatch = issue.bug_id.toLowerCase().includes(searchTerm);
-      const homeDbMatch =
-        !selectedHomeDb || issue.source === selectedHomeDb;
-      const findingMatch =
-        !selectedFinding || issue.findings.includes(selectedFinding);
-      return bugIdMatch && homeDbMatch && findingMatch;
-    });
-
-    currentPage = 1;
-    sortIssues();
-    updateDynamicFilterCounts();
-    displayIssues();
-  }
-
-  function updateDynamicFilterCounts() {
-    const searchTerm = searchInput.value.toLowerCase();
-
-    // Update Findings counts
-    const issuesForFindingsCount = allIssues.filter(
-      (issue) =>
-        (!selectedHomeDb || issue.source === selectedHomeDb) &&
-        issue.bug_id.toLowerCase().includes(searchTerm)
-    );
-    const findingsCount = issuesForFindingsCount.reduce((acc, issue) => {
-      issue.findings.forEach((finding) => {
-        acc[finding] = (acc[finding] || 0) + 1;
+    document.querySelectorAll(".mode-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (btn.dataset.filter === "homedb" && sourceMode !== btn.dataset.mode) {
+          sourceMode = btn.dataset.mode;
+          syncModeButtons();
+          if (selectedSources.size > 0) resetAndFetch();
+        } else if (btn.dataset.filter === "findings" && ruleMode !== btn.dataset.mode) {
+          ruleMode = btn.dataset.mode;
+          syncModeButtons();
+          if (selectedCodes.size > 0 || selectedCategories.size > 0) resetAndFetch();
+        }
       });
-      return acc;
-    }, {});
+    });
 
-    findingsFilterOptions.innerHTML = `<div class="filter-option" data-value="">All (${issuesForFindingsCount.length})</div>`;
-    for (const [finding, count] of Object.entries(findingsCount).sort((a, b) =>
-      a[0].localeCompare(b[0])
-    )) {
-      const name = finding.replace("IMPORT_FINDING_TYPE_", "");
-      const option = document.createElement("div");
-      option.className = "filter-option";
-      option.dataset.value = finding;
-      option.dataset.name = name;
-      option.dataset.count = count;
-      option.textContent = `${name} (${count})`;
-      findingsFilterOptions.appendChild(option);
-    }
-    if (!selectedFinding) {
-      findingsFilterSelected.textContent = `All (${issuesForFindingsCount.length} issues)`;
-    }
-
-    // Update Home Database counts
-    const issuesForHomeDbCount = allIssues.filter(
-      (issue) =>
-        (!selectedFinding || issue.findings.includes(selectedFinding)) &&
-        issue.bug_id.toLowerCase().includes(searchTerm)
-    );
-    const homeDbCount = issuesForHomeDbCount.reduce((acc, issue) => {
-      acc[issue.source] = (acc[issue.source] || 0) + 1;
-      return acc;
-    }, {});
-
-    homeDbFilterOptions.innerHTML = `<div class="filter-option" data-value="">All (${issuesForHomeDbCount.length})</div>`;
-    for (const homeDb of Object.keys(issuesByHomeDb).sort()) {
-      const count = homeDbCount[homeDb] || 0;
-      const option = document.createElement("div");
-      option.className = "filter-option";
-      option.dataset.value = homeDb;
-      option.dataset.count = count;
-      option.textContent = `${homeDb} (${count})`;
-      homeDbFilterOptions.appendChild(option);
-    }
-    if (selectedHomeDb) {
-      const selectedOption = homeDbFilterOptions.querySelector(
-        `[data-value="${selectedHomeDb}"]`
-      );
-      if (selectedOption) {
-        const { value, count } = selectedOption.dataset;
-        homeDbFilterSelected.textContent = `${value} (${count} issues)`;
+    document.getElementById("homedb-clear-btn").addEventListener("click", () => {
+      if (selectedSources.size > 0) {
+        selectedSources.clear();
+        resetAndFetch();
       }
-    } else {
-      homeDbFilterSelected.textContent = `All (${issuesForHomeDbCount.length} issues)`;
-    }
-  }
-
-  function sortIssues() {
-    filteredIssues.sort((a, b) => {
-      const dateA = new Date(a.last_attempt);
-      const dateB = new Date(b.last_attempt);
-      if (sortDirection === "asc") {
-        return dateA - dateB;
-      } else {
-        return dateB - dateA;
+    });
+    document.getElementById("findings-clear-btn").addEventListener("click", () => {
+      if (selectedCodes.size > 0 || selectedCategories.size > 0) {
+        selectedCodes.clear();
+        selectedCategories.clear();
+        resetAndFetch();
       }
+    });
+
+    sinceFilterPanel.addEventListener("click", (e) => {
+      const opt = e.target.closest(".filter-option");
+      if (!opt) return;
+      selectedSince = opt.dataset.value || "";
+      sinceFilterSelected.textContent = opt.textContent;
+      sinceFilterPanel.style.display = "none";
+      resetAndFetch();
     });
   }
 
-  function displayIssues() {
+  function appendCheckboxRow(container, labelText, count, checked, className, onChange) {
+    const row = document.createElement("label");
+    row.className = `check-option ${className}${count === 0 ? " zero-count" : ""}`;
+    const left = document.createElement("span");
+    left.className = "check-option-left";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = checked;
+    cb.addEventListener("change", () => onChange(cb.checked));
+    left.appendChild(cb);
+    left.appendChild(document.createTextNode(labelText));
+    const badge = document.createElement("span");
+    badge.textContent = count.toLocaleString();
+    row.appendChild(left);
+    row.appendChild(badge);
+    container.appendChild(row);
+  }
+
+  function updateDynamicFilterCounts(facets) {
+    const rulesTerm = findingsSearchInput.value.toLowerCase().trim();
+    const categories = facets.categories || [];
+    const rules = facets.rules || [];
+    const totalForRules = facets.total_for_rules || 0;
+
+    const prevRulesScroll = findingsFilterOptions.scrollTop;
+    findingsFilterOptions.replaceChildren();
+    categories.forEach((cat) => {
+      const catRules = rules.filter((r) => r.category === cat.code);
+      const catMatch = !rulesTerm || cat.code.toLowerCase().includes(rulesTerm) || cat.label.toLowerCase().includes(rulesTerm);
+      const visibleRules = catMatch ? catRules : catRules.filter((r) =>
+        r.code.toLowerCase().includes(rulesTerm) || r.label.toLowerCase().includes(rulesTerm)
+      );
+      if (!catMatch && visibleRules.length === 0) return;
+
+      appendCheckboxRow(
+        findingsFilterOptions,
+        `${cat.code} — ${cat.label}`,
+        cat.count,
+        selectedCategories.has(cat.code),
+        "is-category",
+        (checked) => toggleSetFilter(selectedCategories, cat.code, checked)
+      );
+      visibleRules.forEach((r) => {
+        appendCheckboxRow(
+          findingsFilterOptions,
+          `${r.code} (${r.label})`,
+          r.count,
+          selectedCodes.has(r.code),
+          "is-child",
+          (checked) => toggleSetFilter(selectedCodes, r.code, checked)
+        );
+      });
+    });
+    findingsFilterOptions.scrollTop = prevRulesScroll;
+
+    const ruleTokens = [...Array.from(selectedCategories).map((c) => `${c}:*`), ...Array.from(selectedCodes)];
+    findingsFilter.classList.toggle("has-active-include", ruleTokens.length > 0 && ruleMode === "include");
+    findingsFilter.classList.toggle("has-active-exclude", ruleTokens.length > 0 && ruleMode === "exclude");
+    findingsFilterSelected.textContent = ruleTokens.length === 0
+      ? `All (${totalForRules.toLocaleString()} issues)`
+      : `${ruleMode === "exclude" ? "Excl: " : ""}${ruleTokens.join(", ")}`;
+
+    const srcTerm = homeDbSearchInput.value.toLowerCase().trim();
+    const sources = [...(facets.sources || [])].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+    const totalForSources = facets.total_for_sources || 0;
+
+    const prevSourcesScroll = homeDbFilterOptions.scrollTop;
+    homeDbFilterOptions.replaceChildren();
+    sources.forEach((src) => {
+      if (src.count === 0 && !selectedSources.has(src.name)) return;
+      if (srcTerm && !src.name.toLowerCase().includes(srcTerm)) return;
+      appendCheckboxRow(homeDbFilterOptions, src.name, src.count, selectedSources.has(src.name), "", (checked) =>
+        toggleSetFilter(selectedSources, src.name, checked)
+      );
+    });
+    homeDbFilterOptions.scrollTop = prevSourcesScroll;
+
+    homeDbFilter.classList.toggle("has-active-include", selectedSources.size > 0 && sourceMode === "include");
+    homeDbFilter.classList.toggle("has-active-exclude", selectedSources.size > 0 && sourceMode === "exclude");
+    homeDbFilterSelected.textContent = selectedSources.size === 0
+      ? `All (${totalForSources.toLocaleString()} issues)`
+      : `${sourceMode === "exclude" ? "Excl: " : ""}${Array.from(selectedSources).join(", ")}`;
+  }
+
+  function renderActiveChips() {
+    activeChipsEl.replaceChildren();
+    const chips = [];
+    selectedSources.forEach((s) => chips.push({
+      label: `${sourceMode === "exclude" ? "DB ≠ " : "DB: "}${s}`,
+      exclude: sourceMode === "exclude",
+      remove: () => toggleSetFilter(selectedSources, s, false),
+    }));
+    selectedCategories.forEach((c) => chips.push({
+      label: `${ruleMode === "exclude" ? "Cat ≠ " : "Cat: "}${c}`,
+      exclude: ruleMode === "exclude",
+      remove: () => toggleSetFilter(selectedCategories, c, false),
+    }));
+    selectedCodes.forEach((c) => chips.push({
+      label: `${ruleMode === "exclude" ? "Rule ≠ " : "Rule: "}${c}`,
+      exclude: ruleMode === "exclude",
+      remove: () => toggleSetFilter(selectedCodes, c, false),
+    }));
+    if (selectedSince) {
+      chips.push({
+        label: `First seen: ${SINCE_LABELS[selectedSince] || selectedSince}`,
+        remove: () => {
+          selectedSince = "";
+          sinceFilterSelected.textContent = SINCE_LABELS[""];
+          resetAndFetch();
+        },
+      });
+    }
+    if (searchInput.value.trim()) {
+      chips.push({
+        label: `Search: "${searchInput.value.trim()}"`,
+        remove: () => {
+          searchInput.value = "";
+          resetAndFetch();
+        },
+      });
+    }
+
+    chips.forEach((c) => {
+      const chip = document.createElement("span");
+      chip.className = `filter-chip${c.exclude ? " exclude-chip" : ""}`;
+      chip.textContent = c.label;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.innerHTML = '<i class="material-icons">close</i>';
+      btn.addEventListener("click", c.remove);
+      chip.appendChild(btn);
+      activeChipsEl.appendChild(chip);
+    });
+
+    if (chips.length > 1) {
+      const clearAll = document.createElement("button");
+      clearAll.type = "button";
+      clearAll.className = "clear-all-chips-btn";
+      clearAll.textContent = "Clear all";
+      clearAll.addEventListener("click", () => {
+        selectedSources.clear();
+        selectedCategories.clear();
+        selectedCodes.clear();
+        sourceMode = "include";
+        ruleMode = "include";
+        selectedSince = "";
+        searchInput.value = "";
+        sinceFilterSelected.textContent = SINCE_LABELS[""];
+        syncModeButtons();
+        resetAndFetch();
+      });
+      activeChipsEl.appendChild(clearAll);
+    }
+  }
+
+  function displayIssues(paginatedIssues) {
     const tableBody = document
       .getElementById("issues-table")
       .getElementsByTagName("tbody")[0];
     tableBody.innerHTML = "";
-
-    const startIndex = (currentPage - 1) * issuesPerPage;
-    const endIndex = startIndex + issuesPerPage;
-    const paginatedIssues = filteredIssues.slice(startIndex, endIndex);
+    resultsSummaryEl.textContent = totalIssues > 0
+      ? `${totalIssues.toLocaleString()} matching issues`
+      : "0 issues";
 
     if (paginatedIssues.length === 0) {
-      if (dataLoadingComplete) {
-        tableBody.innerHTML = '<tr><td colspan="3">No issues found.</td></tr>';
-      } else {
-        tableBody.innerHTML =
-          '<tr><td colspan="3">Loading data...</td></tr>';
-      }
+      tableBody.innerHTML = '<tr><td colspan="5">No issues found.</td></tr>';
     } else {
       paginatedIssues.forEach((issue) => {
-        let row = tableBody.insertRow();
+        const row = tableBody.insertRow();
         row.classList.add("clickable");
         row.addEventListener("click", () => {
-          openCombinedView(issue.bug_id);
+          openCombinedView(issue.bug_id, issue.details || []);
         });
 
-        let cell1 = row.insertCell();
-        let cell2 = row.insertCell();
-        let cell3 = row.insertCell();
+        const cell1 = row.insertCell();
+        const cell2 = row.insertCell();
+        const cell3 = row.insertCell();
+        const cell4 = row.insertCell();
+        const cell5 = row.insertCell();
 
         const bugLink = document.createElement("a");
-        bugLink.href = `https://api.test.osv.dev/v1/vulns/${issue.bug_id}`;
+        bugLink.href = `https://${apiUrl}/v1/vulns/${encodeURIComponent(issue.bug_id)}`;
         bugLink.textContent = issue.bug_id;
         bugLink.addEventListener("click", (e) => {
           e.stopPropagation();
-          openCombinedView(issue.bug_id);
+          openCombinedView(issue.bug_id, issue.details || []);
           e.preventDefault();
         });
         cell1.appendChild(bugLink);
 
+        cell2.textContent = issue.source || "—";
+
         const findingsContainer = document.createElement("div");
-        issue.findings.forEach((finding) => {
+        (issue.codes || []).forEach((code) => {
           const findingSpan = document.createElement("span");
-          findingSpan.textContent = finding.replace("IMPORT_FINDING_TYPE_", "");
+          findingSpan.textContent = code;
           findingSpan.className = "finding-tag";
           findingsContainer.appendChild(findingSpan);
         });
-        cell2.appendChild(findingsContainer);
+        cell3.appendChild(findingsContainer);
 
-        cell3.textContent = new Date(issue.last_attempt).toLocaleString();
+        cell4.textContent = issue.first_seen
+          ? new Date(issue.first_seen).toLocaleDateString()
+          : "—";
+        cell5.textContent = issue.last_attempt
+          ? new Date(issue.last_attempt).toLocaleString()
+          : "—";
       });
     }
     setupPagination();
@@ -375,7 +544,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function setupPagination() {
     const paginationControls = document.getElementById("pagination-controls");
     paginationControls.innerHTML = "";
-    const pageCount = Math.ceil(filteredIssues.length / issuesPerPage);
+    const pageCount = Math.ceil(totalIssues / issuesPerPage);
 
     if (pageCount <= 1) return;
 
@@ -385,7 +554,7 @@ document.addEventListener("DOMContentLoaded", function () {
     prevButton.addEventListener("click", () => {
       if (currentPage > 1) {
         currentPage--;
-        displayIssues();
+        fetchIssues();
       }
     });
     paginationControls.appendChild(prevButton);
@@ -401,7 +570,7 @@ document.addEventListener("DOMContentLoaded", function () {
     nextButton.addEventListener("click", () => {
       if (currentPage < pageCount) {
         currentPage++;
-        displayIssues();
+        fetchIssues();
       }
     });
     paginationControls.appendChild(nextButton);
@@ -419,10 +588,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
   /**
    * Opens a detailed tab view split into Vulnerability JSON and Linter Findings columns.
-   * Fetches full vulnerability record JSON from the API and renders the interactive JSON tree.
+   * Fetches full vulnerability record JSON from the same-origin endpoint and renders the interactive JSON tree.
    * @param {string} bugId - Vulnerability identifier.
+   * @param {Array<Object>} [details=[]] - Inline linter finding objects for the vulnerability.
    */
-  function openCombinedView(bugId) {
+  function openCombinedView(bugId, details = []) {
     const safeBugId = sanitiseBugId(bugId);
 
     const tabId = `details-${safeBugId}`;
@@ -477,13 +647,11 @@ document.addEventListener("DOMContentLoaded", function () {
       </div>
                 `;
 
-
-
     tabsContent.appendChild(tabContent);
     setActiveTab(tabId);
 
-    // Fetch vuln data with the original bugId
-    fetch(`https://api.test.osv.dev/v1/vulns/${bugId}`)
+    const encodedId = encodeURIComponent(bugId);
+    fetch(`/linter-findings/vuln/${encodedId}`)
       .then((res) =>
         res.ok ? res.json() : { error: `Failed to load: ${res.status}` }
       )
@@ -534,16 +702,15 @@ document.addEventListener("DOMContentLoaded", function () {
         ).textContent = `Error: ${err.message}`;
       });
 
-
-    // Display finding data
-    const details = findingDetails[bugId];
     const findingsEl = document.getElementById(findingsJsonId);
-    if (details?.length) {
-      findingsEl.textContent = ''; // Clear "Loading..."
-      findingsEl.appendChild(formatFindings(details, bugId));
-    } else {
-      findingsEl.textContent =
+    if (findingsEl) {
+      if (details.length > 0) {
+        findingsEl.textContent = "";
+        findingsEl.appendChild(formatFindings(details, bugId));
+      } else {
+        findingsEl.textContent =
           "No linter findings available for this vulnerability.";
+      }
     }
   }
 
@@ -889,8 +1056,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function toggleFilter(filterName) {
-    const options = document.getElementById(`${filterName}-filter-options`);
+  function toggleFilter(filterName, focusEl = null) {
+    const options = document.getElementById(`${filterName}-filter-panel`);
     const isVisible = options.style.display === "block";
 
     // Hide all filter options first
@@ -900,6 +1067,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (!isVisible) {
       options.style.display = "block";
+      if (focusEl) setTimeout(() => focusEl.focus(), 0);
     }
   }
 
@@ -911,5 +1079,5 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  loadData();
+  processAndDisplayData();
 });

@@ -303,14 +303,20 @@ def filter_unknown_ecosystems(vulnerability):
 class TaskRunner:
   """Task runner."""
 
-  def __init__(self, ndb_client, oss_fuzz_dir, work_dir, ssh_key_public_path,
-               ssh_key_private_path):
+  def __init__(self,
+               ndb_client,
+               oss_fuzz_dir,
+               work_dir,
+               ssh_key_public_path,
+               ssh_key_private_path,
+               enable_bisect=False):
     self._ndb_client = ndb_client
     self._oss_fuzz_dir = oss_fuzz_dir
     self._work_dir = work_dir
     self._sources_dir = os.path.join(self._work_dir, 'sources')
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
+    self._enable_bisect = enable_bisect
     os.makedirs(self._sources_dir, exist_ok=True)
     logging.info('Created task runner')
 
@@ -619,8 +625,12 @@ class TaskRunner:
                         task_type, source_id)
 
         if task_type in ('regressed', 'fixed'):
-          oss_fuzz.process_bisect_task(self._oss_fuzz_dir, task_type, source_id,
-                                       message)
+          oss_fuzz.process_bisect_task(
+              self._oss_fuzz_dir,
+              task_type,
+              source_id,
+              message,
+              enable_bisect=self._enable_bisect)
         elif task_type == 'impact':
           try:
             oss_fuzz.process_impact_task(source_id, message)
@@ -694,7 +704,8 @@ class TaskRunner:
     def process_task(ack_id, message):
       """Process a task."""
       osv.ensure_updated_checkout(OSS_FUZZ_GIT_URL, self._oss_fuzz_dir)
-      clean_artifacts(self._oss_fuzz_dir)
+      if self._enable_bisect:
+        clean_artifacts(self._oss_fuzz_dir)
 
       # Enforce timeout by doing the work in another thread.
       done_event = threading.Event()
@@ -743,6 +754,11 @@ def main():
       '--redis_host', help='URL to redis instance, enables redis cache')
   parser.add_argument(
       '--redis_port', default=6379, help='Port of redis instance')
+  parser.add_argument(
+      '--enable_bisect',
+      action='store_true',
+      default=False,
+      help='Enable Docker-based OSS-Fuzz bisection (requires privileged pod)')
   args = parser.parse_args()
 
   if args.redis_host:
@@ -751,11 +767,12 @@ def main():
 
   osv.ecosystems.config.work_dir = args.work_dir
 
-  # Work around kernel bug: https://gvisor.dev/issue/1765
-  resource.setrlimit(resource.RLIMIT_MEMLOCK,
-                     (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+  if args.enable_bisect:
+    # Work around kernel bug: https://gvisor.dev/issue/1765
+    resource.setrlimit(resource.RLIMIT_MEMLOCK,
+                       (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
 
-  subprocess.call(('service', 'docker', 'start'))
+    subprocess.call(('service', 'docker', 'start'))
 
   oss_fuzz_dir = os.path.join(args.work_dir, 'oss-fuzz')
 
@@ -769,19 +786,25 @@ def main():
   os.makedirs(tmp_dir, exist_ok=True)
   os.environ['TMPDIR'] = tmp_dir
 
-  # Add oss-fuzz/infra to the import path so we can import from it.
-  sys.path.append(os.path.join(oss_fuzz_dir, 'infra'))
+  if args.enable_bisect:
+    # Add oss-fuzz/infra to the import path so we can import from it.
+    sys.path.append(os.path.join(oss_fuzz_dir, 'infra'))
 
-  # Suppress OSS-Fuzz build error logs. These are expected as part of
-  # bisection.
-  logging.getLogger('helper').setLevel(logging.CRITICAL)
+    # Suppress OSS-Fuzz build error logs. These are expected as part of
+    # bisection.
+    logging.getLogger('helper').setLevel(logging.CRITICAL)
 
   osv.ensure_updated_checkout(OSS_FUZZ_GIT_URL, oss_fuzz_dir)
 
   ndb_client = ndb.Client()
   with ndb_client.context():
-    task_runner = TaskRunner(ndb_client, oss_fuzz_dir, args.work_dir,
-                             args.ssh_key_public, args.ssh_key_private)
+    task_runner = TaskRunner(
+        ndb_client,
+        oss_fuzz_dir,
+        args.work_dir,
+        args.ssh_key_public,
+        args.ssh_key_private,
+        enable_bisect=args.enable_bisect)
     task_runner.loop()
 
 

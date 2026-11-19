@@ -16,7 +16,29 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "links": [],
+  "links": [
+    {
+      "icon": "external link",
+      "tags": [],
+      "targetBlank": false,
+      "title": "Observability Directory",
+      "tooltip": "Return to OSV.dev Observability Directory",
+      "type": "link",
+      "url": "/d/osv-home"
+    },
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "osv"
+      ],
+      "targetBlank": false,
+      "title": "OSV Dashboards",
+      "type": "dashboards"
+    }
+  ],
   "panels": [
     {
       "collapsed": false,
@@ -27,8 +49,206 @@
         "y": 0
       },
       "id": 100,
+      "panels": [],
       "title": "Service Level Objectives (SLOs) & Key Performance Indicators",
       "type": "row"
+    },
+    {
+      "datasource": "GMP (Prometheus)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 99.5
+              },
+              {
+                "color": "green",
+                "value": 99.9
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 2,
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.52",
+      "targets": [
+        {
+          "expr": "(1 - ((sum(rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\", response_code_class=\"5xx\", monitored_resource=\"cloud_run_revision\"}[7d])) or vector(0)) / sum(rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[7d])))) * 100",
+          "refId": "A",
+          "legendFormat": "API Availability",
+          "instant": true
+        }
+      ],
+      "title": "API Availability (7d SLO: 99.9%)",
+      "type": "stat",
+      "description": "7-day rolling Cloud Run availability for ESPv2 gateway osv-grpc-v1 (SLO: 99.9%)."
+    },
+    {
+      "datasource": "GMP (Prometheus)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 99.5
+              },
+              {
+                "color": "green",
+                "value": 99.9
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 2,
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.52",
+      "targets": [
+        {
+          "expr": "(1 - ((sum(rate(loadbalancing_googleapis_com:https_request_count{monitored_resource=\"https_lb_rule\", url_map_name=~\"website.*\", response_code_class=~\"500|5xx\"}[7d])) or vector(0)) / sum(rate(loadbalancing_googleapis_com:https_request_count{monitored_resource=\"https_lb_rule\", url_map_name=~\"website.*\"}[7d])))) * 100",
+          "refId": "A",
+          "legendFormat": "Website Availability",
+          "instant": true
+        }
+      ],
+      "title": "Website Availability (7d SLO: 99.9%)",
+      "type": "stat",
+      "description": "7-day rolling Cloud Load Balancer availability for website URL map (SLO: 99.9%)."
+    },
+    {
+      "datasource": "GMP (Prometheus)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 95
+              },
+              {
+                "color": "green",
+                "value": 99
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 2,
+          "min": 0,
+          "max": 100
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.52",
+      "targets": [
+        {
+          "expr": "(1 - ((sum(increase(osv_worker_tasks_processed_total{status=\"error\"}[$__range])) or vector(0)) / (sum(increase(osv_worker_tasks_processed_total{status=~\"success|error\"}[$__range])) > 0))) * 100 or vector(100)",
+          "refId": "A",
+          "legendFormat": "Success Rate",
+          "instant": true
+        }
+      ],
+      "title": "Worker Success Rate (Target: > 99%)",
+      "type": "stat"
     },
     {
       "datasource": "GMP (Prometheus)",
@@ -54,13 +274,13 @@
       "gridPos": {
         "h": 4,
         "w": 6,
-        "x": 0,
+        "x": 18,
         "y": 1
       },
       "id": 1,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
@@ -85,196 +305,6 @@
       "type": "stat"
     },
     {
-      "datasource": "GMP (Prometheus)",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 95
-              },
-              {
-                "color": "green",
-                "value": 99
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 6,
-        "y": 1
-      },
-      "id": 2,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "7.5.52",
-      "targets": [
-        {
-          "expr": "(sum(increase(osv_worker_tasks_processed_total{status=\"success\"}[$__range])) / sum(increase(osv_worker_tasks_processed_total{status=~\"success|error\"}[$__range]))) * 100",
-          "refId": "A",
-          "legendFormat": "Success Rate",
-          "instant": true
-        }
-      ],
-      "title": "Worker Success Rate (Target: > 99%)",
-      "type": "stat"
-    },
-    {
-      "datasource": "GMP (Prometheus)",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "max": 100,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 99.0
-              },
-              {
-                "color": "green",
-                "value": 99.95
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 12,
-        "y": 1
-      },
-      "id": 3,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "7.5.52",
-      "targets": [
-        {
-          "expr": "(1 - (sum(rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\",response_code_class=\"5xx\", monitored_resource=\"cloud_run_revision\"}[$__range])) / sum(rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[$__range])))) * 100",
-          "refId": "A",
-          "legendFormat": "Availability",
-          "instant": true
-        }
-      ],
-      "title": "API Availability SLO (Target: 99.95%)",
-      "type": "stat"
-    },
-    {
-      "datasource": "GMP (Prometheus)",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 0.1
-              },
-              {
-                "color": "red",
-                "value": 0.15
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 18,
-        "y": 1
-      },
-      "id": 4,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "7.5.52",
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.99, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[5m]))) / 1000",
-          "refId": "A",
-          "legendFormat": "p99 Latency",
-          "instant": true
-        }
-      ],
-      "title": "API p99 Latency (Target: <= 150ms)",
-      "type": "stat"
-    },
-    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -282,12 +312,19 @@
         "x": 0,
         "y": 5
       },
-      "id": 101,
-      "title": "Worker Ingestion Pipeline Throughput",
+      "id": 102,
+      "panels": [],
+      "title": "Public Serving Traffic & Latency SLOs (Website & Per-Endpoint API)",
       "type": "row"
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "1xx": "#B877D9",
+        "2xx": "#73BF69",
+        "3xx": "#5794F2",
+        "4xx": "#FF9830",
+        "5xx": "#F2495C"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
@@ -295,16 +332,734 @@
       "fill": 2,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 6
       },
       "hiddenSeries": false,
-      "id": 5,
+      "id": 7,
       "legend": {
         "alignAsTable": true,
         "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum by (response_code_class) (rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[5m]))",
+          "refId": "A",
+          "legendFormat": "{{response_code_class}}"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "API Request Rate by Status Class (osv-grpc-v1)",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "reqps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "1xx": "#B877D9",
+        "2xx": "#73BF69",
+        "3xx": "#5794F2",
+        "4xx": "#FF9830",
+        "5xx": "#F2495C",
+        "": "#8E8E8E",
+        "0": "#8E8E8E"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "hiddenSeries": false,
+      "id": 10,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum by (code_class) (label_replace(rate(loadbalancing_googleapis_com:https_request_count{monitored_resource=\"https_lb_rule\", url_map_name=~\"website.*\"}[5m]), \"code_class\", \"${1}xx\", \"response_code_class\", \"^([1-5]).*\"))",
+          "refId": "A",
+          "legendFormat": "{{code_class}}"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Website Request Rate by Status Class (Load Balancer)",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "reqps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "P50 (SLO ≤ 300ms)": "#73BF69",
+        "P90 (SLO ≤ 500ms)": "#FADE2A",
+        "P95 (SLO ≤ 1s)": "#FF9830"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "hiddenSeries": false,
+      "id": 11,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by(le) (rate(loadbalancing_googleapis_com:https_total_latencies_bucket{monitored_resource=\"https_lb_rule\", url_map_name=~\"website.*\"}[5m]))) / 1000",
+          "refId": "A",
+          "legendFormat": "P50 (SLO ≤ 300ms)"
+        },
+        {
+          "expr": "histogram_quantile(0.90, sum by(le) (rate(loadbalancing_googleapis_com:https_total_latencies_bucket{monitored_resource=\"https_lb_rule\", url_map_name=~\"website.*\"}[5m]))) / 1000",
+          "refId": "B",
+          "legendFormat": "P90 (SLO ≤ 500ms)"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by(le) (rate(loadbalancing_googleapis_com:https_total_latencies_bucket{monitored_resource=\"https_lb_rule\", url_map_name=~\"website.*\"}[5m]))) / 1000",
+          "refId": "C",
+          "legendFormat": "P95 (SLO ≤ 1s)"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "custom",
+          "fill": false,
+          "line": true,
+          "lineColor": "rgba(115, 191, 105, 0.75)",
+          "op": "gt",
+          "value": 0.3
+        },
+        {
+          "colorMode": "warning",
+          "fill": false,
+          "line": true,
+          "op": "gt",
+          "value": 0.5
+        },
+        {
+          "colorMode": "critical",
+          "fill": false,
+          "line": true,
+          "op": "gt",
+          "value": 1.0
+        }
+      ],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Website Latency SLOs (P50 ≤ 300ms · P90 ≤ 500ms · P95 ≤ 1s)",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "s",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      },
+      "description": "50% of requests ≤ 300ms, 90% ≤ 500ms, 95% ≤ 1s (Cloud Load Balancer total latency)."
+    },
+    {
+      "aliasColors": {
+        "P50 (SLO ≤ 100ms)": "#73BF69",
+        "P90 (SLO ≤ 200ms)": "#FADE2A",
+        "P95 (SLO ≤ 500ms)": "#FF9830"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "hiddenSeries": false,
+      "id": 8,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"api\", method=~\"(^|.*[._/])GetVulnById$\"}[5m]))) or histogram_quantile(0.50, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"produced_api\", method=~\"(^|.*[._/])GetVulnById$\"}[5m])))",
+          "refId": "A",
+          "legendFormat": "P50 (SLO ≤ 100ms)"
+        },
+        {
+          "expr": "histogram_quantile(0.90, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"api\", method=~\"(^|.*[._/])GetVulnById$\"}[5m]))) or histogram_quantile(0.90, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"produced_api\", method=~\"(^|.*[._/])GetVulnById$\"}[5m])))",
+          "refId": "B",
+          "legendFormat": "P90 (SLO ≤ 200ms)"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"api\", method=~\"(^|.*[._/])GetVulnById$\"}[5m]))) or histogram_quantile(0.95, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"produced_api\", method=~\"(^|.*[._/])GetVulnById$\"}[5m])))",
+          "refId": "C",
+          "legendFormat": "P95 (SLO ≤ 500ms)"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "custom",
+          "fill": false,
+          "line": true,
+          "lineColor": "rgba(115, 191, 105, 0.75)",
+          "op": "gt",
+          "value": 0.1
+        },
+        {
+          "colorMode": "warning",
+          "fill": false,
+          "line": true,
+          "op": "gt",
+          "value": 0.2
+        },
+        {
+          "colorMode": "critical",
+          "fill": false,
+          "line": true,
+          "op": "gt",
+          "value": 0.5
+        }
+      ],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "API Latency: GET /v1/vulns/{id} (P50 ≤ 100ms · P90 ≤ 200ms · P95 ≤ 500ms)",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "s",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      },
+      "description": "ESPv2 end-to-end latency for osv.v1.OSV.GetVulnById. SLOs: P50 ≤ 100ms, P90 ≤ 200ms, P95 ≤ 500ms."
+    },
+    {
+      "aliasColors": {
+        "P50 (SLO ≤ 300ms)": "#73BF69",
+        "P90 (SLO ≤ 500ms)": "#FADE2A",
+        "P95 (SLO ≤ 1s)": "#FF9830"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 26
+      },
+      "hiddenSeries": false,
+      "id": 12,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"api\", method=~\"(^|.*[._/])QueryAffected$\"}[5m]))) or histogram_quantile(0.50, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"produced_api\", method=~\"(^|.*[._/])QueryAffected$\"}[5m])))",
+          "refId": "A",
+          "legendFormat": "P50 (SLO ≤ 300ms)"
+        },
+        {
+          "expr": "histogram_quantile(0.90, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"api\", method=~\"(^|.*[._/])QueryAffected$\"}[5m]))) or histogram_quantile(0.90, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"produced_api\", method=~\"(^|.*[._/])QueryAffected$\"}[5m])))",
+          "refId": "B",
+          "legendFormat": "P90 (SLO ≤ 500ms)"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"api\", method=~\"(^|.*[._/])QueryAffected$\"}[5m]))) or histogram_quantile(0.95, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"produced_api\", method=~\"(^|.*[._/])QueryAffected$\"}[5m])))",
+          "refId": "C",
+          "legendFormat": "P95 (SLO ≤ 1s)"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "custom",
+          "fill": false,
+          "line": true,
+          "lineColor": "rgba(115, 191, 105, 0.75)",
+          "op": "gt",
+          "value": 0.3
+        },
+        {
+          "colorMode": "warning",
+          "fill": false,
+          "line": true,
+          "op": "gt",
+          "value": 0.5
+        },
+        {
+          "colorMode": "critical",
+          "fill": false,
+          "line": true,
+          "op": "gt",
+          "value": 1.0
+        }
+      ],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "API Latency: POST /v1/query (P50 ≤ 300ms · P90 ≤ 500ms · P95 ≤ 1s)",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "s",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      },
+      "description": "ESPv2 end-to-end latency for osv.v1.OSV.QueryAffected. SLOs: P50 ≤ 300ms, P90 ≤ 500ms, P95 ≤ 1s."
+    },
+    {
+      "aliasColors": {
+        "P50 (SLO ≤ 500ms)": "#73BF69",
+        "P90 (SLO ≤ 4s)": "#FADE2A",
+        "P95 (SLO ≤ 6s)": "#FF9830"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 26
+      },
+      "hiddenSeries": false,
+      "id": 13,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"api\", method=~\"(^|.*[._/])QueryAffectedBatch$\"}[5m]))) or histogram_quantile(0.50, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"produced_api\", method=~\"(^|.*[._/])QueryAffectedBatch$\"}[5m]))) or (histogram_quantile(0.50, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-backend-batch\", monitored_resource=\"cloud_run_revision\"}[5m]))) / 1000)",
+          "refId": "A",
+          "legendFormat": "P50 (SLO ≤ 500ms)"
+        },
+        {
+          "expr": "histogram_quantile(0.90, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"api\", method=~\"(^|.*[._/])QueryAffectedBatch$\"}[5m]))) or histogram_quantile(0.90, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"produced_api\", method=~\"(^|.*[._/])QueryAffectedBatch$\"}[5m]))) or (histogram_quantile(0.90, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-backend-batch\", monitored_resource=\"cloud_run_revision\"}[5m]))) / 1000)",
+          "refId": "B",
+          "legendFormat": "P90 (SLO ≤ 4s)"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"api\", method=~\"(^|.*[._/])QueryAffectedBatch$\"}[5m]))) or histogram_quantile(0.95, sum by(le) (rate(serviceruntime_googleapis_com:api_request_latencies_bucket{monitored_resource=\"produced_api\", method=~\"(^|.*[._/])QueryAffectedBatch$\"}[5m]))) or (histogram_quantile(0.95, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-backend-batch\", monitored_resource=\"cloud_run_revision\"}[5m]))) / 1000)",
+          "refId": "C",
+          "legendFormat": "P95 (SLO ≤ 6s)"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "custom",
+          "fill": false,
+          "line": true,
+          "lineColor": "rgba(115, 191, 105, 0.75)",
+          "op": "gt",
+          "value": 0.5
+        },
+        {
+          "colorMode": "warning",
+          "fill": false,
+          "line": true,
+          "op": "gt",
+          "value": 4.0
+        },
+        {
+          "colorMode": "critical",
+          "fill": false,
+          "line": true,
+          "op": "gt",
+          "value": 6.0
+        }
+      ],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "API Latency: POST /v1/querybatch (P50 ≤ 500ms · P90 ≤ 4s · P95 ≤ 6s)",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "s",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      },
+      "description": "ESPv2 end-to-end latency for osv.v1.OSV.QueryAffectedBatch (with fallback to dedicated osv-grpc-backend-batch Cloud Run service). SLOs: P50 ≤ 500ms, P90 ≤ 4s, P95 ≤ 6s."
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 36
+      },
+      "id": 101,
+      "panels": [],
+      "title": "Worker Ingestion Pipeline Throughput",
+      "type": "row"
+    },
+    {
+      "aliasColors": {
+        "success": "#73BF69",
+        "skipped": "#5794F2",
+        "unknown": "#FF9830",
+        "error": "#F2495C"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 37
+      },
+      "hiddenSeries": false,
+      "id": 5,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
         "current": true,
         "max": true,
         "min": false,
@@ -377,7 +1132,12 @@
       }
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "success": "#73BF69",
+        "skipped": "#5794F2",
+        "unknown": "#FF9830",
+        "error": "#F2495C"
+      },
       "bars": true,
       "dashLength": 10,
       "dashes": false,
@@ -385,10 +1145,10 @@
       "fill": 8,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 6
+        "y": 37
       },
       "hiddenSeries": false,
       "id": 6,
@@ -473,212 +1233,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
-      },
-      "id": 102,
-      "title": "Public API Serving & Error Budget Burn Rate",
-      "type": "row"
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "GMP (Prometheus)",
-      "fill": 2,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 15
-      },
-      "hiddenSeries": false,
-      "id": 7,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": false,
-        "rightSide": false,
-        "show": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 2,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.5.52",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum by (response_code_class) (rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[5m]))",
-          "refId": "A",
-          "legendFormat": "{{response_code_class}}"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Cloud Run Request Rate (QPS by Status Class)",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "reqps",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": 0,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "GMP (Prometheus)",
-      "fill": 2,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 15
-      },
-      "hiddenSeries": false,
-      "id": 8,
-      "legend": {
-        "alignAsTable": true,
-        "avg": true,
-        "current": true,
-        "max": true,
-        "min": false,
-        "rightSide": false,
-        "show": true,
-        "total": false,
-        "values": true
-      },
-      "lines": true,
-      "linewidth": 2,
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.5.52",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.50, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[5m]))) / 1000",
-          "refId": "A",
-          "legendFormat": "p50 Latency"
-        },
-        {
-          "expr": "histogram_quantile(0.95, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[5m]))) / 1000",
-          "refId": "B",
-          "legendFormat": "p95 Latency"
-        },
-        {
-          "expr": "histogram_quantile(0.99, sum by(le) (rate(run_googleapis_com:request_latencies_bucket{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[5m]))) / 1000",
-          "refId": "C",
-          "legendFormat": "p99 Latency"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Cloud Run API Latency Percentiles",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "s",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": 0,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": false
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 23
+        "y": 47
       },
       "id": 103,
-      "title": "Ingestion Latency by Source",
+      "panels": [],
+      "title": "Pipeline Ingestion Latency KPI by Source",
       "type": "row"
     },
     {
@@ -687,26 +1246,28 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "GMP (Prometheus)",
-      "fill": 2,
+      "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 12,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 48
       },
       "hiddenSeries": false,
       "id": 9,
       "legend": {
         "alignAsTable": true,
-        "avg": true,
+        "avg": false,
         "current": true,
         "max": true,
         "min": false,
-        "rightSide": false,
+        "rightSide": true,
         "show": true,
         "total": false,
-        "values": true
+        "values": true,
+        "sort": "max",
+        "sortDesc": true
       },
       "lines": true,
       "linewidth": 2,
@@ -725,9 +1286,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by(le, source) (rate(osv_worker_published_to_available_seconds_bucket[1h])))",
+          "expr": "topk(15, histogram_quantile(0.95, sum by(le, source) (rate(osv_worker_importer_to_available_seconds_bucket{source=~\"$source\"}[1h]))))",
           "refId": "A",
-          "legendFormat": "{{source}} (p95)"
+          "legendFormat": "{{source}}"
         }
       ],
       "thresholds": [
@@ -742,7 +1303,8 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Published-to-Available Lag by Source (Target: < 2h)",
+      "title": "Importer-to-Available Pipeline Latency by Source — Top 15 Slowest (Internal KPI: < 2h)",
+      "description": "95th percentile pipeline latency from when the importer picks up and enqueues a record (req_timestamp) until the worker finishes writing it to OSV (excludes reimports).",
       "tooltip": {
         "shared": true,
         "sort": 2,
@@ -790,7 +1352,36 @@
     "worker"
   ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": "GMP (Prometheus)",
+        "definition": "label_values(osv_importer_last_new_record_timestamp_seconds, source)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Ingestion Latency Source",
+        "multi": true,
+        "name": "source",
+        "options": [],
+        "query": "label_values(osv_importer_last_new_record_timestamp_seconds, source)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tags": [],
+        "type": "query",
+        "useTags": false
+      }
+    ]
   },
   "time": {
     "from": "now-24h",

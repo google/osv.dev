@@ -820,8 +820,62 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /**
+   * Checks whether a dot-separated JSON path traverses a `database_specific` field.
+   * @param {string} path - Dot-separated JSON path.
+   * @returns {boolean} True if any segment of the path is `database_specific`.
+   */
+  function isDatabaseSpecificPath(path) {
+    return path.split('.').includes('database_specific');
+  }
+
+  /**
+   * Finds JSON paths to overlapping `introduced` and `fixed` events matching a target value.
+   * Only inspects `affected[].ranges[].events[]`, ignoring `database_specific` and other fields.
+   * @param {Object} vulnData - The vulnerability JSON data.
+   * @param {string} eventValue - The overlapping event value to locate.
+   * @returns {string[]} Found event field path strings.
+   */
+  function findOverlappingEventPaths(vulnData, eventValue) {
+    const exactPaths = [];
+    const fallbackPaths = [];
+    if (!vulnData || !Array.isArray(vulnData.affected)) return exactPaths;
+
+    for (let i = 0; i < vulnData.affected.length; i++) {
+      const affected = vulnData.affected[i];
+      if (!affected || !Array.isArray(affected.ranges)) continue;
+
+      for (let j = 0; j < affected.ranges.length; j++) {
+        const range = affected.ranges[j];
+        if (!range || !Array.isArray(range.events)) continue;
+
+        const introducedPaths = [];
+        const fixedPaths = [];
+        for (let k = 0; k < range.events.length; k++) {
+          const ev = range.events[k];
+          if (!ev || typeof ev !== 'object') continue;
+          if (ev.introduced === eventValue) {
+            introducedPaths.push(`affected.${i}.ranges.${j}.events.${k}.introduced`);
+          }
+          if (ev.fixed === eventValue) {
+            fixedPaths.push(`affected.${i}.ranges.${j}.events.${k}.fixed`);
+          }
+        }
+
+        if (introducedPaths.length > 0 && fixedPaths.length > 0) {
+          exactPaths.push(...introducedPaths, ...fixedPaths);
+        } else {
+          fallbackPaths.push(...introducedPaths, ...fixedPaths);
+        }
+      }
+    }
+
+    return exactPaths.length > 0 ? exactPaths : fallbackPaths;
+  }
+
+  /**
    * Extracts JSON paths from a linter finding message.
-   * Handles schema errors (SCH:xxx), quote/value matches (RNG:002), range types, and top-level properties (REC:xxx).
+   * Handles schema errors (SCH:xxx), overlapping events and unexpected range types (RNG:002),
+   * quote/value matches (excluding `database_specific`), and top-level properties (REC:xxx).
    * @param {Object} finding - Finding record with Code and Message properties.
    * @param {string} bugId - Vulnerability ID.
    * @returns {string[]} Array of target JSON path strings.
@@ -840,22 +894,8 @@ document.addEventListener("DOMContentLoaded", function () {
       paths.push(match[1]);
     }
 
-    // 2. Check for overlapping event values (RNG:002) or anything in quotes using O(1) indexed valueMap
-    const quoteRegex = /"([^"]+)"/g;
-    let quoteMatch;
-    while ((quoteMatch = quoteRegex.exec(finding.Message)) !== null) {
-      const value = quoteMatch[1];
-      if (!value.startsWith('{')) {
-        if (valueMap && valueMap[value]) {
-          paths.push(...valueMap[value]);
-        } else if (vulnData) {
-          const valuePaths = findPathsForValue(vulnData, value);
-          paths.push(...valuePaths);
-        }
-      }
-    }
-
-    // 3. Check for unexpected range type (RNG:002 case 2)
+    // 2. Check for unexpected range type (RNG:002 case 2) before generic quote matching
+    // so quoted keys/values inside the embedded range JSON (including database_specific) are not highlighted.
     const rngTypeRegex = /unexpected range type "[^"]+" for (\{[\s\S]*\})/;
     const rngTypeMatch = rngTypeRegex.exec(finding.Message);
     if (rngTypeMatch) {
@@ -868,9 +908,45 @@ document.addEventListener("DOMContentLoaded", function () {
       } catch (e) {
         console.error("Failed to parse range JSON from finding", e);
       }
+      return paths;
     }
 
-    // 4. Check for invalid top-level properties (REC:xxx)
+    // 3. Check for overlapping event values (RNG:002 case 1), scoped strictly to range events
+    // so matching values in database_specific or versions are ignored.
+    const overlappingEventRegex = /overlapping event:\s*"((?:[^"\\]|\\.)*)"/g;
+    let overlapMatch;
+    let matchedOverlappingEvent = false;
+    while ((overlapMatch = overlappingEventRegex.exec(finding.Message)) !== null) {
+      matchedOverlappingEvent = true;
+      let eventValue = overlapMatch[1];
+      try {
+        eventValue = JSON.parse(`"${overlapMatch[1]}"`);
+      } catch {
+        // Keep raw match if JSON unescaping fails.
+      }
+      paths.push(...findOverlappingEventPaths(vulnData, eventValue));
+    }
+    if (matchedOverlappingEvent) {
+      return paths;
+    }
+
+    // 4. Check for other quoted values using O(1) indexed valueMap (ignoring database_specific)
+    const quoteRegex = /"([^"]+)"/g;
+    let quoteMatch;
+    while ((quoteMatch = quoteRegex.exec(finding.Message)) !== null) {
+      const value = quoteMatch[1];
+      if (!value.startsWith('{')) {
+        let valuePaths = [];
+        if (valueMap && valueMap[value]) {
+          valuePaths = valueMap[value];
+        } else if (vulnData) {
+          valuePaths = findPathsForValue(vulnData, value);
+        }
+        paths.push(...valuePaths.filter((p) => !isDatabaseSpecificPath(p)));
+      }
+    }
+
+    // 5. Check for invalid top-level properties (REC:xxx)
     const invalidPropRegex = /Invalid ([a-zA-Z0-9_]+):/i;
     const invalidPropMatch = invalidPropRegex.exec(finding.Message);
     if (invalidPropMatch) {

@@ -8552,11 +8552,23 @@
         },
         {
           "type": "WEB",
+          "url": "https://github.com/pallets/jinja/releases/tag/3.1.6"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pypa/advisory-database/tree/main/vulns/jinja2/PYSEC-2026-1471.yaml"
+        },
+        {
+          "type": "WEB",
           "url": "https://lists.debian.org/debian-lts-announce/2025/04/msg00022.html"
         },
         {
           "type": "WEB",
           "url": "https://lists.debian.org/debian-lts-announce/2025/04/msg00045.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://pypi.org/project/jinja2"
         }
       ],
       "affected": [
@@ -8583,7 +8595,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -8998,11 +9010,23 @@
         },
         {
           "type": "WEB",
+          "url": "https://github.com/pallets/jinja/releases/tag/3.1.6"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pypa/advisory-database/tree/main/vulns/jinja2/PYSEC-2026-1471.yaml"
+        },
+        {
+          "type": "WEB",
           "url": "https://lists.debian.org/debian-lts-announce/2025/04/msg00022.html"
         },
         {
           "type": "WEB",
           "url": "https://lists.debian.org/debian-lts-announce/2025/04/msg00045.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://pypi.org/project/jinja2"
         }
       ],
       "affected": [
@@ -9029,7 +9053,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V4",
@@ -9445,11 +9469,23 @@
         },
         {
           "type": "WEB",
+          "url": "https://github.com/pallets/jinja/releases/tag/3.1.6"
+        },
+        {
+          "type": "WEB",
+          "url": "https://github.com/pypa/advisory-database/tree/main/vulns/jinja2/PYSEC-2026-1471.yaml"
+        },
+        {
+          "type": "WEB",
           "url": "https://lists.debian.org/debian-lts-announce/2025/04/msg00022.html"
         },
         {
           "type": "WEB",
           "url": "https://lists.debian.org/debian-lts-announce/2025/04/msg00045.html"
+        },
+        {
+          "type": "WEB",
+          "url": "https://pypi.org/project/jinja2"
         }
       ],
       "affected": [
@@ -9476,7 +9512,7 @@
           "database_specific": "<Any value>"
         }
       ],
-      "schema_version": "1.9.0",
+      "schema_version": "1.9.2",
       "severity": [
         {
           "type": "CVSS_V4",

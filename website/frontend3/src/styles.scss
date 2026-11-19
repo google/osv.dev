@@ -1347,11 +1347,13 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       background: $osv-ecosystems-bg;
       border: 1px solid #444;
       border-radius: 0;
-      display: block;
+      display: flex;
+      align-items: center;
+      overflow-wrap: anywhere;
 
       &::before {
         @include chevron-indicator($color: $osv-text-color);
-        vertical-align: middle;
+        flex-shrink: 0;
       }
     }
 

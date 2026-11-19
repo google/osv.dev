@@ -461,7 +461,22 @@ with open(args.input) as f:
     vulns = json.load(f)
 out = {}
 for v in vulns:
-    out[v['id']] = {'0': [{'id': 'SIG-' + v['id'], 'signature_type': 'Function', 'signature_version': 'v1'}]}
+    out[v['id']] = {'0': [{
+        'id': v['id'] + '-12345678',
+        'signature_type': 'Function',
+        'signature_version': 'v1',
+        'source': 'https://example.com/repo',
+        'target': {'file': 'src/foo.c', 'function': 'bar'},
+        'digest': {'function_hash': '123456', 'length': 42},
+        'deprecated': False,
+    }]}
+out['CVE-OTHER'] = {'0': [{
+    'id': 'CVE-OTHER-99999999',
+    'signature_type': 'Function',
+    'signature_version': 'v1',
+    'target': {'file': 'evil.c', 'function': 'pwn'},
+    'digest': {'function_hash': '1', 'length': 1},
+}]}
 with open(args.output, 'w') as f:
     json.dump(out, f)
 `
@@ -475,7 +490,11 @@ with open(args.output, 'w') as f:
 			Id:       "VULN-IPC-1",
 			Modified: timestamppb.New(time.Now()),
 			Affected: []*osvschema.Affected{
-				{Ranges: []*osvschema.Range{{Type: osvschema.Range_GIT, Repo: "https://example.com/repo"}}},
+				{Ranges: []*osvschema.Range{{
+					Type:   osvschema.Range_GIT,
+					Repo:   "https://example.com/repo",
+					Events: []*osvschema.Event{{Fixed: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}},
+				}}},
 			},
 		},
 	}
@@ -485,11 +504,15 @@ with open(args.output, 'w') as f:
 		t.Fatalf("GenerateBatch failed: %v", err)
 	}
 
+	if _, spoofed := res["CVE-OTHER"]; spoofed {
+		t.Errorf("expected spoofed vuln ID CVE-OTHER to be dropped")
+	}
+
 	sigs := res["VULN-IPC-1"][0]
 	if len(sigs) != 1 {
 		t.Fatalf("expected 1 signature, got %d", len(sigs))
 	}
-	if gotID := sigs[0].GetStructValue().GetFields()["id"].GetStringValue(); gotID != "SIG-VULN-IPC-1" {
-		t.Errorf("got signature ID %q, want SIG-VULN-IPC-1", gotID)
+	if gotID := sigs[0].GetStructValue().GetFields()["id"].GetStringValue(); gotID != "VULN-IPC-1-12345678" {
+		t.Errorf("got signature ID %q, want VULN-IPC-1-12345678", gotID)
 	}
 }

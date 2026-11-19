@@ -18,12 +18,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/google/osv.dev/go/logger"
@@ -32,7 +35,55 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-const defaultBatchTimeout = 30 * time.Minute
+const (
+	defaultBatchTimeout  = 30 * time.Minute
+	maxPythonOutputBytes = 64 << 20 // 64 MiB max batch output.json
+	maxPythonLogBytes    = 64 << 10 // 64 KiB max stdout/stderr captured from Python child
+)
+
+type cappedBuffer struct {
+	mu        sync.Mutex
+	buf       bytes.Buffer
+	limit     int
+	truncated bool
+}
+
+func (b *cappedBuffer) Write(p []byte) (int, error) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	origLen := len(p)
+	remaining := b.limit - b.buf.Len()
+	if remaining <= 0 {
+		b.truncated = true
+		return origLen, nil
+	}
+	if len(p) > remaining {
+		p = p[:remaining]
+		b.truncated = true
+	}
+	_, _ = b.buf.Write(p)
+
+	return origLen, nil
+}
+
+func (b *cappedBuffer) Len() int {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	return b.buf.Len()
+}
+
+func (b *cappedBuffer) String() string {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	if b.truncated {
+		return b.buf.String() + "... [truncated]"
+	}
+
+	return b.buf.String()
+}
 
 // SignatureMap maps vulnerability ID -> affected[] index -> list of Vanir signature objects.
 type SignatureMap map[string]map[int][]*structpb.Value
@@ -71,6 +122,31 @@ func (g *PythonGenerator) GenerateBatch(ctx context.Context, vulns []*osvschema.
 		return SignatureMap{}, nil
 	}
 
+	type preparedVuln struct {
+		orig      *osvschema.Vulnerability
+		sanitized *osvschema.Vulnerability
+		indexMap  []int
+	}
+
+	prepared := make([]preparedVuln, 0, len(vulns))
+	for _, v := range vulns {
+		if v == nil {
+			continue
+		}
+		sanitized, gitTargets, needsNetwork, indexMap := sanitizeForVanirWithIndexMap(v)
+		if len(gitTargets) == 0 && !needsNetwork {
+			continue
+		}
+		prepared = append(prepared, preparedVuln{
+			orig:      v,
+			sanitized: sanitized,
+			indexMap:  indexMap,
+		})
+	}
+	if len(prepared) == 0 {
+		return SignatureMap{}, nil
+	}
+
 	ipcDir, err := os.MkdirTemp(workingDir, "vanir-ipc-*")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create IPC temp dir: %w", err)
@@ -86,11 +162,11 @@ func (g *PythonGenerator) GenerateBatch(ctx context.Context, vulns []*osvschema.
 	outputPath := filepath.Join(ipcDir, "output.json")
 
 	marshaler := protojson.MarshalOptions{UseProtoNames: true}
-	rawMessages := make([]json.RawMessage, 0, len(vulns))
-	for _, v := range vulns {
-		b, err := marshaler.Marshal(v)
+	rawMessages := make([]json.RawMessage, 0, len(prepared))
+	for _, item := range prepared {
+		b, err := marshaler.Marshal(item.sanitized)
 		if err != nil {
-			return nil, fmt.Errorf("failed to marshal vulnerability %s to JSON: %w", v.GetId(), err)
+			return nil, fmt.Errorf("failed to marshal vulnerability %s to JSON: %w", item.orig.GetId(), err)
 		}
 		rawMessages = append(rawMessages, json.RawMessage(b))
 	}
@@ -121,9 +197,9 @@ func (g *PythonGenerator) GenerateBatch(ctx context.Context, vulns []*osvschema.
 		"--git-working-dir", gitDir,
 	)
 	cmd.WaitDelay = 10 * time.Second
-	var stderr bytes.Buffer
-	cmd.Stdout = &stderr
-	cmd.Stderr = &stderr
+	stderr := &cappedBuffer{limit: maxPythonLogBytes}
+	cmd.Stdout = stderr
+	cmd.Stderr = stderr
 
 	if err := cmd.Run(); err != nil {
 		logger.ErrorContext(ctx, "Python Vanir signature generation failed",
@@ -137,9 +213,27 @@ func (g *PythonGenerator) GenerateBatch(ctx context.Context, vulns []*osvschema.
 		logger.DebugContext(ctx, "Python Vanir runner output", slog.String("output", stderr.String()))
 	}
 
-	outputData, err := os.ReadFile(outputPath)
+	fd, err := syscall.Open(outputPath, syscall.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_NONBLOCK|syscall.O_CLOEXEC, 0)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open output JSON file: %w", err)
+	}
+	outFile := os.NewFile(uintptr(fd), outputPath)
+	defer outFile.Close()
+
+	fi, err := outFile.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat output JSON file: %w", err)
+	}
+	if !fi.Mode().IsRegular() {
+		return nil, errors.New("output JSON file is not a regular file")
+	}
+
+	outputData, err := io.ReadAll(io.LimitReader(outFile, maxPythonOutputBytes+1))
 	if err != nil {
 		return nil, fmt.Errorf("failed to read output JSON file: %w", err)
+	}
+	if len(outputData) > maxPythonOutputBytes {
+		return nil, fmt.Errorf("output JSON file exceeds max size (%d bytes)", maxPythonOutputBytes)
 	}
 
 	var rawOutput map[string]map[string][]any
@@ -147,28 +241,24 @@ func (g *PythonGenerator) GenerateBatch(ctx context.Context, vulns []*osvschema.
 		return nil, fmt.Errorf("failed to unmarshal output JSON: %w", err)
 	}
 
-	result := make(SignatureMap, len(rawOutput))
-	for vulnID, affectedMap := range rawOutput {
-		idxMap := make(map[int][]*structpb.Value, len(affectedMap))
-		for idxStr, sigList := range affectedMap {
-			idx, err := strconv.Atoi(idxStr)
-			if err != nil {
-				return nil, fmt.Errorf("invalid affected index %q for %s: %w", idxStr, vulnID, err)
-			}
-			vals := make([]*structpb.Value, 0, len(sigList))
-			for _, rawSig := range sigList {
-				val, err := structpb.NewValue(rawSig)
-				if err != nil {
-					return nil, fmt.Errorf("failed to convert signature to structpb.Value for %s: %w", vulnID, err)
-				}
-				vals = append(vals, val)
-			}
-			if len(vals) > 0 {
-				idxMap[idx] = vals
-			}
+	// Pin output strictly to the requested vulnerabilities and validate all signatures.
+	result := make(SignatureMap, len(prepared))
+	for _, item := range prepared {
+		vulnID := item.orig.GetId()
+		affectedMap := rawOutput[vulnID]
+		if len(affectedMap) == 0 {
+			continue
 		}
-		if len(idxMap) > 0 {
-			result[vulnID] = idxMap
+		remapped, err := remapAffectedIndices(item.sanitized, affectedMap, item.indexMap)
+		if err != nil {
+			return nil, fmt.Errorf("invalid affected index for %s: %w", vulnID, err)
+		}
+		validated, err := ValidateSignatures(item.orig, remapped)
+		if err != nil {
+			return nil, fmt.Errorf("signature validation failed for %s: %w", vulnID, err)
+		}
+		if len(validated) > 0 {
+			result[vulnID] = validated
 		}
 	}
 

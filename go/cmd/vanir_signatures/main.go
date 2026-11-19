@@ -19,12 +19,15 @@ import (
 	"context"
 	"flag"
 	"log/slog"
+	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/storage"
 	osvdatastore "github.com/google/osv.dev/go/internal/database/datastore"
+	"github.com/google/osv.dev/go/internal/gitter"
 	"github.com/google/osv.dev/go/internal/vanir"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
@@ -39,15 +42,24 @@ func main() {
 		hours      int
 		pythonBin  string
 		scriptPath string
+		sandboxURL string
+		gitterHost string
 	)
 
 	flag.IntVar(&batchSize, "batch-size", 100, "Number of vulnerabilities to process in each batch.")
 	flag.IntVar(&maxWorkers, "max-workers", 10, "Maximum number of parallel batch workers.")
 	flag.BoolVar(&dryRun, "dry-run", false, "Perform a dry run without modifying GCS or Datastore.")
 	flag.IntVar(&hours, "hours", 0, "Number of hours back to process modified records.")
-	flag.StringVar(&pythonBin, "python-bin", "python3", "Python interpreter binary to use.")
+	flag.StringVar(&pythonBin, "python-bin", "python3", "Python interpreter binary to use (when -sandbox-url is unset).")
 	flag.StringVar(&scriptPath, "script-path", "/usr/local/bin/generate_signatures.py", "Path to the Python Vanir signature generation script.")
+	flag.StringVar(&sandboxURL, "sandbox-url", os.Getenv("VANIR_SANDBOX_URL"), "URL of the remote vanir-sandbox Cloud Run service (defaults to VANIR_SANDBOX_URL).")
+	flag.StringVar(&gitterHost, "gitter-host", os.Getenv("GITTER_HOST"), "URL of the gitter service for commit pack relay (defaults to GITTER_HOST).")
 	flag.Parse()
+
+	visitedFlags := make(map[string]bool)
+	flag.Visit(func(f *flag.Flag) {
+		visitedFlags[f.Name] = true
+	})
 
 	logger.InitGlobalLogger()
 	defer logger.Close()
@@ -83,7 +95,36 @@ func main() {
 		GCS:    gcsClient,
 	})
 	jobStore := osvdatastore.NewJobDataStore(dsClient)
-	generator := vanir.NewPythonGenerator(pythonBin, scriptPath)
+
+	var generator vanir.SignatureGenerator
+	if strings.TrimSpace(sandboxURL) != "" {
+		if !visitedFlags["batch-size"] {
+			batchSize = 1
+		}
+		if !visitedFlags["max-workers"] {
+			maxWorkers = 20
+		}
+
+		var gitterClient gitter.Client
+		if strings.TrimSpace(gitterHost) != "" {
+			gitterClient, err = gitter.NewClient(gitterHost, &http.Client{Timeout: 5 * time.Minute})
+			if err != nil {
+				logger.FatalContext(ctx, "Failed to create Gitter client", slog.String("gitter_host", gitterHost), slog.Any("error", err))
+			}
+		}
+
+		generator, err = vanir.NewHTTPSignatureGenerator(ctx, sandboxURL, gitterClient)
+		if err != nil {
+			logger.FatalContext(ctx, "Failed to create HTTP Vanir sandbox generator", slog.String("sandbox_url", sandboxURL), slog.Any("error", err))
+		}
+		logger.InfoContext(ctx, "Using remote vanir-sandbox generator",
+			slog.String("sandbox_url", sandboxURL),
+			slog.Bool("gitter_relay", gitterClient != nil),
+			slog.Int("batch_size", batchSize),
+			slog.Int("max_workers", maxWorkers))
+	} else {
+		generator = vanir.NewPythonGenerator(pythonBin, scriptPath)
+	}
 
 	runner := &vanir.Runner{
 		VulnStore: vulnStore,

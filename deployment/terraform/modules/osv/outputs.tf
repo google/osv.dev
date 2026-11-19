@@ -8,3 +8,8 @@ output "frontend_service_account_email" {
   description = "The email of the dedicated Cloud Run frontend service account."
 }
 
+output "vanir_sandbox_uri" {
+  value       = google_cloud_run_v2_service.vanir_sandbox.uri
+  description = "The HTTPS URI of the vanir-sandbox Cloud Run service."
+}
+

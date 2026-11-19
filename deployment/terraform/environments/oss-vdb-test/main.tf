@@ -145,6 +145,10 @@ output "postgres_read_pool_private_ip" {
   value       = module.osv_api.read_pool_private_ip_address
 }
 
+output "vanir_sandbox_uri" {
+  description = "HTTPS URI of the vanir-sandbox Cloud Run service"
+  value       = module.osv_test.vanir_sandbox_uri
+}
 
 terraform {
   backend "gcs" {

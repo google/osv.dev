@@ -1,0 +1,31 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: vanir-sandbox
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: '0'
+        autoscaling.knative.dev/maxScale: '30'
+        run.googleapis.com/execution-environment: gen2
+    spec:
+      serviceAccountName: vanir-sandbox@oss-vdb.iam.gserviceaccount.com
+      containerConcurrency: 1
+      timeoutSeconds: 1800
+      containers:
+      - image: vanir-sandbox
+        ports:
+        - containerPort: 8080
+        startupProbe:
+          httpGet:
+            path: /healthz
+        livenessProbe:
+          httpGet:
+            path: /healthz
+        resources:
+          limits:
+            cpu: '4'
+            memory: 8Gi

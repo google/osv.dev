@@ -350,6 +350,24 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/vanir-signatures']
   waitFor: ['build-vanir-signatures', 'cloud-build-queue']
 
+# Build/push vanir-sandbox images to gcr.io/oss-vdb.
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/vanir-sandbox:latest || exit 0']
+  id: 'pull-vanir-sandbox'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/vanir-sandbox:latest', '-t', 'gcr.io/oss-vdb/vanir-sandbox:$COMMIT_SHA', '--target', 'vanir-sandbox', '--build-context', 'bindings=../bindings', '--build-context', 'poetry=../docker/poetry', '-f', 'Dockerfile', '--cache-from', 'gcr.io/oss-vdb/vanir-sandbox:latest', '--pull', '.']
+  dir: 'go'
+  id: 'build-vanir-sandbox'
+  waitFor: ['pull-vanir-sandbox', 'build-vanir-signatures']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/vanir-sandbox']
+  waitFor: ['build-vanir-sandbox', 'cloud-build-queue']
+
 # Build/push cron job images.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/cron:latest', '-t', 'gcr.io/oss-vdb/cron:$COMMIT_SHA', '.']
@@ -621,6 +639,14 @@ steps:
   ]
   dir: deployment/clouddeploy/osv-website
 
+# Vanir Sandbox
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: ['deploy', 'releases', 'create', 'osv-$SHORT_SHA', '--project=oss-vdb', '--region=us-central1',
+    '--delivery-pipeline=vanir-sandbox', '--images',
+    "vanir-sandbox=gcr.io/oss-vdb/vanir-sandbox:$COMMIT_SHA"
+  ]
+  dir: deployment/clouddeploy/vanir-sandbox
+
 timeout: 7200s
 # Also set in Cloud Build:
 serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
@@ -663,4 +689,5 @@ images:
 - 'gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/gitter:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/vanir-signatures:$COMMIT_SHA'
+- 'gcr.io/oss-vdb/vanir-sandbox:$COMMIT_SHA'
 - 'gcr.io/oss-vdb/ubuntu-binary-mapper:$COMMIT_SHA'

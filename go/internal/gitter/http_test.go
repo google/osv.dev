@@ -633,3 +633,109 @@ func TestGetCommitDiffs(t *testing.T) {
 		})
 	}
 }
+
+func TestGetCommitPack(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		req        *pb.CommitPackRequest
+		statusCode int
+		respData   []byte
+		wantData   []byte
+		wantErr    error
+	}{
+		{
+			name: "success",
+			req: &pb.CommitPackRequest{
+				Url:     "https://github.com/example/repo.git",
+				Commits: []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+				RefId:   "OSV-2026-1",
+			},
+			statusCode: http.StatusOK,
+			respData:   []byte("fake-zstd-tar-bytes"),
+			wantData:   []byte("fake-zstd-tar-bytes"),
+		},
+		{
+			name: "not found error mapping",
+			req: &pb.CommitPackRequest{
+				Url:     "https://github.com/example/repo.git",
+				Commits: []string{"0000000000000000000000000000000000000000"},
+			},
+			statusCode: http.StatusNotFound,
+			wantErr:    gitter.ErrRepoNotFound,
+		},
+		{
+			name: "forbidden error mapping",
+			req: &pb.CommitPackRequest{
+				Url:     "https://github.com/example/private.git",
+				Commits: []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+			},
+			statusCode: http.StatusForbidden,
+			wantErr:    gitter.ErrRepoInaccessible,
+		},
+		{
+			name: "bad request error mapping",
+			req: &pb.CommitPackRequest{
+				Url: "https://github.com/example/repo.git",
+			},
+			statusCode: http.StatusBadRequest,
+			wantErr:    gitter.ErrInvalidInput,
+		},
+		{
+			name: "payload too large error mapping",
+			req: &pb.CommitPackRequest{
+				Url:     "https://github.com/example/huge.git",
+				Commits: []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+			},
+			statusCode: http.StatusRequestEntityTooLarge,
+			wantErr:    gitter.ErrPackTooLarge,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if tt.statusCode == http.StatusOK {
+					if r.Method != http.MethodPost || r.URL.Path != "/commit-pack" {
+						t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+					}
+					bodyBytes, _ := io.ReadAll(r.Body)
+					var gotReq pb.CommitPackRequest
+					if err := proto.Unmarshal(bodyBytes, &gotReq); err != nil {
+						t.Errorf("failed unmarshaling CommitPackRequest: %v", err)
+					}
+					if diff := cmp.Diff(tt.req, &gotReq, protocmp.Transform()); diff != "" {
+						t.Errorf("request mismatch (-want +got):\n%s", diff)
+					}
+				}
+				w.Header().Set("Content-Type", "application/zstd")
+				w.WriteHeader(tt.statusCode)
+				_, _ = w.Write(tt.respData)
+			}))
+			t.Cleanup(ts.Close)
+
+			client, err := gitter.NewClient(ts.URL, nil)
+			if err != nil {
+				t.Fatalf("failed to create client: %v", err)
+			}
+
+			got, err := client.GetCommitPack(context.Background(), tt.req)
+			if tt.wantErr != nil {
+				if !errors.Is(err, tt.wantErr) {
+					t.Fatalf("GetCommitPack() error = %v, wantErr = %v", err, tt.wantErr)
+				}
+
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected GetCommitPack() error: %v", err)
+			}
+			if diff := cmp.Diff(tt.wantData, got); diff != "" {
+				t.Errorf("GetCommitPack() bytes mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

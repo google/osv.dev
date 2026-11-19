@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"log/slog"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +18,13 @@ import (
 	"github.com/google/osv.dev/go/internal/osvutil"
 	"github.com/google/osv.dev/go/logger"
 )
+
+var (
+	errCommitNotFound     = errors.New("commit not found in repository")
+	errCommitPackTooLarge = errors.New("commit pack exceeds maximum allowed size")
+)
+
+const maxCommitPackArchiveBytes = 128 << 20 // 128 MiB max archive read into memory
 
 // maxLogOutputBytes is the maximum length of command output included in debug logs (4 KB),
 // preventing overwhelming log entries while preserving useful context.
@@ -338,6 +349,127 @@ func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
 	fileData, err := os.ReadFile(archivePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file: %w", err)
+	}
+
+	return fileData, nil
+}
+
+// CreateCommitPack creates a standalone shallow bare Git repository archive (.tar.zst)
+// containing only the requested commit(s), their immediate parent(s), and the trees/blobs
+// touched by each commit diff. It acquires only a read lock on the cached repository.
+func CreateCommitPack(ctx context.Context, repoURL string, commits []string) ([]byte, error) {
+	repoDirName := getRepoDirName(repoURL)
+	repoPath := filepath.Join(gitStorePath, repoDirName)
+	absRepoPath, err := filepath.Abs(repoPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve repo path: %w", err)
+	}
+
+	repoLock := GetRepoLock(repoURL)
+	repoLock.RLock()
+	defer repoLock.RUnlock()
+
+	if _, err := os.Stat(filepath.Join(absRepoPath, ".git")); err != nil {
+		return nil, fmt.Errorf("cached repository unavailable: %w", err)
+	}
+
+	gitEnv := []string{
+		"GIT_TERMINAL_PROMPT=0",
+		"GIT_CONFIG_NOSYSTEM=1",
+		"GIT_CONFIG_GLOBAL=/dev/null",
+	}
+
+	// Verify all requested commits exist as commit objects in the cached repo before creating the shallow clone.
+	for _, rev := range commits {
+		objType, err := runCmd(ctx, absRepoPath, gitEnv, "git", "cat-file", "-t", rev)
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+
+			return nil, fmt.Errorf("%w: %s", errCommitNotFound, rev)
+		}
+		if strings.TrimSpace(string(objType)) != "commit" {
+			return nil, fmt.Errorf("%w: %s is %s, not commit", errCommitNotFound, rev, strings.TrimSpace(string(objType)))
+		}
+	}
+
+	tmpDir, err := os.MkdirTemp("", "gitter-commit-pack-*")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp dir for commit pack: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	shallowDir := filepath.Join(tmpDir, "repo.git")
+	archivePath := filepath.Join(tmpDir, "pack.tar.zst")
+
+	// 1. Init bare repo
+	if _, err := runCmd(ctx, "", gitEnv, "git", "--git-dir="+shallowDir, "init", "--bare", "--quiet"); err != nil {
+		return nil, fmt.Errorf("git init bare failed: %w", err)
+	}
+
+	// 2. Fetch ONLY the target commit(s) + immediate parents without blobs.
+	// Configuring remote.origin.uploadpack avoids modifying the source repo's .git/config
+	// and ensures both the initial fetch and subsequent promisor lazy fetches work under RLock.
+	fileRemoteURL := (&url.URL{Scheme: "file", Path: absRepoPath}).String()
+	if _, err := runCmd(ctx, "", gitEnv, "git", "--git-dir="+shallowDir, "remote", "add", "origin", fileRemoteURL); err != nil {
+		return nil, fmt.Errorf("git remote add failed: %w", err)
+	}
+	uploadPackCmd := "git -c uploadpack.allowFilter=true -c uploadpack.allowAnySHA1InWant=true upload-pack"
+	if _, err := runCmd(ctx, "", gitEnv, "git", "--git-dir="+shallowDir, "config", "remote.origin.uploadpack", uploadPackCmd); err != nil {
+		return nil, fmt.Errorf("git config uploadpack failed: %w", err)
+	}
+
+	fetchArgs := make([]string, 0, 7+len(commits))
+	fetchArgs = append(fetchArgs, "--git-dir="+shallowDir, "fetch", "--quiet", "--filter=blob:none", "--depth=2", "--no-tags", "origin")
+	fetchArgs = append(fetchArgs, commits...)
+	if _, err := runCmd(ctx, "", gitEnv, "git", fetchArgs...); err != nil {
+		return nil, fmt.Errorf("git shallow fetch failed: %w", err)
+	}
+
+	// 3. Materialize ONLY the trees & blobs touched by each commit diff (for both <rev> and <rev>^).
+	for _, rev := range commits {
+		cmd := prepareCmd(ctx, "", gitEnv, "git", "--git-dir="+shallowDir, "--no-pager", "format-patch", "--stdout", "-1", rev)
+		cmd.Stdout = io.Discard
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			if ctx.Err() != nil {
+				return nil, fmt.Errorf("git format-patch cancelled: %w", ctx.Err())
+			}
+
+			return nil, fmt.Errorf("git format-patch failed for %s: %w, output: %s", rev, err, stderr.String())
+		}
+	}
+
+	// 4. Detach from gitter's promisor path & enable local filtered fetches for vanir.
+	_, _ = runCmd(ctx, "", gitEnv, "git", "--git-dir="+shallowDir, "config", "--unset-all", "remote.origin.promisor")
+	_, _ = runCmd(ctx, "", gitEnv, "git", "--git-dir="+shallowDir, "config", "--remove-section", "remote.origin")
+	if _, err := runCmd(ctx, "", gitEnv, "git", "--git-dir="+shallowDir, "config", "uploadpack.allowFilter", "true"); err != nil {
+		return nil, fmt.Errorf("git config allowFilter failed: %w", err)
+	}
+	if _, err := runCmd(ctx, "", gitEnv, "git", "--git-dir="+shallowDir, "config", "uploadpack.allowAnySHA1InWant", "true"); err != nil {
+		return nil, fmt.Errorf("git config allowAnySHA1InWant failed: %w", err)
+	}
+	// Drop sample hooks to minimize archive size.
+	_ = os.RemoveAll(filepath.Join(shallowDir, "hooks"))
+
+	// 5. Compress bare repo contents into .tar.zst.
+	if _, err := runCmd(ctx, "", nil, "tar", "--zstd", "-cf", archivePath, "-C", shallowDir, "."); err != nil {
+		return nil, fmt.Errorf("tar zstd failed for commit pack: %w", err)
+	}
+
+	fi, err := os.Stat(archivePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat commit pack archive: %w", err)
+	}
+	if fi.Size() > maxCommitPackArchiveBytes {
+		return nil, fmt.Errorf("%w (%d bytes > %d bytes)", errCommitPackTooLarge, fi.Size(), maxCommitPackArchiveBytes)
+	}
+
+	fileData, err := os.ReadFile(archivePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read commit pack archive: %w", err)
 	}
 
 	return fileData, nil

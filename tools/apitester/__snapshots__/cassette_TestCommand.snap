@@ -5207,6 +5207,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-84786",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-88822",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -5216,6 +5220,10 @@
         },
         {
           "id": "DEBIAN-CVE-2026-9076",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-95690",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {

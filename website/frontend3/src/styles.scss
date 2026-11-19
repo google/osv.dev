@@ -1352,7 +1352,7 @@ osv-tabs.vulnerability-packages[affordance="collapse"] {
       overflow-wrap: anywhere;
 
       &::before {
-        @include chevron-indicator($color: $osv-text-color);
+        @include chevron-indicator($margin-right: 17px, $color: $osv-text-color);
         flex-shrink: 0;
       }
     }

@@ -76,7 +76,6 @@ module "osv_api" {
   project_id                     = "oss-vdb"
   api_url                        = "api.osv.dev"
   esp_version                    = "2.57.2"
-  gcs_log_dir                    = "gs://oss-vdb-tf/apply-logs"
   frontend_service_account_email = module.osv.frontend_service_account_email
   service_account_email          = module.osv.frontend_service_account_email
 

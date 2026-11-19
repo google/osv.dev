@@ -11,6 +11,8 @@ The generated files are:
 - `/modified_id.csv` - the (modified, [ECOSYSTEM]/ID) of every vulnerability across all ecosystem directories
 - `GIT/osv_git.json` - a json array of every OSV vulnerability that has Vanir signatures.
 
+The exporter never deletes files. Files that are no longer part of the export (e.g. deleted vulnerabilities) are removed by the [exporter-deleter](../exporter-deleter/README.md), which depends on the file layout above.
+
 ## Running locally
 
 To run the exporter locally, run the exporter from within the `go/cmd/exporter` directory, providing the GCS bucket containing the vulnerability protobufs via the `-osv_vulns_bucket` flag.

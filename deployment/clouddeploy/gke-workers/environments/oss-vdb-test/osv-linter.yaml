@@ -3,10 +3,10 @@ kind: CronJob
 metadata:
   name: osv-linter
   labels:
-    cronLastSuccessfulTimeMins: "2880"
+    cronLastSuccessfulTimeMins: "240"
 spec:
   timeZone: Australia/Sydney
-  schedule: "0 14 * * *"
+  schedule: "0 */2 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:

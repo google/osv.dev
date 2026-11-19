@@ -17,4 +17,3 @@ spec:
             args:
             - "--upload-to-gcs"
             - "--output-bucket=$(OUTPUT_GCS_BUCKET)"
-            - "--o=debian-output"

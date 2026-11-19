@@ -1,7 +1,9 @@
 apiVersion: monitoring.googleapis.com/v1
 kind: ClusterPodMonitoring
 metadata:
-  name: kube-state-metrics
+  # Must not be named 'kube-state-metrics', which GKE's cluster-infra-metrics
+  # addon reconciles and overwrites for gke-managed-kube-state-metrics.
+  name: osv-kube-state-metrics
   labels:
     app.kubernetes.io/name: kube-state-metrics
     app.kubernetes.io/part-of: google-cloud-managed-prometheus
@@ -16,8 +18,9 @@ spec:
     interval: 5s
     metricRelabeling:
     - action: keep
-      # Curated subset of metrics to reduce costs, targeting cronjob, pod, job, and deployment resources.
-      regex: kube_(cronjob|pod|job|deployment)(_.+)?
+      # Only retain cronjob and job metrics here; pod and deployment metrics are
+      # already scraped by GKE's managed kube-state-metrics ClusterPodMonitoring.
+      regex: kube_(cronjob|job)(_.+)?
       sourceLabels: [__name__]
   targetLabels:
     metadata: [] # explicitly empty so the metric labels are respected

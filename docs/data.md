@@ -75,6 +75,8 @@ The following ecosystems have vulnerabilities encoded in this format:
     ([Apache 2.0](https://github.com/cleanstart-dev/cleanstart-security-advisories/blob/main/LICENSE))
 -   [Curl](https://curl.se/docs/security.html)
     ([MIT](https://github.com/curl/curl-www/blob/master/LICENSE))
+-   [Docker Hardened Images](https://github.com/docker-hardened-images/advisories)
+    ([Apache 2.0](https://github.com/docker-hardened-images/advisories/blob/main/LICENSE))
 -   [Julia Security Advisories](https://github.com/JuliaLang/SecurityAdvisories.jl)
     ([CC-BY 4.0](https://github.com/JuliaLang/SecurityAdvisories.jl/blob/main/LICENSE.md))
 -   [Red Hat Security Data](https://security.access.redhat.com/data)

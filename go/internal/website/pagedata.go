@@ -50,6 +50,8 @@ type BlogPostPageData struct {
 // LinterPageData represents the data context passed to linter.html template.
 type LinterPageData struct {
 	BasePageData
+
+	APIURL string
 }
 
 // TriagePageData represents the data context passed to triage.html template.

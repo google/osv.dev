@@ -73,3 +73,24 @@ variable "indexer_subscription" {
   default     = "indexer-work-sub"
 }
 
+variable "vulnerabilities_export_bucket" {
+  type        = string
+  description = "Name of bucket storing exported vulnerability protos and JSONs."
+}
+
+variable "failed_tasks_topic_name" {
+  type        = string
+  description = "Name of the failed-tasks Pub/Sub topic."
+}
+
+variable "datastore_database_id" {
+  type        = string
+  description = "The resource ID of the Datastore database."
+}
+
+variable "website_ingress" {
+  type        = string
+  description = "Optional Cloud Run ingress setting for osv-website."
+  default     = null
+}
+

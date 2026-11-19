@@ -1,35 +1,35 @@
 - name: 'test'
   link: 'https://github.com/google/osv.dev/blob/master/'
-  human_link: 'https://osv.dev/vulnerability/{{ BUG_ID }}'
+  human_link: 'https://osv.dev/vulnerability/{{ .ID }}'
 
 - name: 'cve-osv'
   link: 'https://storage.googleapis.com/cve-osv-conversion/osv-output/'
-  human_link: 'https://cve.org/CVERecord?id={{ BUG_ID }}'
+  human_link: 'https://cve.org/CVERecord?id={{ .ID }}'
 
 - name: 'ubuntu'
   link: 'https://git.launchpad.net/ubuntu-cve-tracker/tree/'
-  human_link: 'https://ubuntu.com/security/{{ BUG_ID }}'
+  human_link: 'https://ubuntu.com/security/{{ .ID }}'
 
 - name: 'ubuntu-cve'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
-  human_link: 'https://ubuntu.com/security/{{ BUG_ID | replace("UBUNTU-", "") }}'
+  human_link: 'https://ubuntu.com/security/{{ .ID | replace "UBUNTU-" "" }}'
 
 - name: 'ubuntu-usn'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
-  human_link: 'https://ubuntu.com/security/notices/{{ BUG_ID }}'
+  human_link: 'https://ubuntu.com/security/notices/{{ .ID }}'
 
 - name: 'debian'
   link: 'https://salsa.debian.org/security-tracker-team/security-tracker/blob/master/'
-  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ .ID }}'
 
 - name: 'debian-dla'
   link: 'https://storage.googleapis.com/debian-osv/'
-  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ .ID }}'
 
 - name: 'suse'
   link: 'https://ftp.suse.com/pub/projects/security/osv/'
-  human_link: 'https://www.suse.com/support/update/announcement/{{ BUG_ID.split(":")[0].split("-")[2] }}/{{ BUG_ID | replace(":", "") | lower }}/'
+  human_link: 'https://www.suse.com/support/update/announcement/{{ .ID | field ":" 0 | field "-" 2 }}/{{ .ID | replace ":" "" | lower }}/'
 
 - name: 'ghsa'
   link: 'https://github.com/github/advisory-database/blob/main/advisories/github-reviewed/'
-  human_link: 'https://github.com/advisories/{{ BUG_ID }}'
+  human_link: 'https://github.com/advisories/{{ .ID }}'

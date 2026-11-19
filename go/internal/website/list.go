@@ -19,7 +19,8 @@ const vulnsPerPage = 16
 // Query parameters:
 //   - q: search query string
 //   - ecosystem: ecosystem filter
-//   - page: page number
+//   - after: pagination cursor (from the previous page's NextAfter)
+//   - page: legacy page number (only page <= 1 is supported)
 func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	ecosystem := r.URL.Query().Get("ecosystem")
@@ -42,10 +43,26 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	page := 1
-	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
-		page = p
+	pageTitle := "Vulnerability Database - OSV"
+	if ecosystem != "" {
+		pageTitle = ecosystem + " - OSV"
 	}
+
+	// Page-number pagination is a leftover from the Python website (the frontend uses `after`),
+	// but some clients (likely scrapers) still request it. Return an empty page for page > 1,
+	// without querying, so that they stop paginating.
+	if p, err := strconv.Atoi(pageStr); err == nil && p > 1 {
+		s.render(w, r, "list.html", http.StatusOK, &ListPageData{
+			Title:             pageTitle,
+			ActiveSection:     "vulnerabilities",
+			DisableTurboCache: true,
+			Query:             q,
+			SelectedEcosystem: ecosystem,
+		})
+
+		return
+	}
+
 	var afterTime time.Time
 	var afterID string
 	if afterStr != "" {
@@ -62,9 +79,6 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 			logger.ErrorContext(r.Context(), "failed to parse after_time", "after_time", afterStr)
 		}
 	}
-	if page > 1 {
-		logger.WarnContext(r.Context(), "search is using legacy pagination")
-	}
 
 	g, ctx := errgroup.WithContext(r.Context())
 
@@ -77,7 +91,6 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 			AfterTime: afterTime,
 			AfterID:   afterID,
 			PageSize:  vulnsPerPage,
-			Page:      page,
 		})
 		if err != nil {
 			return err
@@ -120,11 +133,6 @@ func (s *Server) handleList(w http.ResponseWriter, r *http.Request) {
 	totalEcoCounts := 0
 	for _, c := range ecoCounts {
 		totalEcoCounts += c.Count
-	}
-
-	pageTitle := "Vulnerability Database - OSV"
-	if ecosystem != "" {
-		pageTitle = ecosystem + " - OSV"
 	}
 
 	data := ListPageData{

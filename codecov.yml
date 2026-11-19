@@ -1,0 +1,38 @@
+coverage:
+  status:
+    project:
+      default:
+        informational: true
+    patch:
+      default:
+        informational: true
+
+flags:
+  go:
+    paths:
+      - go/
+    carryforward: true
+  vulnfeeds:
+    paths:
+      - vulnfeeds/
+    carryforward: true
+  bindings:
+    paths:
+      - bindings/go/
+    carryforward: true
+
+ignore:
+  - "**/*.pb.go"
+  - "**/*.sql.go"
+  - "go/internal/database/postgres/db.go"
+  - "go/internal/database/postgres/models.go"
+  - "go/testutils/**"
+  - "vulnfeeds/internal/testutils/**"
+  - "osv/**"
+  - "gcp/**"
+  - "website/**"
+  - "tools/**"
+  - "external/**"
+  - "deployment/**"
+  - "docker/**"
+  - "docs/**"

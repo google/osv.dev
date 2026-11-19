@@ -4,38 +4,42 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
 )
 
-func negatedPrefix(regex string) (string, bool) {
-	// We have a bunch of ignore patterns in the form "^(?!DB_ID-).*$"
-	// This is silly, since we're already enforcing prefix matches
-	// This is a check to see if we can skip those ignore patterns
-	// (since go doesn't support negative lookaheads)
-	// TODO(michaelkedar): Remove this function + regexes from source repos
-	const prefix = "^(?!"
-	const suffix = ").*$"
-	if strings.HasPrefix(regex, prefix) && strings.HasSuffix(regex, suffix) {
-		return strings.TrimSuffix(strings.TrimPrefix(regex, prefix), suffix), true
+var validIDRegex = regexp.MustCompile(`^[a-zA-Z0-9:_.-]+$`)
+
+// isValidID reports whether id uses only characters permitted by the OSV schema
+// (^[a-zA-Z0-9:_.-]+$) and is not a relative path segment ("." or "..").
+func isValidID(id string) bool {
+	if id == "." || id == ".." {
+		return false
 	}
 
-	return "", false
+	return validIDRegex.MatchString(id)
+}
+
+// hasValidPrefix reports whether name starts with any of the configured ID prefixes
+// (or returns true when no prefixes are configured).
+func hasValidPrefix(name string, idPrefixes []string) bool {
+	if len(idPrefixes) == 0 {
+		return true
+	}
+	for _, prefix := range idPrefixes {
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func compileIgnorePatterns(sourceRepo *models.SourceRepository) []*regexp.Regexp {
 	compiledIgnorePatterns := make([]*regexp.Regexp, 0, len(sourceRepo.IgnorePatterns))
 	for _, pattern := range sourceRepo.IgnorePatterns {
-		// There's a bunch on negative lookaheads in the ignore patterns that check if the file begins with an ID prefix
-		// We can remove those patterns since we're already checking for prefix matches
-		if prefix, ok := negatedPrefix(pattern); ok {
-			if slices.Contains(sourceRepo.IDPrefixes, prefix) {
-				continue
-			}
-		}
 		compiledPattern, err := regexp.Compile(pattern)
 		if err != nil {
 			logger.Warn("Failed to compile ignore pattern",
@@ -54,17 +58,8 @@ func compileIgnorePatterns(sourceRepo *models.SourceRepository) []*regexp.Regexp
 
 // shouldIgnore checks if the given name matches any of the ID prefixes and ignore patterns.
 func shouldIgnore(name string, idPrefixes []string, ignorePatterns []*regexp.Regexp) bool {
-	if len(idPrefixes) > 0 {
-		prefixMatch := false
-		for _, prefix := range idPrefixes {
-			if strings.HasPrefix(name, prefix) {
-				prefixMatch = true
-				break
-			}
-		}
-		if !prefixMatch {
-			return true
-		}
+	if !hasValidPrefix(name, idPrefixes) {
+		return true
 	}
 
 	for _, compiledIgnorePattern := range ignorePatterns {

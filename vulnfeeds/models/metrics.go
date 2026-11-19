@@ -133,6 +133,10 @@ const (
 	VersionSourceRefs        VersionSource = "REFERENCES"
 	VersionSourceRefsCommit  VersionSource = "REFERENCES_COMMIT"
 	VersionSourceRefsTag     VersionSource = "REFERENCES_TAG"
+	// VersionSourceRefsCompare is for version ranges inferred from the two
+	// sides of a Git compare URL, e.g.
+	// https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.2
+	VersionSourceRefsCompare VersionSource = "REFERENCES_COMPARE"
 )
 
 func DetermineOutcome(metrics *ConversionMetrics) {

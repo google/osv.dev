@@ -132,6 +132,97 @@ class OssFuzzDetailsTest(unittest.TestCase):
     )
 
 
+class ProcessBisectTaskTest(unittest.TestCase):
+  """Tests for short-circuited process_bisect_task."""
+
+  def setUp(self):
+    ds_emulator.reset()
+    self.tmp_dir = tempfile.TemporaryDirectory()
+    for name, lang, main_repo in (
+        ('curl', 'c', 'https://github.com/curl/curl-from-yaml.git'),
+        ('boringssl', 'c', None),
+        ('afl', 'c', None),
+    ):
+      project_dir = os.path.join(self.tmp_dir.name, 'projects', name)
+      os.makedirs(project_dir, exist_ok=True)
+      with open(os.path.join(project_dir, 'project.yaml'), 'w') as f:
+        f.write(f'language: {lang}\n')
+        if main_repo:
+          f.write(f'main_repo: {main_repo}\n')
+
+  def tearDown(self):
+    self.tmp_dir.cleanup()
+
+  def _make_message(self, **overrides):
+    """Build a mock Pub/Sub bisect message."""
+    attrs = {
+        'type': 'regressed',
+        'project_name': 'curl',
+        'architecture': 'x86_64',
+        'sanitizer': 'address',
+        'fuzz_target': 'fuzz_target',
+        'old_commit': 'aaa111',
+        'new_commit': 'bbb222',
+        'repo_url': 'https://github.com/curl/curl.git',
+        'issue_id': '12345',
+        'crash_type': 'Heap-buffer-overflow',
+        'crash_state': 'Foo\nBar\n',
+        'severity': 'High',
+        'timestamp': '2026-07-18T15:46:11.296832',
+    }
+    attrs.update(overrides)
+    message = mock.Mock()
+    message.attributes = attrs
+    message.data = b''
+    return message
+
+  @mock.patch('oss_fuzz.do_bisect')
+  def test_bisect_disabled_uses_message_repo_url(self, mock_do_bisect):
+    """Records commit range and message repo_url without running do_bisect."""
+    msg = self._make_message()
+    oss_fuzz.process_bisect_task(self.tmp_dir.name, 'regressed', 'oss-fuzz:1',
+                                 msg)
+
+    mock_do_bisect.assert_not_called()
+    entity = ndb.Key(osv.RegressResult, 'oss-fuzz:1').get()
+    self.assertIsNotNone(entity)
+    self.assertEqual('aaa111:bbb222', entity.commit)
+    self.assertEqual('https://github.com/curl/curl.git', entity.repo_url)
+    self.assertEqual('OSS-Fuzz', entity.ecosystem)
+    self.assertEqual('Bisect disabled', entity.error)
+
+  def test_project_denylist_leaves_repo_url_none(self):
+    """Preserves PROJECT_DENYLIST behavior (repo_url left unset)."""
+    msg = self._make_message(project_name='boringssl')
+    oss_fuzz.process_bisect_task(self.tmp_dir.name, 'regressed', 'oss-fuzz:2',
+                                 msg)
+
+    entity = ndb.Key(osv.RegressResult, 'oss-fuzz:2').get()
+    self.assertIsNotNone(entity)
+    self.assertIsNone(entity.repo_url)
+
+  def test_repo_denylist_skipped(self):
+    """Skips repos in REPO_DENYLIST."""
+    msg = self._make_message(
+        project_name='afl', repo_url='https://github.com/google/AFL')
+    oss_fuzz.process_bisect_task(self.tmp_dir.name, 'regressed', 'oss-fuzz:3',
+                                 msg)
+
+    self.assertIsNone(ndb.Key(osv.RegressResult, 'oss-fuzz:3').get())
+
+  def test_bisect_disabled_falls_back_to_project_yaml(self):
+    """Falls back to project.yaml main_repo when repo_url is absent."""
+    msg = self._make_message()
+    del msg.attributes['repo_url']
+    oss_fuzz.process_bisect_task(self.tmp_dir.name, 'regressed', 'oss-fuzz:4',
+                                 msg)
+
+    entity = ndb.Key(osv.RegressResult, 'oss-fuzz:4').get()
+    self.assertIsNotNone(entity)
+    self.assertEqual('https://github.com/curl/curl-from-yaml.git',
+                     entity.repo_url)
+
+
 class ImpactTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
   """Impact task tests."""
 

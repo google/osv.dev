@@ -90,9 +90,13 @@ module "oss_fuzz" {
   source                       = "../../modules/oss_fuzz"
   project_id                   = "oss-vdb"
   tasks_topic_id               = module.osv_pipeline.tasks_topic_id
+  tasks_topic_name             = module.osv_pipeline.tasks_topic_name
   failed_tasks_topic_id        = module.osv_pipeline.failed_tasks_topic_id
   pubsub_service_account_email = module.osv_pipeline.pubsub_service_account_email
   subnetwork                   = module.osv_pipeline.oss_fuzz_subnet_self_link
+  datastore_database_id        = module.osv_pipeline.datastore_database_id
+  public_import_logs_bucket    = module.osv.public_import_logs_bucket_name
+  oss_fuzz_export_bucket       = "oss-fuzz-osv-vulns"
 }
 
 # Production CI/CD deployment service account

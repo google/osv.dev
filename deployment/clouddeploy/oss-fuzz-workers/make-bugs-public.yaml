@@ -11,6 +11,7 @@ spec:
     spec:
       template:
         spec:
+          serviceAccountName: oss-fuzz-make-bugs-public
           containers:
           - name: cron
             image: cron
@@ -19,8 +20,6 @@ spec:
             env:
             - name: GOOGLE_CLOUD_PROJECT
               value: "oss-vdb"
-            - name: OSV_VULNERABILITIES_BUCKET
-              value: osv-vulnerabilities
             resources:
               requests:
                 cpu: 1

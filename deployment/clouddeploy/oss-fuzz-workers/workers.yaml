@@ -12,6 +12,7 @@ spec:
       labels:
         name: worker-private
     spec:
+      serviceAccountName: oss-fuzz-worker
       containers:
       - name: worker-private
         image: worker
@@ -19,8 +20,6 @@ spec:
         env:
           - name: GOOGLE_CLOUD_PROJECT
             value: oss-vdb
-          - name: OSV_VULNERABILITIES_BUCKET
-            value: osv-vulnerabilities
         args:
           - "--ssh_key_public=/secrets/ssh.pub"
           - "--ssh_key_private=/secrets/ssh"
@@ -30,11 +29,6 @@ spec:
             name: "ssd"
           - mountPath: "/secrets"
             name: "secrets"
-        securityContext:
-          capabilities:
-            add:
-            - all
-          privileged: true
         resources:
           requests:
             cpu: 1
@@ -45,7 +39,8 @@ spec:
       volumes:
         - name: "ssd"
           hostPath:
-            path: "/mnt/disks/ssd0"
+            path: "/mnt/disks/ssd0/worker"
+            type: DirectoryOrCreate
         - name: secrets
           secret:
             secretName: secrets

@@ -12,5 +12,7 @@ spec:
           value: oss-vdb-test
         - name: OSV_VULNERABILITIES_BUCKET
           value: osv-test-vulnerabilities
+        - name: OSV_CVE_CONVERSION_BUCKET
+          value: osv-test-cve-osv-conversion
         - name: CLUSTER_LOCATION
           value: us-west2-b

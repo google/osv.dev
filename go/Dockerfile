@@ -25,7 +25,7 @@
 # 
 # Select which service to build using the --target flag (e.g. importer, worker, exporter, exporter-deleter,
 # relations, recordchecker, generatesitemap, custommetrics, gitter, first_package_finder,
-# api, recoverer, vanir-signatures, ubuntubinarymapper, staging-api-test, website).
+# api, recoverer, vanir-signatures, ubuntubinarymapper, staging-api-test, website, osv-linter).
 # ====================================================================================
 
 # ========================================================
@@ -227,4 +227,29 @@ RUN CGO_ENABLED=0 go build -o /app/ubuntubinarymapper ./cmd/ubuntubinarymapper/
 FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS ubuntubinarymapper
 COPY --from=ubuntubinarymapper-build /app/ubuntubinarymapper /
 ENTRYPOINT ["/ubuntubinarymapper"]
+
+# ========================================================
+# Target: OSV Linter
+# ========================================================
+FROM golang:1.27.3-alpine@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS osv-linter-cli-build
+RUN apk add --no-cache "git>=2.54.1"
+WORKDIR /src
+# Using osv-schema v1.9.0
+RUN git clone https://github.com/ossf/osv-schema.git osv-schema && cd osv-schema && git checkout 972b058557d91ee36d92306fd5f986947b1b3c30
+WORKDIR /src/osv-schema/tools/osv-linter
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download && go generate ./... && \
+    CGO_ENABLED=0 GOOS=linux go build -o /app/osv-linter ./cmd/osv
+
+FROM builder AS osv-linter-worker-build
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/osv-linter-worker ./cmd/osv-linter-worker
+
+FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS osv-linter
+COPY --from=osv-linter-cli-build /app/osv-linter /usr/local/bin/osv-linter
+COPY --from=osv-linter-worker-build /app/osv-linter-worker /usr/local/bin/osv-linter-worker
+WORKDIR /linter
+ENTRYPOINT ["/usr/local/bin/osv-linter-worker"]
 

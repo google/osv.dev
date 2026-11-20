@@ -5,10 +5,10 @@ go 1.27.4
 require (
 	github.com/gkampitakis/go-snaps v0.5.25
 	github.com/google/go-cmp v0.7.0
-	github.com/tidwall/gjson v1.20.0
-	github.com/tidwall/pretty v1.2.2
-	github.com/tidwall/sjson v1.2.5
-	gopkg.in/dnaeon/go-vcr.v4 v4.0.7
+	github.com/tidwall/gjson v1.20.2
+	github.com/tidwall/pretty v1.3.0
+	github.com/tidwall/sjson v1.2.9
+	gopkg.in/dnaeon/go-vcr.v4 v4.0.8
 )
 
 require (
@@ -20,5 +20,5 @@ require (
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
 	github.com/sergi/go-diff v1.4.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
-	go.yaml.in/yaml/v4 v4.0.0-rc.6 // indirect
+	go.yaml.in/yaml/v4 v4.0.0 // indirect
 )

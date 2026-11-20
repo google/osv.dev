@@ -4,60 +4,42 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "AC-Angle",
-          "ecosystem": "Hackage"
-        },
+        "package": { "name": "AC-Angle", "ecosystem": "Hackage" },
         "version": "1.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ALUT",
-          "ecosystem": "Hackage"
-        },
+        "package": { "name": "ALUT", "ecosystem": "Hackage" },
         "version": "2.4.0.3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ANum",
-          "ecosystem": "Hackage"
-        },
+        "package": { "name": "ANum", "ecosystem": "Hackage" },
         "version": "0.2.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "Agda",
-          "ecosystem": "Hackage"
-        },
+        "package": { "name": "Agda", "ecosystem": "Hackage" },
         "version": "2.6.4.3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "Allure",
-          "ecosystem": "Hackage"
-        },
+        "package": { "name": "Allure", "ecosystem": "Hackage" },
         "version": "0.11.0.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "biscuit-haskell",
-          "ecosystem": "Hackage"
-        },
+        "package": { "name": "biscuit-haskell", "ecosystem": "Hackage" },
         "version": "0.3.0.0"
       },
       "vulns": [
@@ -77,10 +59,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "AWSSDK.Core",
-          "ecosystem": "NuGet"
-        },
+        "package": { "name": "AWSSDK.Core", "ecosystem": "NuGet" },
         "version": "3.7.10.6"
       },
       "vulns": []
@@ -97,10 +76,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "System.Linq.Dynamic.Core",
-          "ecosystem": "NuGet"
-        },
+        "package": { "name": "System.Linq.Dynamic.Core", "ecosystem": "NuGet" },
         "version": "1.3.7"
       },
       "vulns": [
@@ -112,10 +88,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "TestLibrary",
-          "ecosystem": "NuGet"
-        },
+        "package": { "name": "TestLibrary", "ecosystem": "NuGet" },
         "version": "1.0.0"
       },
       "vulns": []
@@ -130,130 +103,91 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "async",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "async", "ecosystem": "RubyGems" },
         "version": "2.23.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "async-dns",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "async-dns", "ecosystem": "RubyGems" },
         "version": "1.4.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "async-http",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "async-http", "ecosystem": "RubyGems" },
         "version": "0.87.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "async-pool",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "async-pool", "ecosystem": "RubyGems" },
         "version": "0.10.3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "console",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "console", "ecosystem": "RubyGems" },
         "version": "1.29.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "fiber-annotation",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "fiber-annotation", "ecosystem": "RubyGems" },
         "version": "0.2.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "fiber-local",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "fiber-local", "ecosystem": "RubyGems" },
         "version": "1.1.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "fiber-storage",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "fiber-storage", "ecosystem": "RubyGems" },
         "version": "1.0.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "geoip",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "geoip", "ecosystem": "RubyGems" },
         "version": "1.6.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "io-endpoint",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "io-endpoint", "ecosystem": "RubyGems" },
         "version": "0.15.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "io-event",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "io-event", "ecosystem": "RubyGems" },
         "version": "1.9.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "io-stream",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "io-stream", "ecosystem": "RubyGems" },
         "version": "0.6.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "json",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "json", "ecosystem": "RubyGems" },
         "version": "2.10.1"
       },
       "vulns": [
@@ -269,20 +203,14 @@
     },
     {
       "query": {
-        "package": {
-          "name": "metrics",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "metrics", "ecosystem": "RubyGems" },
         "version": "0.12.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "nokogiri",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "nokogiri", "ecosystem": "RubyGems" },
         "version": "1.18.2"
       },
       "vulns": [
@@ -362,100 +290,70 @@
     },
     {
       "query": {
-        "package": {
-          "name": "process-daemon",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "process-daemon", "ecosystem": "RubyGems" },
         "version": "1.0.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "protocol-hpack",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "protocol-hpack", "ecosystem": "RubyGems" },
         "version": "1.5.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "protocol-http",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "protocol-http", "ecosystem": "RubyGems" },
         "version": "0.49.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "protocol-http1",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "protocol-http1", "ecosystem": "RubyGems" },
         "version": "0.30.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "protocol-http2",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "protocol-http2", "ecosystem": "RubyGems" },
         "version": "0.22.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "racc",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "racc", "ecosystem": "RubyGems" },
         "version": "1.8.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "rainbow",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "rainbow", "ecosystem": "RubyGems" },
         "version": "2.2.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "rake",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "rake", "ecosystem": "RubyGems" },
         "version": "13.2.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "rubydns",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "rubydns", "ecosystem": "RubyGems" },
         "version": "2.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "traces",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "traces", "ecosystem": "RubyGems" },
         "version": "0.15.2"
       },
       "vulns": []
@@ -480,10 +378,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "Microsoft.Net.Compilers",
-          "ecosystem": "NuGet"
-        },
+        "package": { "name": "Microsoft.Net.Compilers", "ecosystem": "NuGet" },
         "version": "1.0.0"
       },
       "vulns": []
@@ -498,10 +393,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "Newtonsoft.Json",
-          "ecosystem": "NuGet"
-        },
+        "package": { "name": "Newtonsoft.Json", "ecosystem": "NuGet" },
         "version": "13.0.3"
       },
       "vulns": []
@@ -516,40 +408,28 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "fuzzyset",
-          "ecosystem": "Hackage"
-        },
+        "package": { "name": "fuzzyset", "ecosystem": "Hackage" },
         "version": "0.2.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "hasql-pool",
-          "ecosystem": "Hackage"
-        },
+        "package": { "name": "hasql-pool", "ecosystem": "Hackage" },
         "version": "1.0.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "jose-jwt",
-          "ecosystem": "Hackage"
-        },
+        "package": { "name": "jose-jwt", "ecosystem": "Hackage" },
         "version": "0.10.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "postgresql-libpq",
-          "ecosystem": "Hackage"
-        },
+        "package": { "name": "postgresql-libpq", "ecosystem": "Hackage" },
         "version": "0.10.1.0"
       },
       "vulns": []
@@ -564,20 +444,14 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "emoji",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "emoji", "ecosystem": "PyPI" },
         "version": "2.14.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "protobuf",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "protobuf", "ecosystem": "PyPI" },
         "version": "4.25.5"
       },
       "vulns": [

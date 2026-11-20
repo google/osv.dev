@@ -4,40 +4,28 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.8"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -52,40 +40,28 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.1"
       },
       "vulns": [
@@ -97,140 +73,98 @@
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.13-r0"
       },
       "vulns": []
@@ -245,40 +179,28 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.1"
       },
       "vulns": [
@@ -290,140 +212,98 @@
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.13-r0"
       },
       "vulns": []
@@ -438,40 +318,28 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.8"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -486,40 +354,28 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.1"
       },
       "vulns": [
@@ -531,140 +387,98 @@
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.13-r0"
       },
       "vulns": []
@@ -679,40 +493,28 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.8"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -727,30 +529,21 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -765,170 +558,119 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.13-r0"
       },
       "vulns": []
@@ -943,40 +685,28 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.1"
       },
       "vulns": [
@@ -988,140 +718,98 @@
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.13-r0"
       },
       "vulns": []
@@ -1136,40 +824,28 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.8"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -1184,10 +860,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -1202,10 +875,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.1"
       },
       "vulns": [
@@ -1225,10 +895,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.8"
       },
       "vulns": []

@@ -9,7 +9,14 @@
       "type": "string"
     },
     "id": {
-      "$ref": "#/$defs/prefix"
+      "allOf": [
+        {
+          "$ref": "#/$defs/prefix"
+        },
+        {
+          "$ref": "#/$defs/idFormat"
+        }
+      ]
     },
     "modified": {
       "$ref": "#/$defs/timestamp"
@@ -26,19 +33,19 @@
         "null"
       ],
       "items": {
-        "type": "string"
+        "$ref": "#/$defs/idFormat"
       }
     },
     "related": {
       "type": "array",
       "items": {
-        "type": "string"
+        "$ref": "#/$defs/idFormat"
       }
     },
     "upstream": {
       "type": "array",
       "items": {
-        "type": "string"
+        "$ref": "#/$defs/idFormat"
       }
     },
     "summary": {
@@ -461,6 +468,12 @@
       "title": "Currently supported ecosystems",
       "description": "These ecosystems are also documented at https://ossf.github.io/osv-schema/#affectedpackage-field",
       "pattern": "^(AlmaLinux|Alpaquita|Alpine|Android|Azure Linux|BellSoft Hardened Containers|Bioconductor|Bitnami|Chainguard|CleanStart|ConanCenter|CRAN|crates\\.io|Debian|Docker Hardened Images|Echo|FreeBSD|GHC|GitHub Actions|Go|Hackage|Hex|Homebrew|Julia|Kubernetes|Linux|Mageia|Maven|MinimOS|npm|NuGet|opam|openEuler|openSUSE|OSS-Fuzz|Packagist|Photon OS|Pub|PyPI|Raspberry Pi OS|Red Hat|Red Hat Lightwell|Rocky Linux|Root|RubyGems|SUSE|SwiftURL|TuxCare|Ubuntu|vcpkg|VSCode|Wolfi|WordPress|GIT)(:.+)?$"
+    },
+    "idFormat": {
+      "type": "string",
+      "title": "Permitted identifier characters",
+      "description": "Identifiers must use only permitted ASCII characters as documented at https://ossf.github.io/osv-schema/#character-set-constraints",
+      "pattern": "^[a-zA-Z0-9:_.-]+$"
     },
     "prefix": {
       "type": "string",

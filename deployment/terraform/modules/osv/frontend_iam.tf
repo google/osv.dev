@@ -57,11 +57,18 @@ resource "google_pubsub_topic_iam_member" "frontend_failed_tasks_publisher" {
 
 resource "google_service_account_iam_member" "frontend_deployer_act_as" {
   for_each = toset([
-    "serviceAccount:deployment@oss-vdb.iam.gserviceaccount.com",
-    "serviceAccount:terraform-apply@oss-vdb.iam.gserviceaccount.com",
+    for email in var.frontend_deployer_service_account_emails : "serviceAccount:${email}"
   ])
 
   service_account_id = google_service_account.frontend_sa.name
   role               = "roles/iam.serviceAccountUser"
   member             = each.value
+}
+
+# Cloud Deploy permissions to roll out osv-website and osv-api Cloud Run revisions
+resource "google_project_iam_member" "deployment_run_admin" {
+  count   = var.deployment_service_account_email != "" ? 1 : 0
+  project = var.project_id
+  role    = "roles/run.admin"
+  member  = "serviceAccount:${var.deployment_service_account_email}"
 }

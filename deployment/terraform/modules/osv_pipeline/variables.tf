@@ -47,6 +47,12 @@ variable "worker_service_account_id" {
   default     = "osv-worker"
 }
 
+variable "deployment_service_account_email" {
+  type        = string
+  description = "Optional email of the CI/CD deployment service account granted Cloud Deploy and Cloud SQL migration permissions."
+  default     = ""
+}
+
 # Storage
 variable "vulnerabilities_export_bucket" {
   type        = string

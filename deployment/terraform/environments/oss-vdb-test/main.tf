@@ -30,6 +30,7 @@ module "osv_pipeline" {
   source = "../../modules/osv_pipeline"
 
   project_id                                     = "oss-vdb-test"
+  deployment_service_account_email               = var.deployment_service_account_email
   vulnerabilities_export_bucket                  = "osv-test-vulnerabilities"
   affected_commits_backups_bucket                = "osv-test-affected-commits"
   affected_commits_backups_bucket_retention_days = 2
@@ -49,8 +50,13 @@ module "osv_pipeline" {
 module "osv_test" {
   source = "../../modules/osv"
 
-  project_id                    = "oss-vdb-test"
-  worker_service_account_email  = module.osv_pipeline.worker_service_account_email
+  project_id                       = "oss-vdb-test"
+  worker_service_account_email     = module.osv_pipeline.worker_service_account_email
+  deployment_service_account_email = var.deployment_service_account_email
+  frontend_deployer_service_account_emails = compact([
+    var.deployment_service_account_email,
+    var.terraform_service_account_email,
+  ])
   vulnerabilities_export_bucket = module.osv_pipeline.vulnerabilities_export_bucket_name
   failed_tasks_topic_name       = module.osv_pipeline.failed_tasks_topic_name
   datastore_database_id         = module.osv_pipeline.datastore_database_id
@@ -142,6 +148,18 @@ output "postgres_primary_private_ip" {
 output "postgres_read_pool_private_ip" {
   description = "Private IP address of the Cloud SQL PostgreSQL read pool instance"
   value       = module.osv_api.read_pool_private_ip_address
+}
+
+variable "deployment_service_account_email" {
+  type        = string
+  description = "CI/CD deployment service account email."
+  default     = "deployment@oss-vdb.iam.gserviceaccount.com"
+}
+
+variable "terraform_service_account_email" {
+  type        = string
+  description = "Terraform runner service account email granted actAs on the frontend service account."
+  default     = "terraform-apply@oss-vdb.iam.gserviceaccount.com"
 }
 
 

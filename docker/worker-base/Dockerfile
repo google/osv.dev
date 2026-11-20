@@ -72,5 +72,8 @@ RUN curl -fsSL https://gvisor.dev/archive.key | gpg --dearmor -o /etc/apt/truste
     add-apt-repository "deb https://storage.googleapis.com/gvisor/releases 20260309 main" && \
     apt-get update && apt-get install -y runsc
 
+# Install zstd needed by worker/cron images.
+RUN apt-get update && apt-get install -y --no-install-recommends zstd && rm -rf /var/lib/apt/lists/*
+
 # Make gVisor the default Docker runtime.
 COPY docker/worker-base/daemon.json /etc/docker/daemon.json

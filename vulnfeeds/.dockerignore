@@ -3,3 +3,7 @@ osv_output
 cve_jsons
 parts
 .idea
+**/testdata
+test_data
+**/__snapshots__
+**/*_test.go

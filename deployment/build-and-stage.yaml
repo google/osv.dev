@@ -553,16 +553,20 @@ steps:
 - name: gcr.io/oss-vdb/terraform
   args: ['init', '-no-color']
   dir:  deployment/terraform/environments/oss-vdb-test
+  id: 'terraform-init'
+  waitFor: ['setup']
 # no waitFor means wait for every previous step to complete
 - name: gcr.io/oss-vdb/terraform
   args: ['apply', '-no-color', '-auto-approve']
   dir:  deployment/terraform/environments/oss-vdb-test
+  id: 'terraform-apply'
 
 # Apply PostgreSQL schema migrations to staging environment
 - name: gcr.io/oss-vdb/goose
   env: ['CLOUDSQL_INSTANCE=oss-vdb-test:us-central1:osv-db']
   args: ['up']
   dir:  go/internal/database/postgres/migrations
+  id: 'goose-up'
 
 # Cloud Deploy
 # GKE Workers
@@ -596,6 +600,8 @@ steps:
      cron=gcr.io/oss-vdb/cron:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-workers
+  id: 'deploy-gke-workers'
+  waitFor: ['goose-up']
 
 # API Backend
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -604,6 +610,8 @@ steps:
     "osv-server=gcr.io/oss-vdb/osv-server:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/osv-api
+  id: 'deploy-osv-api'
+  waitFor: ['goose-up']
 
 # Indexer
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -612,6 +620,8 @@ steps:
     "indexer=gcr.io/oss-vdb/indexer:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-indexer
+  id: 'deploy-gke-indexer'
+  waitFor: ['goose-up']
 
 # Website
 - name: 'gcr.io/cloud-builders/gcloud'
@@ -620,6 +630,8 @@ steps:
     "osv-website=gcr.io/oss-vdb/osv-website:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/osv-website
+  id: 'deploy-osv-website'
+  waitFor: ['goose-up']
 
 timeout: 7200s
 # Also set in Cloud Build:
@@ -629,38 +641,5 @@ options:
   machineType: E2_HIGHCPU_32
   env:
   - BUILDKIT_PROGRESS=plain
-  - GOMAXPROCS=8
 
 tags: ['build-and-stage']
-
-images:
-- 'gcr.io/oss-vdb/worker-base:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/worker:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/importer:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/osv-worker:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/exporter:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/exporter-deleter:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/cron:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/debian-cve-convert:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/indexer:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA'
-- 'gcr.io/oss-vdb-test/staging-api-test:$COMMIT_SHA'
-- 'gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/recoverer:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/cve5-to-osv:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/record-checker:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/custommetrics:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/relations:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/oss-fuzz-worker:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/oss-fuzz-importer:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/generatesitemap:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/gitter:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/vanir-signatures:$COMMIT_SHA'
-- 'gcr.io/oss-vdb/ubuntu-binary-mapper:$COMMIT_SHA'

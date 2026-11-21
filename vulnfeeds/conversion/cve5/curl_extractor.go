@@ -141,7 +141,7 @@ func (cve *CurlVersionExtractor) ExtractVersions(cveRecord models.CVE5, v *vulns
 	}
 
 	successfulRepos := make(map[string]bool)
-	resolvedRanges, unresolvedRanges, sR := c.ProcessRanges(gitRanges, repos, metrics, cache, httpClient)
+	resolvedRanges, unresolvedRanges, sR := c.ProcessRanges(gitRanges, repos, v.GetModified().AsTime(), metrics, cache, httpClient)
 	for _, s := range sR {
 		successfulRepos[s] = true
 	}

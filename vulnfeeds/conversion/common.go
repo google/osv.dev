@@ -173,8 +173,9 @@ func ConductAnalysisAndUpload(prefix string, year string, metricsDir string, csv
 }
 
 // GitVersionsToCommits examines repos and tries to convert versions to commits by treating them as Git tags.
+// modified is when the record the versions come from was last modified.
 // Returns the resolved ranges, unresolved ranges, and successful repos involved.
-func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache, httpClient *http.Client) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
+func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []string, modified time.Time, metrics *models.ConversionMetrics, cache git.RepoTagsCache, httpClient *http.Client) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
 	var newVersionRanges []models.RangeWithMetadata
 	unresolvedRanges := versionRanges
 	var successfulRepos []string
@@ -230,6 +231,7 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 		}
 
 		resolvedVersions := make(map[string]string)
+		refreshed := false
 		resolveVersion := func(ver string) string {
 			if ver == "" {
 				return ""
@@ -241,6 +243,16 @@ func GitVersionsToCommits(versionRanges []models.RangeWithMetadata, repos []stri
 				return commit
 			}
 			commit, err := git.VersionToCommit(ver, normalizedTags)
+			if err != nil && !refreshed {
+				// The version may have been tagged since the repo's tags were cached.
+				refreshed = true
+				if refreshedTags, refreshErr := git.RefreshNormalizedRepoTags(repo, modified, cache, httpClient); refreshErr != nil {
+					metrics.AddNotef("Failed to refresh tags - %s: %v", repo, refreshErr)
+				} else {
+					normalizedTags = refreshedTags
+					commit, err = git.VersionToCommit(ver, normalizedTags)
+				}
+			}
 			if err != nil {
 				metrics.AddNotef("error resolving version to commit - %s - %s", ver, err)
 			}
@@ -841,7 +853,8 @@ func IsDirectGitRange(vr models.RangeWithMetadata) bool {
 }
 
 // ProcessRanges attempts to resolve the given ranges to commits and updates the metrics accordingly.
-func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *models.ConversionMetrics, cache git.RepoTagsCache, httpClient *http.Client) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
+// modified is when the record the ranges come from was last modified.
+func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, modified time.Time, metrics *models.ConversionMetrics, cache git.RepoTagsCache, httpClient *http.Client) ([]models.RangeWithMetadata, []models.RangeWithMetadata, []string) {
 	if len(ranges) == 0 {
 		return nil, nil, nil
 	}
@@ -879,7 +892,7 @@ func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *m
 	}
 
 	if len(tagVersionRanges) > 0 {
-		r, un, sR := GitVersionsToCommits(tagVersionRanges, repos, metrics, cache, httpClient)
+		r, un, sR := GitVersionsToCommits(tagVersionRanges, repos, modified, metrics, cache, httpClient)
 		resolvedRanges = append(resolvedRanges, r...)
 		unresolvedRanges = append(unresolvedRanges, un...)
 		successfulRepos = append(successfulRepos, sR...)

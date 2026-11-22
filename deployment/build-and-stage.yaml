@@ -256,10 +256,10 @@ steps:
 
 # Build/push osv-linter images to gcr.io/oss-vdb-test.
 - name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb-test/osv-linter:latest', '-t', 'gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA', '--build-context', 'bindings=../bindings', '-f', 'cmd/osv-linter-worker/Dockerfile', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb-test/osv-linter:latest', '-t', 'gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA', '--target', 'osv-linter', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--pull', '.']
   dir: 'go'
   id: 'build-osv-linter'
-  waitFor: ['build-worker', 'build-gitter']
+  waitFor: ['build-gitter']
   volumes:
   - name: 'docker-config'
     path: '/root/.docker'

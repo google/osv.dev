@@ -32,6 +32,9 @@
 # Shared Builder Stage
 # ========================================================
 FROM golang:1.27.3-alpine@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS builder
+# Cap compile-time Go parallelism to avoid CPU/RAM oversubscription when multiple
+# targets build concurrently on E2_HIGHCPU_32 (32 vCPU / 32 GB RAM).
+ENV GOMAXPROCS=8
 
 WORKDIR /workspace
 

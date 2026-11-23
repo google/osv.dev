@@ -89,6 +89,14 @@ steps:
   waitFor: ['build-oss-fuzz-importer', 'cloud-build-queue']
 
 # Build/push go images
+# build-importer warms the shared builder stage and BuildKit Go caches (/go/pkg/mod, /root/.cache/go-build).
+# Subsequent Go builds are scheduled into 4 bounded lanes (plus vanir-signatures and website) via waitFor
+# to cap BuildKit concurrency on E2_HIGHCPU_32 — these waitFor edges are concurrency slots, not functional deps:
+#   Lane 1: osv-worker -> relations -> osv-server
+#   Lane 2: exporter -> generatesitemap -> recoverer
+#   Lane 3: exporter-deleter -> custommetrics -> staging-api-test -> first-package-finder
+#   Lane 4: record-checker -> gitter -> ubuntu-binary-mapper -> osv-linter
+#   Heavy (unlaned): vanir-signatures, website (also waits on frontend3 & hugo)
 - name: 'gcr.io/cloud-builders/docker'
   args: ['buildx', 'create', '--name', 'osv-builder', '--use', '--bootstrap', '--driver-opt', 'network=host']
   id: 'setup-buildx'
@@ -259,7 +267,7 @@ steps:
   args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb-test/osv-linter:latest', '-t', 'gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA', '--target', 'osv-linter', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--pull', '.']
   dir: 'go'
   id: 'build-osv-linter'
-  waitFor: ['build-gitter']
+  waitFor: ['build-ubuntu-binary-mapper']
   volumes:
   - name: 'docker-config'
     path: '/root/.docker'
@@ -352,7 +360,7 @@ steps:
   args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/run_first_package_finder:latest', '-t', 'gcr.io/oss-vdb/run_first_package_finder:$COMMIT_SHA', '--target', 'first_package_finder', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--pull', '.']
   dir: 'go'
   id: 'build-first-package-finder'
-  waitFor: ['build-osv-server']
+  waitFor: ['build-staging-api-test']
   volumes:
   - name: 'docker-config'
     path: '/root/.docker'

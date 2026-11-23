@@ -87,27 +87,30 @@ unset PG_RO_PASS
 
 ### Cloud SQL PostgreSQL Schema Migrations & IAM Access
 
-Database schema migrations live in `go/internal/database/postgres/migrations/` and are managed with [goose](https://github.com/pressly/goose).
+Cloud SQL instances use `ssl_mode = "ENCRYPTED_ONLY"`; `osv-db-read-pool` is **private IP only** (`ipv4_enabled = false`), and `osv-db` defaults to `postgres_ipv4_enabled = true` only while `osv-db-migrate` and `tools/pg_tunnel.sh` are rolled out and verified (flip `postgres_ipv4_enabled` to `false` once confirmed).
 
-* **Staging (`oss-vdb-test`)**: Applied automatically by `build-and-stage.yaml` right after `terraform apply` using the `gcr.io/oss-vdb/goose` Cloud Builder image (see `docker/goose/`).
-* **Production (`oss-vdb` & `private-osv`)**: Applied automatically by `deploy-prod.yaml` at the release `$COMMIT_SHA` right before promoting the Cloud Deploy pipelines.
+Database schema migrations live in `go/internal/database/postgres/migrations/` and are managed with [goose](https://github.com/pressly/goose). Each commit to `master` builds `gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA` (via `docker/goose/migrations.Dockerfile` layered on `gcr.io/oss-vdb/goose:latest`).
 
-After the initial `terraform apply` creates the `deployment@oss-vdb.iam` Cloud SQL user on an instance, set its default login role to `cloudsqlsuperuser` once per instance (so tables created by CI/CD migrations are owned by the shared `cloudsqlsuperuser` role):
+* **Staging (`oss-vdb-test`)**: Applied automatically by `build-and-stage.yaml` right after `terraform apply` by updating and executing the private `osv-db-migrate` Cloud Run Job (`gcloud run jobs execute osv-db-migrate --wait`).
+* **Production (`oss-vdb` & `private-osv`)**: Applied automatically by `deploy-prod.yaml` at the release `$COMMIT_SHA` via the `osv-db-migrate` Cloud Run Jobs right before promoting the Cloud Deploy pipelines.
+
+After the initial `terraform apply` creates the `osv-migrator@<project>.iam` Cloud SQL user on an instance, set its default login role to `cloudsqlsuperuser` once per instance (so tables created by CI/CD migrations are owned by the shared `cloudsqlsuperuser` role):
 
 ```bash
-# In one terminal (use us-central1 for oss-vdb / oss-vdb-test, or us-west2 for private-osv):
-cloud-sql-proxy "${PROJECT_ID}:us-central1:osv-db" \
-  --auto-iam-authn \
-  --impersonate-service-account=deployment@oss-vdb.iam.gserviceaccount.com
+# In one terminal, open a tunnel through the project's GKE `workers` cluster:
+make run-pg-tunnel-staging   # or make run-pg-tunnel / make run-pg-tunnel-private
 
-# In another terminal:
-psql "host=127.0.0.1 port=5432 user=deployment@oss-vdb.iam dbname=osv sslmode=disable" \
-  -c 'ALTER ROLE "deployment@oss-vdb.iam" SET role = '\''cloudsqlsuperuser'\'';'
+# In another terminal, impersonate osv-migrator so it alters its own role
+# (PostgreSQL 16+/18 hardened CREATEROLE rules disallow altering another role without ADMIN OPTION):
+PGSSLMODE=require PGPASSWORD=$(gcloud sql generate-login-token \
+  --impersonate-service-account="osv-migrator@${PROJECT_ID}.iam.gserviceaccount.com") \
+  psql -h 127.0.0.1 -p 5432 -U "osv-migrator@${PROJECT_ID}.iam" -d osv \
+  -c "ALTER ROLE \"osv-migrator@${PROJECT_ID}.iam\" SET role = 'cloudsqlsuperuser';"
 ```
 
-To connect or run `goose` manually from your workstation via IAM authentication:
+To connect or run `goose` manually from your workstation via IAM authentication (no public IP required):
 
-1. Install `cloud-sql-proxy` (via `gcloud components install cloud-sql-proxy`, `go install github.com/GoogleCloudPlatform/cloud-sql-proxy/v2@latest`, or the [standalone binary](https://cloud.google.com/sql/docs/postgres/connect-instance-auth-proxy#install)).
+1. Ensure `kubectl` is installed alongside `gcloud`.
 2. Create a Cloud SQL IAM user for your Google account (once per instance):
    ```bash
    gcloud sql users create "$(gcloud config get-value account)" \
@@ -116,24 +119,37 @@ To connect or run `goose` manually from your workstation via IAM authentication:
      --type=CLOUD_IAM_USER \
      --database-roles=cloudsqlsuperuser
    ```
-3. Start `cloud-sql-proxy` with automatic IAM authentication (or via `make run-cloud-sql-proxy-staging` / `make run-cloud-sql-proxy`):
+3. Start an ephemeral TCP tunnel via `workers` GKE (`tools/pg_tunnel.sh`, which spins up a temporary `batch/v1` `Job` running `socat`, executes `kubectl port-forward`, deletes the job on Ctrl+C, and sets an 8-hour auto-expiry `TTL_SECONDS=28800` as a safeguard against orphaned pods):
    ```bash
-   # Use us-central1 for oss-vdb / oss-vdb-test, or us-west2 for private-osv
-   cloud-sql-proxy "${PROJECT_ID}:us-central1:osv-db" --auto-iam-authn
+   make run-pg-tunnel-staging   # oss-vdb-test primary (:5432)
+   # or make run-pg-tunnel      # oss-vdb primary (:5432)
+   # or make run-pg-tunnel INSTANCE=osv-db-read-pool REMOTE_PORT=6432
+   # or make run-pg-tunnel-private
    ```
+   *(For local sessions longer than ~1 hour, IAM tokens from `gcloud sql generate-login-token` expire — connect as `osv-readonly` with `gcloud secrets versions access latest --secret=osv-db-readonly-password` instead. To also verify the database server certificate against the instance CA instead of `sslmode=require`, fetch it with `gcloud sql instances describe osv-db --project="$PROJECT_ID" --format='value(serverCaCert.cert)' > /tmp/osv-db-ca.pem` and pass `PGSSLMODE=verify-ca PGSSLROOTCERT=/tmp/osv-db-ca.pem`.)*
 4. Set your IAM user's default login role to `cloudsqlsuperuser` (once per instance):
    ```bash
-   psql "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=disable" \
+   PGSSLMODE=require PGPASSWORD=$(gcloud sql generate-login-token) \
+     psql -h 127.0.0.1 -p 5432 -U "$(gcloud config get-value account)" -d osv \
      -c "ALTER ROLE \"$(gcloud config get-value account)\" SET role = 'cloudsqlsuperuser';"
    ```
-5. Run `goose`:
+5. Check migration status via `osv-db-migrate`:
+   ```bash
+   # Use --region=us-west2 for private-osv
+   gcloud run jobs execute osv-db-migrate \
+     --project="$PROJECT_ID" \
+     --region=us-central1 \
+     --args=status \
+     --wait
+   ```
+   Or run `goose` locally through the tunnel:
    ```bash
    goose -dir go/internal/database/postgres/migrations postgres \
-     "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=disable default_query_exec_mode=cache_describe" \
+     "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) password=$(gcloud sql generate-login-token) dbname=osv sslmode=require default_query_exec_mode=cache_describe" \
      status
    ```
 
-> **Reverting migrations**: In production, prefer pushing a new forward-fix migration PR rather than rolling back history. For immediate rollbacks of an additive migration, you can connect via `cloud-sql-proxy` and run `goose ... down` (which executes the `-- +goose Down` block of the latest version), then revert the migration file in git.
+> **Reverting migrations**: In production, prefer pushing a new forward-fix migration PR rather than rolling back history. For immediate rollbacks of an additive migration, run `gcloud run jobs execute osv-db-migrate --project="$PROJECT_ID" --region=us-central1 --args=down --wait` (use `--region=us-west2` for `private-osv`), which executes the `-- +goose Down` block of the latest version, then revert the migration file in git.
 
 
 ## Setting up auto-scaler

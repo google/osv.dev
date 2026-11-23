@@ -445,6 +445,16 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/nvd-mirror']
   waitFor: ['build-nvd-mirror', 'cloud-build-queue']
 
+# Build/push goose migrations image
+- name: gcr.io/cloud-builders/docker
+  args: ['build', '--pull', '-t', 'gcr.io/oss-vdb/goose-migrations:latest', '-t', 'gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA', '-f', 'docker/goose/migrations.Dockerfile', 'go/internal/database/postgres/migrations']
+  id: 'build-goose-migrations'
+  waitFor: ['setup']
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/goose-migrations']
+  id: 'push-goose-migrations'
+  waitFor: ['build-goose-migrations', 'cloud-build-queue']
+
 # Apply Terraform config to staging environment
 # TODO(michaelkedar): regenerate the api protobufs?
 - name: gcr.io/oss-vdb/terraform
@@ -458,12 +468,28 @@ steps:
   dir:  deployment/terraform/environments/oss-vdb-test
   id: 'terraform-apply'
 
-# Apply PostgreSQL schema migrations to staging environment
-- name: gcr.io/oss-vdb/goose
-  env: ['CLOUDSQL_INSTANCE=oss-vdb-test:us-central1:osv-db']
-  args: ['up']
-  dir:  go/internal/database/postgres/migrations
+# Apply PostgreSQL schema migrations to staging environment via private Cloud Run Job
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: [
+    'run', 'jobs', 'update', 'osv-db-migrate',
+    '--quiet',
+    '--project=oss-vdb-test',
+    '--region=us-central1',
+    '--image=gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA',
+  ]
+  id: 'goose-update'
+  waitFor: ['terraform-apply', 'push-goose-migrations']
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: [
+    'run', 'jobs', 'execute', 'osv-db-migrate',
+    '--quiet',
+    '--project=oss-vdb-test',
+    '--region=us-central1',
+    '--args=up',
+    '--wait',
+  ]
   id: 'goose-up'
+  waitFor: ['goose-update']
 
 # Cloud Deploy
 # GKE Workers

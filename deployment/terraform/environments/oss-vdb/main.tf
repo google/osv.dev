@@ -29,8 +29,12 @@ locals {
 module "osv_pipeline" {
   source = "../../modules/osv_pipeline"
 
-  project_id                                     = "oss-vdb"
-  deployment_service_account_email               = "${google_service_account.deployment_service.account_id}@${google_service_account.deployment_service.project}.iam.gserviceaccount.com"
+  project_id                       = "oss-vdb"
+  deployment_service_account_email = "${google_service_account.deployment_service.account_id}@${google_service_account.deployment_service.project}.iam.gserviceaccount.com"
+  migrator_deployer_service_account_emails = compact([
+    "${google_service_account.deployment_service.account_id}@${google_service_account.deployment_service.project}.iam.gserviceaccount.com",
+    var.terraform_service_account_email,
+  ])
   vulnerabilities_export_bucket                  = "osv-vulnerabilities"
   affected_commits_backups_bucket                = "osv-affected-commits"
   affected_commits_backups_bucket_retention_days = 3
@@ -255,7 +259,7 @@ terraform {
 
 variable "terraform_service_account_email" {
   type        = string
-  description = "Service account used to apply Terraform changes (granted actAs on the frontend service account)."
+  description = "Service account used to apply Terraform changes (granted actAs on the frontend and migrator service accounts)."
   default     = "terraform-apply@oss-vdb.iam.gserviceaccount.com"
 }
 

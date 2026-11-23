@@ -100,7 +100,7 @@ go run ./cmd/mirrors/debian-copyright-mirror -gcs-path gs://my-bucket/debian_cop
 Build the container image from the `vulnfeeds/` directory:
 
 ```bash
-docker build -t gcr.io/oss-vdb/debian-copyright-mirror:latest -f cmd/mirrors/debian-copyright-mirror/Dockerfile .
+docker build -t gcr.io/oss-vdb/debian-copyright-mirror:latest --target debian-copyright-mirror -f Dockerfile .
 ```
 
 ### Kubernetes CronJob Deployment

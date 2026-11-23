@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/osv.dev/go/internal/linter"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
 )
@@ -36,6 +37,7 @@ type Config struct {
 	RequestTimeout       time.Duration
 	RedirectLinterToTest bool
 	LinterCacheTTL       time.Duration
+	LinterSuppressions   *linter.Registry
 }
 
 type Stores struct {
@@ -128,7 +130,13 @@ func NewServer(cfg Config) (*Server, error) {
 
 	var linterIdx *linterIndex
 	if !cfg.RedirectLinterToTest {
-		linterIdx = newLinterIndex(cfg.Stores.Linter, cfg.Stores.SourceRepo, cfg.Stores.ImportFindings, cfg.LinterCacheTTL)
+		linterIdx = newLinterIndex(
+			cfg.Stores.Linter,
+			cfg.Stores.SourceRepo,
+			cfg.Stores.ImportFindings,
+			cfg.LinterCacheTTL,
+			cfg.LinterSuppressions,
+		)
 	}
 
 	s := &Server{

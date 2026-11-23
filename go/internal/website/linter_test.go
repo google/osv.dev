@@ -531,3 +531,117 @@ func TestLinterQuery_MissingFirstSeenSortsLast(t *testing.T) {
 		t.Errorf("sort=first_seen asc = %v, want [GHSA-old GHSA-new GHSA-zero]", got)
 	}
 }
+
+func TestLinterQuery_ProviderSuppressions(t *testing.T) {
+	t.Parallel()
+	now := time.Now().UTC().Truncate(time.Second)
+
+	linterStore := &richLinterStore{
+		infos: []models.LinterSourceInfo{
+			{Source: "chainguard", Updated: now.Add(-1 * time.Hour), Generation: 1},
+			{Source: "ghsa", Updated: now.Add(-2 * time.Hour), Generation: 1},
+			{Source: "suse", Updated: now.Add(-3 * time.Hour), Generation: 1},
+			{Source: "uvi", Updated: now.Add(-4 * time.Hour), Generation: 1},
+		},
+		payloads: map[string]string{
+			"chainguard": `{
+				"tmp/CGA-ZERO-ONLY.json": [
+					{"Code": "RNG:002", "Message": "overlapping event: \"0\""},
+					{"Code": "RNG:002", "Message": "overlapping event: \"0\""}
+				],
+				"tmp/CGA-MIXED.json": [
+					{"Code": "RNG:002", "Message": "overlapping event: \"0\""},
+					{"Code": "SCH:001", "Message": "Record does not conform to schema"}
+				],
+				"tmp/CGA-REAL-OVERLAP.json": [
+					{"Code": "RNG:002", "Message": "overlapping event: \"1.2.3\""}
+				]
+			}`,
+			"ghsa": `{
+				"tmp/GHSA-ZERO.json": [
+					{"Code": "RNG:002", "Message": "overlapping event: \"0\""}
+				],
+				"tmp/GHSA-PRETAGGED.json": [
+					{"Code": "PKG:001", "Message": "package not found", "Suppressed": true, "SuppressedReason": "Custom worker tag"}
+				]
+			}`,
+			"suse": `{
+				"tmp/SUSE-SU-2024:0100-1.json": [
+					{"Code": "REC:003", "Message": "Invalid Upstream: upstream should not contain related IDs"}
+				],
+				"tmp/openSUSE-SU-2024:0200-1.json": [
+					{"Code": "REC:003", "Message": "Invalid Upstream: upstream should not contain related IDs"}
+				]
+			}`,
+			"uvi": `{
+				"tmp/GSD-2021-1000001.json": [
+					{"Code": "SCH:001", "Message": "Record does not conform to schema"},
+					{"Code": "REC:001", "Message": "Invalid Affected"}
+				]
+			}`,
+		},
+	}
+
+	srv := newTestServer(t, website.Config{
+		Stores: website.Stores{
+			Linter:     linterStore,
+			SourceRepo: &richSourceRepoStore{names: []string{"chainguard", "ghsa", "suse", "uvi"}},
+		},
+	})
+
+	// 1. Default query excludes suppressed findings and fully-suppressed issues.
+	def := queryLinter(t, srv, "sort=bug_id&order=asc")
+	if def.SuppressedFindings != 8 || def.SuppressedIssues != 6 {
+		t.Fatalf("got suppressed=(findings=%d, issues=%d), want (8, 6)", def.SuppressedFindings, def.SuppressedIssues)
+	}
+	wantDefaultIDs := []string{"CGA-MIXED", "CGA-REAL-OVERLAP", "GHSA-ZERO"}
+	gotDefaultIDs := make([]string, 0, len(def.Issues))
+	for _, iss := range def.Issues {
+		gotDefaultIDs = append(gotDefaultIDs, iss.BugID)
+	}
+	if !slices.Equal(gotDefaultIDs, wantDefaultIDs) {
+		t.Fatalf("default issues = %v, want %v", gotDefaultIDs, wantDefaultIDs)
+	}
+	// CGA-MIXED should only expose SCH:001 when suppressed findings are hidden.
+	if !slices.Equal(def.Issues[0].Codes, []string{"SCH:001"}) || len(def.Issues[0].Details) != 1 {
+		t.Errorf("expected CGA-MIXED to only expose SCH:001 by default, got %+v", def.Issues[0])
+	}
+	// RNG:002 count in default facets should be 2 (CGA-REAL-OVERLAP + GHSA-ZERO), excluding CGA-ZERO-ONLY and CGA-MIXED.
+	if !slices.ContainsFunc(def.Facets.Rules, func(r website.LinterRuleFacet) bool {
+		return r.Code == "RNG:002" && r.Count == 2
+	}) {
+		t.Errorf("expected default RNG:002 facet count=2, got %+v", def.Facets.Rules)
+	}
+	// SUSE and UVI should have 0 active issues by default.
+	for _, zeroSrc := range []string{"suse", "uvi"} {
+		if !slices.ContainsFunc(def.Facets.Sources, func(s website.LinterSourceFacet) bool {
+			return s.Name == zeroSrc && s.Count == 0
+		}) {
+			t.Errorf("expected default %s facet count=0, got %+v", zeroSrc, def.Facets.Sources)
+		}
+	}
+
+	// 2. include_suppressed=true includes all 8 issues and surfaces Suppressed + SuppressedReason metadata.
+	all := queryLinter(t, srv, "include_suppressed=true&sort=bug_id&order=asc")
+	if all.Total != 8 {
+		t.Fatalf("include_suppressed=true total = %d, want 8", all.Total)
+	}
+	var cgaMixed, ghsaPretagged *website.LinterIssueSummary
+	for i := range all.Issues {
+		switch all.Issues[i].BugID {
+		case "CGA-MIXED":
+			cgaMixed = &all.Issues[i]
+		case "GHSA-PRETAGGED":
+			ghsaPretagged = &all.Issues[i]
+		}
+	}
+	if cgaMixed == nil || !slices.Equal(cgaMixed.Codes, []string{"RNG:002", "SCH:001"}) || len(cgaMixed.Details) != 2 {
+		t.Fatalf("expected CGA-MIXED with both RNG:002 and SCH:001 when include_suppressed=true, got %+v", cgaMixed)
+	}
+	if !cgaMixed.Details[0].Suppressed || cgaMixed.Details[0].SuppressedReason == "" || cgaMixed.Details[1].Suppressed {
+		t.Errorf("unexpected CGA-MIXED detail suppression metadata: %+v", cgaMixed.Details)
+	}
+	if ghsaPretagged == nil || len(ghsaPretagged.Details) != 1 || !ghsaPretagged.Details[0].Suppressed || ghsaPretagged.Details[0].SuppressedReason != "Custom worker tag" {
+		t.Errorf("expected pre-tagged GCS suppression preserved on GHSA-PRETAGGED, got %+v", ghsaPretagged)
+	}
+}

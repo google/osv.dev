@@ -23,6 +23,7 @@ package main
 
 import (
 	"archive/zip"
+	"cmp"
 	"context"
 	"encoding/json"
 	"errors"
@@ -42,6 +43,7 @@ import (
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/storage"
 	db "github.com/google/osv.dev/go/internal/database/datastore"
+	"github.com/google/osv.dev/go/internal/linter"
 	internalmodels "github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
 	"golang.org/x/sync/errgroup"
@@ -71,10 +73,11 @@ var errorCodeMapping = map[string]internalmodels.ImportFindings{
 }
 
 var (
-	workDir      = flag.String("work-dir", "tmp", "Working directory")
-	localData    = flag.String("local-data", "", "Path to local all.zip or directory containing OSV data")
-	linterBinary = flag.String("linter-bin", "osv-linter", "Path to osv-linter binary")
-	dryRun       = flag.Bool("dry-run", true, "Dry run mode (no GCS upload or Datastore writes)")
+	workDir          = flag.String("work-dir", "tmp", "Working directory")
+	localData        = flag.String("local-data", "", "Path to local all.zip or directory containing OSV data")
+	linterBinary     = flag.String("linter-bin", "osv-linter", "Path to osv-linter binary")
+	suppressionsFile = flag.String("suppressions-file", "", "Optional path to custom linter suppressions YAML (defaults to embedded rules)")
+	dryRun           = flag.Bool("dry-run", true, "Dry run mode (no GCS upload or Datastore writes)")
 )
 
 func main() {
@@ -103,6 +106,14 @@ func run() error {
 	sourceRepoStore := db.NewSourceRepositoryStore(dsClient)
 	importFindingsStore := db.NewImportFindingsStore(dsClient, storageClient, linterExportBucket, linterResultDir)
 
+	suppressions := linter.DefaultRegistry()
+	if *suppressionsFile != "" {
+		suppressions, err = linter.LoadFile(*suppressionsFile)
+		if err != nil {
+			return fmt.Errorf("failed to load suppressions: %w", err)
+		}
+	}
+
 	prefixToSource, err := constructPrefixToSourceMap(ctx, sourceRepoStore)
 	if err != nil {
 		return fmt.Errorf("failed to construct prefix map: %w", err)
@@ -124,7 +135,7 @@ func run() error {
 		return fmt.Errorf("linter execution failed: %w", err)
 	}
 
-	if err := processLinterResult(ctx, importFindingsStore, linterOutput, prefixToSource, *dryRun); err != nil {
+	if err := processLinterResult(ctx, importFindingsStore, linterOutput, prefixToSource, suppressions, *dryRun); err != nil {
 		return fmt.Errorf("failed to process linter result: %w", err)
 	}
 
@@ -305,7 +316,44 @@ func runLinter(binaryPath, dataDir string) ([]byte, error) {
 	return output, nil
 }
 
-func processLinterResult(ctx context.Context, store internalmodels.ImportFindingsStore, output []byte, prefixToSource map[string]string, dryRun bool) error {
+type prefixSourcePair struct {
+	prefix string
+	source string
+}
+
+func sortPrefixesLongestFirst(prefixToSource map[string]string) []prefixSourcePair {
+	pairs := make([]prefixSourcePair, 0, len(prefixToSource))
+	for p, src := range prefixToSource {
+		pairs = append(pairs, prefixSourcePair{prefix: p, source: src})
+	}
+	slices.SortFunc(pairs, func(a, b prefixSourcePair) int {
+		return cmp.Or(
+			cmp.Compare(len(b.prefix), len(a.prefix)),
+			cmp.Compare(a.prefix, b.prefix),
+		)
+	})
+
+	return pairs
+}
+
+func resolveSource(bugID string, sortedPrefixes []prefixSourcePair) string {
+	for _, pair := range sortedPrefixes {
+		if strings.HasPrefix(bugID, pair.prefix) {
+			return pair.source
+		}
+	}
+
+	return ""
+}
+
+func processLinterResult(
+	ctx context.Context,
+	store internalmodels.ImportFindingsStore,
+	output []byte,
+	prefixToSource map[string]string,
+	suppressions *linter.Registry,
+	dryRun bool,
+) error {
 	var results map[string][]map[string]any
 	if len(output) == 0 {
 		return errors.New("linter output is empty")
@@ -316,10 +364,84 @@ func processLinterResult(ctx context.Context, store internalmodels.ImportFinding
 
 	logger.Info("Successfully parsed linter output")
 
+	// 1. Annotate suppressed findings in-place for GCS upload and build active Datastore findings
+	// before launching concurrent GCS upload / Datastore batch workers.
+	sortedPrefixes := sortPrefixesLongestFirst(prefixToSource)
+	linterBugs := make(map[string]bool)
+	findingsToPut := make([]*internalmodels.ImportFinding, 0, len(results))
+	now := time.Now().UTC()
+	var suppressedFindingsCount, suppressedRecordsCount int
+
+	for filename, findingsList := range results {
+		if len(findingsList) == 0 {
+			continue
+		}
+
+		bugID := strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))
+		source := resolveSource(bugID, sortedPrefixes)
+
+		uniqueFindings := make(map[internalmodels.ImportFindings]bool)
+		for _, f := range findingsList {
+			code, ok := f["Code"].(string)
+			if !ok {
+				code = "UNKNOWN_CODE"
+			}
+			msg, _ := f["Message"].(string)
+
+			if reason, suppressed := suppressions.Match(source, bugID, code, msg); suppressed {
+				f["Suppressed"] = true
+				if reason != "" {
+					f["SuppressedReason"] = reason
+				} else {
+					delete(f, "SuppressedReason")
+				}
+				suppressedFindingsCount++
+
+				continue
+			}
+
+			delete(f, "Suppressed")
+			delete(f, "SuppressedReason")
+
+			importFinding := errorCodeMapping[code]
+			if importFinding == 0 {
+				importFinding = internalmodels.ImportFindingsNone
+			}
+			uniqueFindings[importFinding] = true
+		}
+
+		if len(uniqueFindings) == 0 {
+			suppressedRecordsCount++
+			continue
+		}
+
+		linterBugs[bugID] = true
+
+		sortedFindings := make([]internalmodels.ImportFindings, 0, len(uniqueFindings))
+		for f := range uniqueFindings {
+			sortedFindings = append(sortedFindings, f)
+		}
+		slices.Sort(sortedFindings)
+
+		finding := &internalmodels.ImportFinding{
+			BugID:       bugID,
+			Source:      source,
+			Findings:    sortedFindings,
+			LastAttempt: now,
+		}
+		findingsToPut = append(findingsToPut, finding)
+	}
+
+	if suppressedFindingsCount > 0 {
+		logger.Info("Applied linter suppressions",
+			slog.Int("suppressed_findings", suppressedFindingsCount),
+			slog.Int("fully_suppressed_records", suppressedRecordsCount))
+	}
+
 	g, groupCtx := errgroup.WithContext(ctx)
 
 	g.Go(func() error {
-		if err := uploadRecordToStore(groupCtx, store, results, prefixToSource, dryRun); err != nil {
+		if err := uploadRecordToStore(groupCtx, store, results, sortedPrefixes, dryRun); err != nil {
 			logger.Error("Failed to upload results to store", slog.Any("err", err))
 			return nil
 		}
@@ -340,51 +462,6 @@ func processLinterResult(ctx context.Context, store internalmodels.ImportFinding
 
 		return nil
 	})
-
-	// 3. Process findings and update Datastore (Parallel)
-	linterBugs := make(map[string]bool)
-	findingsToPut := make([]*internalmodels.ImportFinding, 0, len(results))
-	now := time.Now().UTC()
-
-	// Prepare findings in memory first (CPU bound)
-	for filename, findingsList := range results {
-		bugID := strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))
-		linterBugs[bugID] = true
-
-		if len(findingsList) == 0 {
-			continue
-		}
-
-		uniqueFindings := make(map[internalmodels.ImportFindings]bool)
-		for _, f := range findingsList {
-			code, ok := f["Code"].(string)
-			if !ok {
-				code = "UNKNOWN_CODE"
-			}
-			importFinding := errorCodeMapping[code]
-			if importFinding == 0 {
-				importFinding = internalmodels.ImportFindingsNone
-			}
-			uniqueFindings[importFinding] = true
-		}
-
-		var sortedFindings []internalmodels.ImportFindings
-		for f := range uniqueFindings {
-			sortedFindings = append(sortedFindings, f)
-		}
-		slices.Sort(sortedFindings)
-
-		prefix := strings.Split(bugID, "-")[0] + "-"
-		source := prefixToSource[prefix]
-
-		finding := &internalmodels.ImportFinding{
-			BugID:       bugID,
-			Source:      source,
-			Findings:    sortedFindings,
-			LastAttempt: now,
-		}
-		findingsToPut = append(findingsToPut, finding)
-	}
 
 	// Launch workers to process findingsToPut
 
@@ -520,7 +597,7 @@ func equalFindings(a, b []internalmodels.ImportFindings) bool {
 	return true
 }
 
-func uploadRecordToStore(ctx context.Context, store internalmodels.ImportFindingsStore, results map[string][]map[string]any, prefixToSource map[string]string, dryRun bool) error {
+func uploadRecordToStore(ctx context.Context, store internalmodels.ImportFindingsStore, results map[string][]map[string]any, sortedPrefixes []prefixSourcePair, dryRun bool) error {
 	existingObjects, err := store.ListResultSources(ctx)
 	if err != nil {
 		return err
@@ -533,8 +610,7 @@ func uploadRecordToStore(ctx context.Context, store internalmodels.ImportFinding
 	sourceResults := make(map[string]map[string][]map[string]any)
 	for filename, findings := range results {
 		bugID := strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))
-		prefix := strings.Split(bugID, "-")[0] + "-"
-		source := prefixToSource[prefix]
+		source := resolveSource(bugID, sortedPrefixes)
 		if source == "" {
 			continue
 		}

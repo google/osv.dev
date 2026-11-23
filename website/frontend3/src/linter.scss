@@ -927,3 +927,60 @@ tr.clickable {
   color: #fdd663;
 }
 
+.suppressed-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12.5px;
+  color: #ccc;
+  padding: 3px 8px;
+  border: 1px solid var(--osv-border-color);
+  border-radius: 4px;
+  background-color: var(--osv-surface-color);
+  transition: border-color 0.15s ease;
+
+  &:hover {
+    border-color: #777;
+  }
+
+  input {
+    cursor: pointer;
+    margin: 0;
+  }
+}
+
+tr.suppressed-issue-row {
+  opacity: 0.72;
+}
+
+.finding-tag.finding-tag-suppressed {
+  border: 1px dashed var(--osv-grey-600);
+  background-color: transparent;
+  color: #b0b5ba;
+}
+
+tr.suppressed-finding-row {
+  opacity: 0.8;
+}
+
+.suppressed-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 11px;
+  border-radius: 3px;
+  border: 1px dashed var(--osv-grey-600);
+  color: #fdd663;
+  vertical-align: middle;
+}
+
+.suppressed-reason {
+  margin-top: 6px;
+  font-size: 12px;
+  font-family: var(--osv-body-font-family);
+  color: #b0b5ba;
+}
+
+

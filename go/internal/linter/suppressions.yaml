@@ -1,0 +1,16 @@
+# Provider-specific osv-linter suppressions.
+# Matching findings are excluded from Datastore ImportFinding entities (API + data-quality
+# metrics) and hidden by default on the /linter report UI, while remaining inspectable in
+# GCS result.json and on /linter when "Show suppressed" is enabled.
+suppressions:
+  - source: chainguard
+    code: RNG:002
+    message: 'overlapping event: "0"'
+    reason: 'Chainguard uses introduced="0" and fixed="0" to mark advisories fixed prior to any affected version (not affected).'
+  - source: suse
+    code: REC:003
+    message: 'Invalid Upstream: upstream should not contain related IDs'
+    reason: 'SUSE and openSUSE advisories list CVEs in both upstream and related fields.'
+  - source: uvi
+    code: '*'
+    reason: 'UVI (GSD) is archived and no longer provides vulnerability data.'

@@ -63,18 +63,28 @@ steps:
   waitFor: ['build-worker-base', 'cloud-build-queue']
 
 # Build/push core worker images.
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/worker:latest || exit 0']
+  id: 'pull-worker'
+  waitFor: ['pull-worker-base']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/worker:latest', '-t', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', '-f', 'gcp/workers/worker/Dockerfile', '.']
+  args: ['build', '--build-arg', 'BUILDKIT_INLINE_CACHE=1', '--build-arg', 'CACHEBUST=$COMMIT_SHA', '-t', 'gcr.io/oss-vdb/worker:latest', '-t', 'gcr.io/oss-vdb/worker:$COMMIT_SHA', '-f', 'gcp/workers/worker/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/worker:latest', '.']
   id: 'build-worker'
-  waitFor: ['build-worker-base']
+  waitFor: ['build-worker-base', 'pull-worker']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/worker']
   waitFor: ['build-worker', 'cloud-build-queue']
 
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  args: ['-c', 'docker pull gcr.io/oss-vdb/oss-fuzz-worker:latest || exit 0']
+  id: 'pull-oss-fuzz-worker'
+  waitFor: ['pull-worker-base']
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/oss-fuzz-worker:latest', '-t', 'gcr.io/oss-vdb/oss-fuzz-worker:$COMMIT_SHA', '-f', 'gcp/workers/oss_fuzz_worker/Dockerfile', '.']
+  args: ['build', '--build-arg', 'BUILDKIT_INLINE_CACHE=1', '--build-arg', 'CACHEBUST=$COMMIT_SHA', '-t', 'gcr.io/oss-vdb/oss-fuzz-worker:latest', '-t', 'gcr.io/oss-vdb/oss-fuzz-worker:$COMMIT_SHA', '-f', 'gcp/workers/oss_fuzz_worker/Dockerfile', '--cache-from', 'gcr.io/oss-vdb/oss-fuzz-worker:latest', '.']
   id: 'build-oss-fuzz-worker'
-  waitFor: ['build-worker-base']
+  waitFor: ['build-worker-base', 'pull-oss-fuzz-worker']
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/oss-fuzz-worker']
   waitFor: ['build-oss-fuzz-worker', 'cloud-build-queue']

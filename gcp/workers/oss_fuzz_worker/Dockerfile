@@ -18,18 +18,20 @@ RUN mkdir /work && mkdir -p /env/gcp/workers/worker
 VOLUME /var/lib/docker
 
 # Replicate project structure to make relative editable poetry dependency work.
-# Install dependencies before copying osv/ so edits to osv/ don't bust the poetry layer.
+# TODO(ochang): Just copy the entire project (needs a clean checkout).
 COPY gcp/workers/oss_fuzz_worker/poetry.lock gcp/workers/oss_fuzz_worker/pyproject.toml /env/gcp/workers/worker/
 COPY poetry.lock pyproject.toml README.md /env/
-
-# Create a minimal osv package stub so Poetry installs all third-party deps and the
-# editable osv link in a cacheable layer before copying the real osv/ source tree.
-RUN mkdir -p /env/osv && touch /env/osv/__init__.py && \
-    cd /env/gcp/workers/worker && POETRY_VIRTUALENVS_CREATE=false poetry install
-
 COPY osv /env/osv
+
+# Set virtualenv creation to false to install globally
+RUN cd /env/gcp/workers/worker && POETRY_VIRTUALENVS_CREATE=false poetry install
 
 COPY gcp/workers/oss_fuzz_worker/oss_fuzz.py gcp/workers/oss_fuzz_worker/worker.py /usr/local/bin/
 RUN chmod 755 /usr/local/bin/worker.py
+
+# Run apt-get upgrade at the end so the Poetry layer can hit --cache-from
+# while still applying fresh OS security updates on every CI build (via CACHEBUST).
+ARG CACHEBUST
+RUN : "${CACHEBUST}" && apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT ["worker.py"]

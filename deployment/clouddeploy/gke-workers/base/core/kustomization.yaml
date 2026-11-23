@@ -1,5 +1,6 @@
 resources:
 - backup.yaml
+- db-tunnel.yaml
 - exporter.yaml
 - exporter-deleter.yaml
 - gitter.yaml

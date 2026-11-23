@@ -17,6 +17,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -24,22 +25,49 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
+)
+
+const (
+	cloudSQLIAMAuthScope   = "https://www.googleapis.com/auth/sqlservice.login"
+	iamTokenRefreshTimeout = 10 * time.Second
 )
 
 // ConnConfig holds connection parameters for PostgreSQL.
 type ConnConfig struct {
-	Host     string
-	Port     uint16
-	User     string
-	Password string
-	Database string
-	SSLMode  string
+	Host        string
+	Port        uint16
+	User        string
+	Password    string
+	Database    string
+	SSLMode     string
+	SSLRootCert string
+	// IAMAuth enables automatic Cloud SQL IAM authentication using Google
+	// Application Default Credentials (refreshing short-lived OAuth2 login tokens
+	// on every new pool connection). Requires TLS (sslmode require, verify-ca,
+	// or verify-full).
+	IAMAuth bool
+
+	// tokenSource overrides google.DefaultTokenSource in tests.
+	tokenSource oauth2.TokenSource
 }
 
 var kwQuoteReplacer = strings.NewReplacer(`\`, `\\`, `'`, `\'`)
 
 func quoteKeywordValue(v string) string {
 	return "'" + kwQuoteReplacer.Replace(v) + "'"
+}
+
+func (c ConnConfig) effectiveSSLMode() string {
+	if c.SSLMode != "" {
+		return c.SSLMode
+	}
+	if c.IAMAuth {
+		return "require"
+	}
+
+	return "disable"
 }
 
 // ConnString returns a libpq-style keyword/value connection string.
@@ -60,10 +88,7 @@ func (c ConnConfig) ConnString() string {
 	if dbName == "" {
 		dbName = "osv"
 	}
-	sslMode := c.SSLMode
-	if sslMode == "" {
-		sslMode = "disable"
-	}
+	sslMode := c.effectiveSSLMode()
 
 	parts := []string{
 		"host=" + quoteKeywordValue(host),
@@ -71,6 +96,9 @@ func (c ConnConfig) ConnString() string {
 		"user=" + quoteKeywordValue(user),
 		"dbname=" + quoteKeywordValue(dbName),
 		"sslmode=" + quoteKeywordValue(sslMode),
+	}
+	if c.SSLRootCert != "" {
+		parts = append(parts, "sslrootcert="+quoteKeywordValue(c.SSLRootCert))
 	}
 	if c.Password != "" {
 		parts = append(parts, "password="+quoteKeywordValue(c.Password))
@@ -83,9 +111,11 @@ func (c ConnConfig) ConnString() string {
 //   - POSTGRES_HOST (default: "127.0.0.1")
 //   - POSTGRES_PORT (default: 5432)
 //   - POSTGRES_USER (default: "postgres")
-//   - POSTGRES_PASSWORD (optional, e.g. omitted when using cloud-sql-proxy IAM auth)
+//   - POSTGRES_PASSWORD (optional, e.g. omitted when using IAM auth)
 //   - POSTGRES_DB (default: "osv")
-//   - POSTGRES_SSLMODE (default: "disable")
+//   - POSTGRES_SSLMODE (default: "require" when POSTGRES_IAM_AUTH=true, otherwise "disable")
+//   - POSTGRES_SSLROOTCERT (optional path to CA cert PEM, e.g. with POSTGRES_SSLMODE=verify-ca)
+//   - POSTGRES_IAM_AUTH (default: false; when true, mints/refreshes Cloud SQL IAM login tokens via ADC)
 func ConnConfigFromEnv() (ConnConfig, error) {
 	host := os.Getenv("POSTGRES_HOST")
 	if host == "" {
@@ -111,18 +141,33 @@ func ConnConfigFromEnv() (ConnConfig, error) {
 		dbName = "osv"
 	}
 
+	var iamAuth bool
+	if iamStr := os.Getenv("POSTGRES_IAM_AUTH"); iamStr != "" {
+		v, err := strconv.ParseBool(iamStr)
+		if err != nil {
+			return ConnConfig{}, fmt.Errorf("invalid POSTGRES_IAM_AUTH %q: %w", iamStr, err)
+		}
+		iamAuth = v
+	}
+
 	sslMode := os.Getenv("POSTGRES_SSLMODE")
 	if sslMode == "" {
-		sslMode = "disable"
+		if iamAuth {
+			sslMode = "require"
+		} else {
+			sslMode = "disable"
+		}
 	}
 
 	return ConnConfig{
-		Host:     host,
-		Port:     port,
-		User:     user,
-		Password: os.Getenv("POSTGRES_PASSWORD"),
-		Database: dbName,
-		SSLMode:  sslMode,
+		Host:        host,
+		Port:        port,
+		User:        user,
+		Password:    os.Getenv("POSTGRES_PASSWORD"),
+		Database:    dbName,
+		SSLMode:     sslMode,
+		SSLRootCert: os.Getenv("POSTGRES_SSLROOTCERT"),
+		IAMAuth:     iamAuth,
 	}, nil
 }
 
@@ -135,6 +180,24 @@ const (
 
 // NewPool creates a new pgxpool.Pool from the given ConnConfig.
 func NewPool(ctx context.Context, cfg ConnConfig) (*pgxpool.Pool, error) {
+	poolCfg, err := buildPoolConfig(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return pgxpool.NewWithConfig(ctx, poolCfg)
+}
+
+func buildPoolConfig(ctx context.Context, cfg ConnConfig) (*pgxpool.Config, error) {
+	if cfg.IAMAuth {
+		sslMode := cfg.effectiveSSLMode()
+		switch sslMode {
+		case "require", "verify-ca", "verify-full":
+		default:
+			return nil, fmt.Errorf("IAM auth requires TLS (sslmode must be require, verify-ca, or verify-full, got %q)", sslMode)
+		}
+	}
+
 	poolCfg, err := pgxpool.ParseConfig(cfg.ConnString())
 	if err != nil {
 		return nil, fmt.Errorf("parse pgxpool config: %w", err)
@@ -154,7 +217,34 @@ func NewPool(ctx context.Context, cfg ConnConfig) (*pgxpool.Pool, error) {
 	poolCfg.MaxConns = max(poolCfg.MaxConns, defaultMaxConns)
 	poolCfg.MaxConnIdleTime = defaultMaxConnIdleTime
 
-	return pgxpool.NewWithConfig(ctx, poolCfg)
+	if cfg.IAMAuth {
+		ts := cfg.tokenSource
+		if ts == nil {
+			// Detach cancellation so future token refreshes survive after a
+			// short-lived startup context expires, and enforce a bounded HTTP
+			// timeout so a stalled token refresh cannot block pool connections.
+			tsCtx := context.WithValue(
+				context.WithoutCancel(ctx),
+				oauth2.HTTPClient,
+				&http.Client{Timeout: iamTokenRefreshTimeout},
+			)
+			ts, err = google.DefaultTokenSource(tsCtx, cloudSQLIAMAuthScope)
+			if err != nil {
+				return nil, fmt.Errorf("create Cloud SQL IAM token source: %w", err)
+			}
+		}
+		poolCfg.BeforeConnect = func(_ context.Context, connCfg *pgx.ConnConfig) error {
+			tok, err := ts.Token()
+			if err != nil {
+				return fmt.Errorf("fetch Cloud SQL IAM auth token: %w", err)
+			}
+			connCfg.Password = tok.AccessToken
+
+			return nil
+		}
+	}
+
+	return poolCfg, nil
 }
 
 // NewPoolFromEnv creates a new pgxpool.Pool configured via environment variables.

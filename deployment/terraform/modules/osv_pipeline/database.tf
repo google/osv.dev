@@ -23,6 +23,12 @@ resource "google_project_service" "secretmanager" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "cloud_run" {
+  project            = var.project_id
+  service            = "run.googleapis.com"
+  disable_on_destroy = false
+}
+
 resource "google_sql_database_instance" "postgres" {
   project             = var.project_id
   name                = var.postgres_instance_name
@@ -124,6 +130,70 @@ resource "google_sql_user" "deployment" {
   database_roles = ["cloudsqlsuperuser"]
 
   depends_on = [google_sql_user.worker]
+}
+
+resource "google_sql_user" "db_migrator" {
+  project        = var.project_id
+  instance       = google_sql_database_instance.postgres.name
+  name           = trimsuffix(google_service_account.db_migrator.email, ".gserviceaccount.com")
+  type           = "CLOUD_IAM_SERVICE_ACCOUNT"
+  database_roles = ["cloudsqlsuperuser"]
+
+  depends_on = [google_sql_user.deployment]
+}
+
+# VPC-connected Cloud Run Job that applies goose schema migrations over Cloud SQL Private IP.
+resource "google_cloud_run_v2_job" "db_migrate" {
+  project             = var.project_id
+  name                = "osv-db-migrate"
+  location            = var.postgres_region
+  deletion_protection = false
+
+  template {
+    template {
+      service_account = google_service_account.db_migrator.email
+      max_retries     = 0
+      timeout         = "600s"
+
+      vpc_access {
+        egress = "PRIVATE_RANGES_ONLY"
+        network_interfaces {
+          network    = "default"
+          subnetwork = var.postgres_migration_subnetwork
+        }
+      }
+
+      containers {
+        image = "gcr.io/oss-vdb/goose:latest" # Placeholder; updated on deploy to goose-migrations:$COMMIT_SHA.
+
+        env {
+          name  = "CLOUDSQL_INSTANCE"
+          value = google_sql_database_instance.postgres.connection_name
+        }
+        env {
+          name  = "CLOUDSQL_PRIVATE_IP"
+          value = "true"
+        }
+      }
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      # Container image is updated per release by Cloud Build (build-and-stage.yaml / deploy-prod.yaml).
+      template[0].template[0].containers[0].image,
+      client,
+      client_version,
+    ]
+  }
+
+  depends_on = [
+    google_project_service.cloud_run,
+    google_compute_subnetwork.my_subnet_0,
+    google_sql_user.db_migrator,
+    google_project_iam_member.db_migrator_cloudsql_roles,
+    google_service_account_iam_member.db_migrator_act_as,
+  ]
 }
 
 resource "google_secret_manager_secret" "postgres_worker_password" {

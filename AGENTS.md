@@ -245,8 +245,8 @@ Many tests use expected outputs saved directly in the source tree:
   ```bash
   make run-api-server
   ```
-- To run it against the staging (`oss-vdb-test`) project with PostgreSQL shadow reads enabled, use `make run-api-server-test`. This expects a PostgreSQL connection on `127.0.0.1:5432` by default; override with the `POSTGRES_*` environment variables (see the target in the [`Makefile`](Makefile)).
-- Notable API environment variables: `OSV_NORMALIZE_MATCH_NAMES` (case-insensitive package name matching for ecosystems such as NuGet and crates.io), `POSTGRES_SHADOW_RATE` (fraction of requests shadow-read from PostgreSQL), and `POSTGRES_HOST/PORT/USER/PASSWORD/DB/SSLMODE`.
+- To run it against the staging (`oss-vdb-test`) project with PostgreSQL shadow reads enabled, start the VPC tunnel in another terminal (`make run-db-tunnel-staging`) and run `make run-api-server-test`. This connects to `127.0.0.1:5432` using TLS + automatic GCP ADC IAM token refresh (`POSTGRES_SSLMODE=require`, `POSTGRES_IAM_AUTH=true`) by default; override with the `POSTGRES_*` environment variables (see the target in the [`Makefile`](Makefile)).
+- Notable API environment variables: `OSV_NORMALIZE_MATCH_NAMES` (case-insensitive package name matching for ecosystems such as NuGet and crates.io), `POSTGRES_SHADOW_RATE` (fraction of requests shadow-read from PostgreSQL), `POSTGRES_IAM_AUTH` (automatically mint/refresh Cloud SQL IAM login tokens via ADC), and `POSTGRES_HOST/PORT/USER/PASSWORD/DB/SSLMODE`.
 
 ### Local Monitoring Development
 - To preview and edit dashboards locally (Plutono, a Grafana fork, against live GMP data), run `make run-grafana-local`. See the [monitoring README](deployment/clouddeploy/gke-workers/environments/oss-vdb-test/monitoring/README.md) for how metrics and dashboards are wired together.
@@ -337,7 +337,10 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
    - Run as a cron job (`go/cmd/ubuntubinarymapper/`).
    - Reads `Ubuntu/modified_id.csv` from the exported GCS bucket (`gs://osv-vulnerabilities`) with a 1-hour lookback window, downloads modified Ubuntu vulnerability records (via `Ubuntu/all.zip` or individual `Ubuntu/<id>.json` files), extracts binary-to-source package name mappings from `ecosystem_specific`, and persists them to Datastore (`UbuntuPackageMapping`) alongside a `JobData` execution checkpoint (or to a local JSON file via `-output-json`).
 
-15. **`tools/` (`reimport-tui`, `repo-allowlist-sync`)**:
+15. **`db-tunnel`**:
+   - Lightweight raw-TCP forwarder (`go/cmd/db-tunnel/`) deployed inside the GKE `workers` cluster so engineers can reach Private-IP-only Cloud SQL instances via `kubectl port-forward` (`make run-db-tunnel{,-staging,-private}`) with end-to-end TLS + personal IAM authentication.
+
+16. **`tools/` (`reimport-tui`, `repo-allowlist-sync`)**:
    - Developer and operator CLI/TUI utilities under `go/cmd/tools/` that share the main `go/go.mod` module.
    - `reimport-tui`: Interactive TUI tool to trigger reimports for selected `SourceRepository` entities in Datastore (`make reimport-tui`). See its [README](go/cmd/tools/reimport-tui/README.md).
    - `repo-allowlist-sync`: Synchronizes the repository allowlist YAML files (`repo_allowlist.yaml` for prod, `repo_allowlist_test.yaml` for staging) to `RepoAllowList` entities in Datastore. Runs automatically via Cloud Build when those files change on `master`, so changing per-repo Git enumeration behavior is normally just a YAML PR. See its [README](go/cmd/tools/repo-allowlist-sync/README.md).

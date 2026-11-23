@@ -30,9 +30,10 @@ module "osv_pipeline" {
   default_pool_res_size = 1
   highend_pool_res_size = 2
 
-  postgres_region            = "us-west2"
-  postgres_tier              = "db-perf-optimized-N-2"
-  postgres_availability_type = "ZONAL"
+  postgres_region               = "us-west2"
+  postgres_tier                 = "db-perf-optimized-N-2"
+  postgres_availability_type    = "ZONAL"
+  postgres_migration_subnetwork = "osv-subnet"
 }
 
 # Kept scoped to private-osv (not shared osv_pipeline) so deployment@oss-vdb cannot actAs privileged SAs in oss-vdb

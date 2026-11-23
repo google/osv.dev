@@ -254,6 +254,31 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/ubuntu-binary-mapper']
   waitFor: ['build-ubuntu-binary-mapper', 'cloud-build-queue']
 
+- name: gcr.io/cloud-builders/docker
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/db-tunnel:latest', '-t', 'gcr.io/oss-vdb/db-tunnel:$COMMIT_SHA', '--target', 'db-tunnel', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--pull', '.']
+  dir: 'go'
+  id: 'build-db-tunnel'
+  waitFor: ['build-ubuntu-binary-mapper']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/db-tunnel']
+  waitFor: ['build-db-tunnel', 'cloud-build-queue']
+
+# Build/push versioned PostgreSQL migrations image for the osv-db-migrate Cloud Run Job
+- name: gcr.io/cloud-builders/docker
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/goose-migrations:latest', '-t', 'gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA', '--build-context', 'migrations=../../go/internal/database/postgres/migrations', '-f', 'Dockerfile.migrations', '--pull', '.']
+  dir: 'docker/goose'
+  id: 'build-goose-migrations'
+  waitFor: ['setup-buildx']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/goose-migrations']
+  waitFor: ['build-goose-migrations', 'cloud-build-queue']
+
 # Build/push osv-linter images to gcr.io/oss-vdb-test.
 - name: gcr.io/cloud-builders/docker
   args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb-test/osv-linter:latest', '-t', 'gcr.io/oss-vdb-test/osv-linter:$COMMIT_SHA', '--target', 'osv-linter', '--build-context', 'bindings=../bindings', '-f', 'Dockerfile', '--pull', '.']
@@ -458,12 +483,15 @@ steps:
   dir:  deployment/terraform/environments/oss-vdb-test
   id: 'terraform-apply'
 
-# Apply PostgreSQL schema migrations to staging environment
-- name: gcr.io/oss-vdb/goose
-  env: ['CLOUDSQL_INSTANCE=oss-vdb-test:us-central1:osv-db']
-  args: ['up']
-  dir:  go/internal/database/postgres/migrations
+# Apply PostgreSQL schema migrations to staging environment via VPC-connected Cloud Run Job
+- name: gcr.io/cloud-builders/gcloud
+  args: ['run', 'jobs', 'update', 'osv-db-migrate', '--quiet', '--project=oss-vdb-test', '--region=us-central1', '--image=gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA']
+  id: 'goose-up-update'
+  waitFor: ['terraform-apply']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['run', 'jobs', 'execute', 'osv-db-migrate', '--quiet', '--project=oss-vdb-test', '--region=us-central1', '--wait']
   id: 'goose-up'
+  waitFor: ['goose-up-update']
 
 # Cloud Deploy
 # GKE Workers
@@ -494,6 +522,7 @@ steps:
      gitter=gcr.io/oss-vdb/gitter:$COMMIT_SHA,\
      vanir-signatures=gcr.io/oss-vdb/vanir-signatures:$COMMIT_SHA,\
      ubuntu-binary-mapper=gcr.io/oss-vdb/ubuntu-binary-mapper:$COMMIT_SHA,\
+     db-tunnel=gcr.io/oss-vdb/db-tunnel:$COMMIT_SHA,\
      cron=gcr.io/oss-vdb/cron:$COMMIT_SHA"
   ]
   dir: deployment/clouddeploy/gke-workers

@@ -89,26 +89,14 @@ unset PG_RO_PASS
 
 Database schema migrations live in `go/internal/database/postgres/migrations/` and are managed with [goose](https://github.com/pressly/goose).
 
-* **Staging (`oss-vdb-test`)**: Applied automatically by `build-and-stage.yaml` right after `terraform apply` using the `gcr.io/oss-vdb/goose` Cloud Builder image (see `docker/goose/`).
-* **Production (`oss-vdb` & `private-osv`)**: Applied automatically by `deploy-prod.yaml` at the release `$COMMIT_SHA` right before promoting the Cloud Deploy pipelines.
+* **Staging (`oss-vdb-test`)**: Applied automatically by `build-and-stage.yaml` right after `terraform apply` by updating and executing the VPC-connected `osv-db-migrate` Cloud Run Job with `gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA` (connects over Cloud SQL Private IP as `db-migrator@oss-vdb-test.iam`).
+* **Production (`oss-vdb` & `private-osv`)**: Applied automatically by `deploy-prod.yaml` at the release `$COMMIT_SHA` via the `osv-db-migrate` Cloud Run Job in each project right before promoting the Cloud Deploy pipelines.
 
-After the initial `terraform apply` creates the `deployment@oss-vdb.iam` Cloud SQL user on an instance, set its default login role to `cloudsqlsuperuser` once per instance (so tables created by CI/CD migrations are owned by the shared `cloudsqlsuperuser` role):
+The `docker/goose/entrypoint.bash` script automatically sets `role=cloudsqlsuperuser` at session startup so objects created by CI/CD migrations are owned by the shared `cloudsqlsuperuser` role.
 
-```bash
-# In one terminal (use us-central1 for oss-vdb / oss-vdb-test, or us-west2 for private-osv):
-cloud-sql-proxy "${PROJECT_ID}:us-central1:osv-db" \
-  --auto-iam-authn \
-  --impersonate-service-account=deployment@oss-vdb.iam.gserviceaccount.com
+To connect or run `goose` / `psql` manually from your workstation over Private IP via IAM authentication (no public IP or `cloud-sql-proxy` binary needed):
 
-# In another terminal:
-psql "host=127.0.0.1 port=5432 user=deployment@oss-vdb.iam dbname=osv sslmode=disable" \
-  -c 'ALTER ROLE "deployment@oss-vdb.iam" SET role = '\''cloudsqlsuperuser'\'';'
-```
-
-To connect or run `goose` manually from your workstation via IAM authentication:
-
-1. Install `cloud-sql-proxy` (via `gcloud components install cloud-sql-proxy`, `go install github.com/GoogleCloudPlatform/cloud-sql-proxy/v2@latest`, or the [standalone binary](https://cloud.google.com/sql/docs/postgres/connect-instance-auth-proxy#install)).
-2. Create a Cloud SQL IAM user for your Google account (once per instance):
+1. Create a Cloud SQL IAM user for your Google account (once per instance):
    ```bash
    gcloud sql users create "$(gcloud config get-value account)" \
      --instance=osv-db \
@@ -116,24 +104,35 @@ To connect or run `goose` manually from your workstation via IAM authentication:
      --type=CLOUD_IAM_USER \
      --database-roles=cloudsqlsuperuser
    ```
-3. Start `cloud-sql-proxy` with automatic IAM authentication (or via `make run-cloud-sql-proxy-staging` / `make run-cloud-sql-proxy`):
+2. Start the in-VPC GKE port-forward tunnel in one terminal (forwards primary `osv-db` on `127.0.0.1:5432`, and `osv-db-read-pool` on `127.0.0.1:6432` for `oss-vdb` / `oss-vdb-test`):
    ```bash
-   # Use us-central1 for oss-vdb / oss-vdb-test, or us-west2 for private-osv
-   cloud-sql-proxy "${PROJECT_ID}:us-central1:osv-db" --auto-iam-authn
+   # Choose the target environment:
+   make run-db-tunnel-staging   # oss-vdb-test
+   make run-db-tunnel           # oss-vdb
+   make run-db-tunnel-private   # private-osv
+   ```
+3. Download the Cloud SQL instance's server CA certificate once so TLS verifies the database server (`sslmode=verify-ca` prevents in-cluster/VPC MITM when connecting through `db-tunnel`):
+   ```bash
+   gcloud sql instances describe osv-db \
+     --project="$PROJECT_ID" \
+     --format='value(serverCaCert.cert)' > "/tmp/osv-db-${PROJECT_ID}-ca.pem"
    ```
 4. Set your IAM user's default login role to `cloudsqlsuperuser` (once per instance):
    ```bash
-   psql "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=disable" \
+   PGPASSWORD="$(gcloud sql generate-login-token)" \
+   psql "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=verify-ca sslrootcert=/tmp/osv-db-${PROJECT_ID}-ca.pem" \
      -c "ALTER ROLE \"$(gcloud config get-value account)\" SET role = 'cloudsqlsuperuser';"
    ```
-5. Run `goose`:
+5. Run `goose` (short-lived IAM login token via `gcloud sql generate-login-token`):
    ```bash
+   PGPASSWORD="$(gcloud sql generate-login-token)" \
    goose -dir go/internal/database/postgres/migrations postgres \
-     "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=disable default_query_exec_mode=cache_describe" \
+     "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv sslmode=verify-ca sslrootcert=/tmp/osv-db-${PROJECT_ID}-ca.pem default_query_exec_mode=cache_describe" \
      status
    ```
+6. For long-running local API server testing (`make run-api-server-test`), `POSTGRES_IAM_AUTH=true` and `POSTGRES_SSLMODE=require` are enabled by default in `Makefile` so `go/internal/database/postgres` automatically refreshes ADC IAM tokens across the tunnel. To enable server CA verification locally as well, pass `POSTGRES_SSLMODE=verify-ca POSTGRES_SSLROOTCERT=/tmp/osv-db-oss-vdb-test-ca.pem`.
 
-> **Reverting migrations**: In production, prefer pushing a new forward-fix migration PR rather than rolling back history. For immediate rollbacks of an additive migration, you can connect via `cloud-sql-proxy` and run `goose ... down` (which executes the `-- +goose Down` block of the latest version), then revert the migration file in git.
+> **Reverting migrations**: In production, prefer pushing a new forward-fix migration PR rather than rolling back history. For immediate rollbacks of an additive migration, connect via `make run-db-tunnel` and run `goose ... down` (which executes the `-- +goose Down` block of the latest version), then revert the migration file in git.
 
 
 ## Setting up auto-scaler

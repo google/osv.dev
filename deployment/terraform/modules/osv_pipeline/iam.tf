@@ -132,3 +132,50 @@ resource "google_project_iam_member" "deployment_clouddeploy_roles" {
   member  = "serviceAccount:${var.deployment_service_account_email}"
 }
 
+# Dedicated per-project service account for the VPC-connected osv-db-migrate Cloud Run Job
+resource "google_service_account" "db_migrator" {
+  project      = var.project_id
+  account_id   = "db-migrator"
+  display_name = "OSV PostgreSQL Migration Service Account"
+}
+
+resource "google_project_iam_member" "db_migrator_cloudsql_roles" {
+  for_each = toset([
+    "roles/cloudsql.client",
+    "roles/cloudsql.instanceUser",
+  ])
+
+  project = var.project_id
+  role    = each.value
+  member  = "serviceAccount:${google_service_account.db_migrator.email}"
+}
+
+# Allow Cloud Build's deployment SA to update and execute only the osv-db-migrate Cloud Run Job
+resource "google_cloud_run_v2_job_iam_member" "deployment_db_migrate_developer" {
+  count    = var.deployment_service_account_email != "" ? 1 : 0
+  project  = var.project_id
+  location = google_cloud_run_v2_job.db_migrate.location
+  name     = google_cloud_run_v2_job.db_migrate.name
+  role     = "roles/run.developer"
+  member   = "serviceAccount:${var.deployment_service_account_email}"
+}
+
+# Project-level viewer allows polling Cloud Run operation status during `gcloud run jobs update/execute --wait`.
+resource "google_project_iam_member" "deployment_run_viewer" {
+  count   = var.deployment_service_account_email != "" ? 1 : 0
+  project = var.project_id
+  role    = "roles/run.viewer"
+  member  = "serviceAccount:${var.deployment_service_account_email}"
+}
+
+resource "google_service_account_iam_member" "db_migrator_act_as" {
+  for_each = toset(compact([
+    var.deployment_service_account_email != "" ? "serviceAccount:${var.deployment_service_account_email}" : "",
+    "serviceAccount:terraform-apply@oss-vdb.iam.gserviceaccount.com",
+  ]))
+
+  service_account_id = google_service_account.db_migrator.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = each.value
+}
+

@@ -121,16 +121,32 @@ run-api-server-test:
 		POSTGRES_PORT=$${POSTGRES_PORT:-5432} \
 		POSTGRES_USER=$${POSTGRES_USER:-$$(gcloud config get-value account)} \
 		POSTGRES_DB=$${POSTGRES_DB:-osv} \
-		POSTGRES_SSLMODE=$${POSTGRES_SSLMODE:-disable} \
+		POSTGRES_SSLMODE=$${POSTGRES_SSLMODE:-require} \
+		POSTGRES_IAM_AUTH=$${POSTGRES_IAM_AUTH:-true} \
 		./api-devserver $(ARGS); EXIT_CODE=$$?; rm -f ./api-devserver; exit $$EXIT_CODE)
 
 run-grafana-local: ## Run local Grafana for testing
 	./tools/run_grafana_local.sh $(ARGS)
 
-run-cloud-sql-proxy: ## Run Cloud SQL Auth Proxy against prod (override via INSTANCE=project:region:instance)
+define run_db_tunnel
+	@KCFG=$$(mktemp) && trap 'rm -f "$$KCFG"' EXIT INT TERM && \
+		KUBECONFIG="$$KCFG" gcloud container clusters get-credentials workers --zone=$(2) --project=$(1) && \
+		KUBECONFIG="$$KCFG" kubectl port-forward deploy/db-tunnel $(3)
+endef
+
+run-db-tunnel: ## Port-forward prod osv-db (5432) and osv-db-read-pool (6432) via GKE db-tunnel
+	$(call run_db_tunnel,oss-vdb,us-west2-c,5432:5432 6432:6432)
+
+run-db-tunnel-staging: ## Port-forward staging (oss-vdb-test) osv-db (5432) and osv-db-read-pool (6432) via GKE db-tunnel
+	$(call run_db_tunnel,oss-vdb-test,us-west2-b,5432:5432 6432:6432)
+
+run-db-tunnel-private: ## Port-forward private-osv osv-db (5432) via GKE db-tunnel
+	$(call run_db_tunnel,private-osv,us-west2-c,5432:5432)
+
+run-cloud-sql-proxy: ## (Legacy) Run Cloud SQL Auth Proxy against prod over public IP
 	cloud-sql-proxy "$${INSTANCE:-oss-vdb:us-central1:osv-db}" --auto-iam-authn
 
-run-cloud-sql-proxy-staging: ## Run Cloud SQL Auth Proxy against staging (oss-vdb-test)
+run-cloud-sql-proxy-staging: ## (Legacy) Run Cloud SQL Auth Proxy against staging (oss-vdb-test) over public IP
 	cloud-sql-proxy "oss-vdb-test:us-central1:osv-db" --auto-iam-authn
 
 # TODO: API integration tests.

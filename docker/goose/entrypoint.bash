@@ -10,18 +10,31 @@ if [[ "${1:-}" == "version" || "${1:-}" == "-version" || "${1:-}" == "--version"
 fi
 
 if [[ -n "${CLOUDSQL_INSTANCE:-}" ]]; then
-  active_account=$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2> /dev/null)
+  # Prefer the GCE/Cloud Run metadata server (works in Cloud Run Jobs without gcloud login),
+  # falling back to active gcloud CLI credentials when running locally or in Cloud Build.
+  active_account=$(curl -sf --max-time 2 -H "Metadata-Flavor: Google" \
+    "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email" 2>/dev/null || true)
   if [[ -z "${active_account}" ]]; then
-    echo "No active gcloud account found for Cloud SQL IAM authentication."
+    active_account=$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2>/dev/null || true)
+  fi
+  if [[ -z "${active_account}" ]]; then
+    echo "No active GCP identity found for Cloud SQL IAM authentication."
     exit 1
   fi
 
-  echo "Starting cloud-sql-proxy for ${CLOUDSQL_INSTANCE}..."
-  cloud-sql-proxy "${CLOUDSQL_INSTANCE}" \
-    --port=5432 \
-    --auto-iam-authn \
-    --health-check \
-    --http-port=9090 &
+  proxy_args=(
+    "${CLOUDSQL_INSTANCE}"
+    "--port=5432"
+    "--auto-iam-authn"
+    "--health-check"
+    "--http-port=9090"
+  )
+  if [[ "${CLOUDSQL_PRIVATE_IP:-}" == "true" ]]; then
+    proxy_args+=("--private-ip")
+  fi
+
+  echo "Starting cloud-sql-proxy for ${CLOUDSQL_INSTANCE} (private_ip=${CLOUDSQL_PRIVATE_IP:-false})..."
+  cloud-sql-proxy "${proxy_args[@]}" &
   PROXY_PID=$!
   trap 'kill "${PROXY_PID}" 2>/dev/null || true' EXIT
 
@@ -48,7 +61,14 @@ if [[ -n "${CLOUDSQL_INSTANCE:-}" ]]; then
   db_user="${PGUSER:-${active_account%.gserviceaccount.com}}"
   db_name="${PGDATABASE:-osv}"
   export GOOSE_DRIVER="${GOOSE_DRIVER:-postgres}"
-  export GOOSE_DBSTRING="${GOOSE_DBSTRING:-host=127.0.0.1 port=5432 user=${db_user} dbname=${db_name} sslmode=disable default_query_exec_mode=cache_describe}"
+  # Set role=cloudsqlsuperuser at session startup so objects created by migrations are owned by
+  # the shared cloudsqlsuperuser role even before a manual ALTER ROLE ... SET role is executed.
+  db_role="${PGROLE-cloudsqlsuperuser}"
+  role_param=""
+  if [[ -n "${db_role}" ]]; then
+    role_param=" role=${db_role}"
+  fi
+  export GOOSE_DBSTRING="${GOOSE_DBSTRING:-host=127.0.0.1 port=5432 user=${db_user} dbname=${db_name} sslmode=disable default_query_exec_mode=cache_describe${role_param}}"
 fi
 
 echo "Running: goose $*"

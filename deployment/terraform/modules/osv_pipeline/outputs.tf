@@ -75,6 +75,7 @@ output "postgres_instance_name" {
     google_sql_database.osv,
     google_sql_user.worker,
     google_sql_user.deployment,
+    google_sql_user.db_migrator,
   ]
 }
 

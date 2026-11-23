@@ -32,3 +32,4 @@ patches:
 - path: gitter.yaml
 - path: vanir-signatures.yaml
 - path: ubuntu-binary-mapper.yaml
+- path: db-tunnel.yaml

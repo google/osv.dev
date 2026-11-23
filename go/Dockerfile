@@ -25,7 +25,11 @@
 # 
 # Select which service to build using the --target flag (e.g. importer, worker, exporter, exporter-deleter,
 # relations, recordchecker, generatesitemap, custommetrics, gitter, first_package_finder,
+<<<<<<< HEAD
 # api, recoverer, vanir-signatures, ubuntubinarymapper, staging-api-test, website, osv-linter).
+=======
+# api, recoverer, vanir-signatures, ubuntubinarymapper, db-tunnel, staging-api-test, website).
+>>>>>>> 21f47ee0 (feat(infra): add VPC-connected DB migration job and GKE db-tunnel)
 # ====================================================================================
 
 # ========================================================
@@ -252,4 +256,14 @@ COPY --from=osv-linter-cli-build /app/osv-linter /usr/local/bin/osv-linter
 COPY --from=osv-linter-worker-build /app/osv-linter-worker /usr/local/bin/osv-linter-worker
 WORKDIR /linter
 ENTRYPOINT ["/usr/local/bin/osv-linter-worker"]
+
+# ========================================================
+# Target: DB Tunnel (in-VPC TCP forwarder for kubectl port-forward)
+# ========================================================
+FROM builder AS db-tunnel-build
+RUN CGO_ENABLED=0 go build -o /app/db-tunnel ./cmd/db-tunnel/
+
+FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS db-tunnel
+COPY --from=db-tunnel-build /app/db-tunnel /
+ENTRYPOINT ["/db-tunnel"]
 

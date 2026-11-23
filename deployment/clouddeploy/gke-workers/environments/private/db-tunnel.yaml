@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-tunnel
+spec:
+  template:
+    spec:
+      containers:
+      - name: db-tunnel
+        env:
+        - name: TUNNEL_MAPPINGS
+          value: "127.0.0.1:5432=10.77.0.3:5432"

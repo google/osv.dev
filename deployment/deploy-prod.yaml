@@ -13,26 +13,15 @@
 # limitations under the License.
 
 steps:
-# Fetch PostgreSQL migrations at the release commit and apply to prod and private-osv
-- name: gcr.io/cloud-builders/git
-  entrypoint: bash
-  env: ['COMMIT_SHA=$COMMIT_SHA']
-  args:
-  - '-c'
-  - |
-    set -euo pipefail
-    git clone --filter=blob:none --no-checkout https://github.com/google/osv.dev.git repo
-    cd repo
-    git sparse-checkout set go/internal/database/postgres/migrations
-    git checkout "$COMMIT_SHA"
-- name: gcr.io/oss-vdb/goose
-  env: ['CLOUDSQL_INSTANCE=oss-vdb:us-central1:osv-db']
-  args: ['up']
-  dir:  repo/go/internal/database/postgres/migrations
-- name: gcr.io/oss-vdb/goose
-  env: ['CLOUDSQL_INSTANCE=private-osv:us-west2:osv-db']
-  args: ['up']
-  dir:  repo/go/internal/database/postgres/migrations
+# Apply PostgreSQL migrations at the release commit via VPC-connected Cloud Run Jobs
+- name: gcr.io/cloud-builders/gcloud
+  args: ['run', 'jobs', 'update', 'osv-db-migrate', '--quiet', '--project=oss-vdb', '--region=us-central1', '--image=gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['run', 'jobs', 'execute', 'osv-db-migrate', '--quiet', '--project=oss-vdb', '--region=us-central1', '--wait']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['run', 'jobs', 'update', 'osv-db-migrate', '--quiet', '--project=private-osv', '--region=us-west2', '--image=gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['run', 'jobs', 'execute', 'osv-db-migrate', '--quiet', '--project=private-osv', '--region=us-west2', '--wait']
 
 # Promote Cloud Deploy
 - name: gcr.io/cloud-builders/gcloud
@@ -88,6 +77,10 @@ steps:
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/osv-website:$COMMIT_SHA', 'gcr.io/oss-vdb/osv-website:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/recoverer:$COMMIT_SHA', 'gcr.io/oss-vdb/recoverer:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/db-tunnel:$COMMIT_SHA', 'gcr.io/oss-vdb/db-tunnel:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA', 'gcr.io/oss-vdb/goose-migrations:$TAG_NAME']
 
 serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
 options:

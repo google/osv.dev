@@ -40,6 +40,12 @@ variable "postgres_ipv4_enabled" {
   default     = true
 }
 
+variable "postgres_migration_subnetwork" {
+  type        = string
+  description = "Subnetwork in the default VPC (within var.postgres_region, with Private Google Access enabled) used by the osv-db-migrate Cloud Run Job for Direct VPC Egress."
+  default     = "default"
+}
+
 # Identity & Security
 variable "worker_service_account_id" {
   type        = string

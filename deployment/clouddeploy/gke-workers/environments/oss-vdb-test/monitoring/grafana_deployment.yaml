@@ -42,6 +42,8 @@ spec:
           value: "X-Goog-Authenticated-User-Email"
         - name: PL_AUTH_PROXY_HEADER_PROPERTY
           value: "username"
+        - name: PL_AUTH_PROXY_WHITELIST
+          value: "35.191.0.0/16, 130.211.0.0/22"
         - name: PL_AUTH_PROXY_AUTO_SIGN_UP
           value: "true"
         - name: PL_USERS_AUTO_ASSIGN_ORG

@@ -37,8 +37,9 @@ flowchart LR
   `/etc/plutono/...` paths. A `gmp-frontend` sidecar proxies PromQL queries to Cloud Monitoring
   for project `oss-vdb-test`.
 - **Access**: [`grafana_ingress.yaml`](grafana_ingress.yaml) puts the service behind IAP with a
-  managed certificate. Plutono trusts the `X-Goog-Authenticated-User-Email` header, so users are
-  auto-created with the `Viewer` role. The login form and anonymous access are disabled.
+  managed certificate. Plutono trusts the `X-Goog-Authenticated-User-Email` header only from Google
+  Cloud Load Balancer / IAP proxy ranges (`PL_AUTH_PROXY_WHITELIST: "35.191.0.0/16, 130.211.0.0/22"`),
+  and users are auto-created with the `Viewer` role. The login form and anonymous access are disabled.
 - **Provisioning**:
   - [`configmaps/grafana_datasources.yaml`](configmaps/grafana_datasources.yaml) defines
     `GMP (Prometheus)` (uid `gmp`, default) and `Cloud Monitoring` (uid `cloud-monitoring`).

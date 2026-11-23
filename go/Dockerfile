@@ -31,7 +31,7 @@
 # ========================================================
 # Shared Builder Stage
 # ========================================================
-FROM golang:1.27.3-alpine@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS builder
+FROM golang:1.27.4-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS builder
 # Cap compile-time Go parallelism to avoid CPU/RAM oversubscription when multiple
 # targets build concurrently on E2_HIGHCPU_32 (32 vCPU / 32 GB RAM).
 ENV GOMAXPROCS=8
@@ -269,7 +269,7 @@ ENTRYPOINT ["/ubuntubinarymapper"]
 # ========================================================
 # Target: OSV Linter
 # ========================================================
-FROM golang:1.27.3-alpine@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS osv-linter-cli-build
+FROM golang:1.27.4-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS osv-linter-cli-build
 ENV GOMAXPROCS=8
 RUN apk add --no-cache "git>=2.54.1"
 WORKDIR /src

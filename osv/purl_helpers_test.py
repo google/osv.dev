@@ -43,6 +43,9 @@ class PurlHelpersTest(unittest.TestCase):
     self.assertEqual('pkg:apk/chainguard/solr',
                      purl_helpers.package_to_purl('Chainguard', 'solr'))
 
+    self.assertEqual('pkg:apk/cleanstart/nginx',
+                     purl_helpers.package_to_purl('CleanStart', 'nginx'))
+
     self.assertEqual('pkg:cran/commonmark',
                      purl_helpers.package_to_purl('CRAN', 'commonmark'))
 
@@ -205,6 +208,9 @@ class PurlHelpersTest(unittest.TestCase):
 
     self.assertEqual(('Chainguard', 'solr', None),
                      purl_helpers.parse_purl('pkg:apk/chainguard/solr'))
+
+    self.assertEqual(('CleanStart', 'nginx', None),
+                     purl_helpers.parse_purl('pkg:apk/cleanstart/nginx'))
 
     self.assertEqual(('crates.io', 'surrealdb', '2.1.0'),
                      purl_helpers.parse_purl('pkg:cargo/surrealdb@2.1.0'))

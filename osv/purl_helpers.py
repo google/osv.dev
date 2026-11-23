@@ -40,6 +40,8 @@ ECOSYSTEM_PURL_DATA = {
         EcosystemPURL('bitnami', None),
     'Chainguard':
         EcosystemPURL('apk', 'chainguard'),
+    'CleanStart':
+        EcosystemPURL('apk', 'cleanstart'),
     'ConanCenter':
         EcosystemPURL('conan', None),
     'CRAN':

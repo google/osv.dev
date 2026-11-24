@@ -12,3 +12,8 @@ output "public_import_logs_bucket_name" {
   value       = google_storage_bucket.osv_public_import_logs.name
   description = "The name of the public import logs bucket."
 }
+
+output "vanir_sandbox_uri" {
+  value       = google_cloud_run_v2_service.vanir_sandbox.uri
+  description = "The HTTPS URI of the vanir-sandbox Cloud Run service."
+}

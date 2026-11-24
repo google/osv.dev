@@ -39,6 +39,7 @@ func main() {
 		hours      int
 		pythonBin  string
 		scriptPath string
+		sandboxURL string
 	)
 
 	flag.IntVar(&batchSize, "batch-size", 100, "Number of vulnerabilities to process in each batch.")
@@ -47,6 +48,7 @@ func main() {
 	flag.IntVar(&hours, "hours", 0, "Number of hours back to process modified records.")
 	flag.StringVar(&pythonBin, "python-bin", "python3", "Python interpreter binary to use.")
 	flag.StringVar(&scriptPath, "script-path", "/usr/local/bin/generate_signatures.py", "Path to the Python Vanir signature generation script.")
+	flag.StringVar(&sandboxURL, "sandbox-url", os.Getenv("VANIR_SANDBOX_URL"), "URL of the remote Cloud Run vanir-sandbox service (defaults to VANIR_SANDBOX_URL). If empty, runs generate_signatures.py locally.")
 	flag.Parse()
 
 	logger.InitGlobalLogger()
@@ -83,7 +85,18 @@ func main() {
 		GCS:    gcsClient,
 	})
 	jobStore := osvdatastore.NewJobDataStore(dsClient)
-	generator := vanir.NewPythonGenerator(pythonBin, scriptPath)
+
+	var generator vanir.SignatureGenerator
+	if sandboxURL != "" {
+		httpGen, err := vanir.NewHTTPSignatureGenerator(ctx, sandboxURL)
+		if err != nil {
+			logger.FatalContext(ctx, "Failed to create HTTP Vanir sandbox generator", slog.Any("error", err))
+		}
+		generator = httpGen
+		logger.InfoContext(ctx, "Using remote Vanir sandbox generator", slog.String("sandbox_url", sandboxURL))
+	} else {
+		generator = vanir.NewPythonGenerator(pythonBin, scriptPath)
+	}
 
 	runner := &vanir.Runner{
 		VulnStore: vulnStore,

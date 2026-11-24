@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-gcloud functions deploy pypi \
+gcloud functions deploy pypi-publisher \
   --gen2 \
   --region=us-central1 \
   --runtime=python313 \

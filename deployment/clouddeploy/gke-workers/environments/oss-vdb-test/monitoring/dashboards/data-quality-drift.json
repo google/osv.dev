@@ -169,11 +169,19 @@
     },
     {
       "datasource": "GMP (Prometheus)",
+      "description": "Active osv-linter findings across upstream sources. Click to open test.osv.dev/linter.",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Open Linter Findings (test.osv.dev/linter)",
+              "url": "https://test.osv.dev/linter"
+            }
+          ],
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
@@ -203,6 +211,13 @@
         "y": 1
       },
       "id": 3,
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "Open Linter Findings (test.osv.dev/linter)",
+          "url": "https://test.osv.dev/linter"
+        }
+      ],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -875,13 +890,13 @@
       "pluginVersion": "7.5.52",
       "targets": [
         {
-          "expr": "sort_desc(topk(20, (time() - max by (source) (osv_importer_last_new_record_timestamp_seconds{source=~\"$source\"})) / 3600))",
+          "expr": "sort_desc((time() - max by (source) (osv_importer_last_new_record_timestamp_seconds{source=~\"$source\"})) / 3600)",
           "refId": "A",
           "legendFormat": "{{source}}",
           "instant": true
         }
       ],
-      "title": "Feed Ingestion Staleness — Slowest Feeds First (Hours Since Last New Record)",
+      "title": "Feed Ingestion Staleness — All Sources (Hours Since Last New Record)",
       "type": "bargauge"
     },
     {

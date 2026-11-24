@@ -14,8 +14,6 @@
 
 FROM gcr.io/oss-vdb/worker-base
 
-RUN apt-get update && apt-get upgrade -y
-
 RUN mkdir /work && mkdir -p /env/gcp/workers/worker
 VOLUME /var/lib/docker
 
@@ -30,5 +28,10 @@ RUN cd /env/gcp/workers/worker && POETRY_VIRTUALENVS_CREATE=false poetry install
 
 COPY gcp/workers/oss_fuzz_worker/oss_fuzz.py gcp/workers/oss_fuzz_worker/worker.py /usr/local/bin/
 RUN chmod 755 /usr/local/bin/worker.py
+
+# Run apt-get upgrade at the end so the Poetry layer can hit --cache-from
+# while still applying fresh OS security updates on every CI build (via CACHEBUST).
+ARG CACHEBUST
+RUN : "${CACHEBUST}" && apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT ["worker.py"]

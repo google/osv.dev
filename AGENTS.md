@@ -419,6 +419,7 @@ An independent Go module containing mirrors and converters that turn upstream ad
 - Overview and per-tool docs: [`vulnfeeds/README.md`](vulnfeeds/README.md), plus READMEs under `vulnfeeds/cmd/converters/*/` and `vulnfeeds/cmd/mirrors/*/`.
 - CVE5 conversion and the per-CNA extractor / strategy pattern: [`vulnfeeds/conversion/cve5/README.md`](vulnfeeds/conversion/cve5/README.md).
 - Combining NVD/CVE5 output into final records: [`vulnfeeds/cmd/combine-to-osv/DESIGN.md`](vulnfeeds/cmd/combine-to-osv/DESIGN.md).
+- Docker builds: All vulnfeeds container images share a unified multi-target [`vulnfeeds/Dockerfile`](vulnfeeds/Dockerfile) (built via `docker build --target <service> -f Dockerfile .` from `vulnfeeds/`).
 - Tests: `make vulnfeed-tests` (snapshot tests use go-snaps; see *Managing Test Expectations & Snapshots*).
 
 ---

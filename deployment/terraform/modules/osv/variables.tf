@@ -106,3 +106,9 @@ variable "frontend_deployer_service_account_emails" {
   default     = []
 }
 
+variable "public_buckets" {
+  type        = bool
+  description = "Whether to grant allUsers public read access on public OSV feed, log, indexer config, and sitemap buckets."
+  default     = false
+}
+

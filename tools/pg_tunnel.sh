@@ -20,31 +20,47 @@
 # Usage:
 #   tools/pg_tunnel.sh [project] [target] [local_port] [remote_port]
 #
+# Defaults to the read-only pool (`pg-tunnel-read-pool`) on oss-vdb / oss-vdb-test
+# to avoid accidental writes or load on the primary instance (`pg-tunnel`).
+# private-osv has no read pool, so it defaults to `pg-tunnel`.
+#
 # Examples:
-#   tools/pg_tunnel.sh oss-vdb-test                                # staging primary (:5432)
-#   tools/pg_tunnel.sh oss-vdb pg-tunnel-read-pool 5433 6432       # prod read pool pooler
+#   tools/pg_tunnel.sh oss-vdb-test                       # staging read pool (:5432)
+#   tools/pg_tunnel.sh oss-vdb '' 5433 6432               # prod read pool pooler (:6432)
+#   tools/pg_tunnel.sh oss-vdb pg-tunnel                  # prod primary (writable, :5432)
 
 set -euo pipefail
 
 PROJECT="${1:-oss-vdb-test}"
-TARGET="${2:-pg-tunnel}"
 LOCAL_PORT="${3:-5432}"
 REMOTE_PORT="${4:-5432}"
 CLUSTER_NAME="${CLUSTER_NAME:-workers}"
 
-if [[ -n "${CLUSTER_ZONE:-}" ]]; then
-  ZONE="${CLUSTER_ZONE}"
-else
-  case "${PROJECT}" in
-    oss-vdb)      ZONE="us-west2-c" ;;
-    oss-vdb-test) ZONE="us-west2-b" ;;
-    private-osv)  ZONE="us-west2-c" ;;
-    *)
+case "${PROJECT}" in
+  oss-vdb)
+    DEFAULT_ZONE="us-west2-c"
+    DEFAULT_TARGET="pg-tunnel-read-pool"
+    ;;
+  oss-vdb-test)
+    DEFAULT_ZONE="us-west2-b"
+    DEFAULT_TARGET="pg-tunnel-read-pool"
+    ;;
+  private-osv)
+    DEFAULT_ZONE="us-west2-c"
+    DEFAULT_TARGET="pg-tunnel"
+    ;;
+  *)
+    if [[ -z "${CLUSTER_ZONE:-}" ]]; then
       echo "Unknown project '${PROJECT}'. Set CLUSTER_ZONE=<zone> to override." >&2
       exit 1
-      ;;
-  esac
-fi
+    fi
+    DEFAULT_ZONE="${CLUSTER_ZONE}"
+    DEFAULT_TARGET="pg-tunnel-read-pool"
+    ;;
+esac
+
+ZONE="${CLUSTER_ZONE:-${DEFAULT_ZONE}}"
+TARGET="${2:-${DEFAULT_TARGET}}"
 
 for cmd in gcloud kubectl; do
   if ! command -v "${cmd}" >/dev/null 2>&1; then

@@ -92,6 +92,9 @@ func ParseConfig(data []byte) (*Registry, error) {
 		}
 
 		code := strings.ToUpper(strings.TrimSpace(r.Code))
+		if code == "*" {
+			return nil, fmt.Errorf("suppression rule %d (%s): wildcard code \"*\" is not allowed; specify an explicit rule code or matcher", i, source)
+		}
 		hasExactMessage := r.Message != nil
 		var exactMessage string
 		if hasExactMessage {
@@ -150,7 +153,7 @@ func (r *Registry) Match(source, bugID, code, message string) (string, bool) {
 
 	normCode := strings.ToUpper(strings.TrimSpace(code))
 	for _, rule := range rules {
-		if rule.code != "" && rule.code != "*" && rule.code != normCode {
+		if rule.code != "" && rule.code != normCode {
 			continue
 		}
 		if rule.hasExactMessage && rule.message != message {

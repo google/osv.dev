@@ -21,11 +21,6 @@ func TestDefaultRegistry_BuiltInRules(t *testing.T) {
 			t.Fatalf("expected suse REC:003 (%s) to be suppressed, got ok=%v reason=%q", bugID, ok, reason)
 		}
 	}
-	for _, code := range []string{"SCH:001", "REC:001", "RNG:002", "PKG:003"} {
-		if reason, ok := reg.Match("uvi", "GSD-2021-1000001", code, "any message"); !ok || reason == "" {
-			t.Fatalf("expected uvi (%s) to be suppressed, got ok=%v reason=%q", code, ok, reason)
-		}
-	}
 
 	for _, tc := range []struct {
 		name    string
@@ -143,6 +138,7 @@ suppressions:
 		{"missing source", "suppressions:\n  - code: RNG:002\n    reason: x\n"},
 		{"missing reason", "suppressions:\n  - source: a\n    code: RNG:002\n"},
 		{"no matchers", "suppressions:\n  - source: a\n    reason: x\n"},
+		{"wildcard code disallowed", "suppressions:\n  - source: a\n    code: '*'\n    reason: x\n"},
 		{"bad message_regex", "suppressions:\n  - source: a\n    message_regex: '['\n    reason: x\n"},
 		{"bad bug_id_regex", "suppressions:\n  - source: a\n    bug_id_regex: '['\n    reason: x\n"},
 	} {

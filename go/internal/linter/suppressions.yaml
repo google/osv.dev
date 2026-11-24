@@ -11,6 +11,3 @@ suppressions:
     code: REC:003
     message: 'Invalid Upstream: upstream should not contain related IDs'
     reason: 'SUSE and openSUSE advisories list CVEs in both upstream and related fields.'
-  - source: uvi
-    code: '*'
-    reason: 'UVI (GSD) is archived and no longer provides vulnerability data.'

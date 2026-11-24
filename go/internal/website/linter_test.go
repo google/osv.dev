@@ -541,7 +541,6 @@ func TestLinterQuery_ProviderSuppressions(t *testing.T) {
 			{Source: "chainguard", Updated: now.Add(-1 * time.Hour), Generation: 1},
 			{Source: "ghsa", Updated: now.Add(-2 * time.Hour), Generation: 1},
 			{Source: "suse", Updated: now.Add(-3 * time.Hour), Generation: 1},
-			{Source: "uvi", Updated: now.Add(-4 * time.Hour), Generation: 1},
 		},
 		payloads: map[string]string{
 			"chainguard": `{
@@ -573,26 +572,20 @@ func TestLinterQuery_ProviderSuppressions(t *testing.T) {
 					{"Code": "REC:003", "Message": "Invalid Upstream: upstream should not contain related IDs"}
 				]
 			}`,
-			"uvi": `{
-				"tmp/GSD-2021-1000001.json": [
-					{"Code": "SCH:001", "Message": "Record does not conform to schema"},
-					{"Code": "REC:001", "Message": "Invalid Affected"}
-				]
-			}`,
 		},
 	}
 
 	srv := newTestServer(t, website.Config{
 		Stores: website.Stores{
 			Linter:     linterStore,
-			SourceRepo: &richSourceRepoStore{names: []string{"chainguard", "ghsa", "suse", "uvi"}},
+			SourceRepo: &richSourceRepoStore{names: []string{"chainguard", "ghsa", "suse"}},
 		},
 	})
 
 	// 1. Default query excludes suppressed findings and fully-suppressed issues.
 	def := queryLinter(t, srv, "sort=bug_id&order=asc")
-	if def.SuppressedFindings != 8 || def.SuppressedIssues != 6 {
-		t.Fatalf("got suppressed=(findings=%d, issues=%d), want (8, 6)", def.SuppressedFindings, def.SuppressedIssues)
+	if def.SuppressedFindings != 6 || def.SuppressedIssues != 5 {
+		t.Fatalf("got suppressed=(findings=%d, issues=%d), want (6, 5)", def.SuppressedFindings, def.SuppressedIssues)
 	}
 	wantDefaultIDs := []string{"CGA-MIXED", "CGA-REAL-OVERLAP", "GHSA-ZERO"}
 	gotDefaultIDs := make([]string, 0, len(def.Issues))
@@ -612,19 +605,17 @@ func TestLinterQuery_ProviderSuppressions(t *testing.T) {
 	}) {
 		t.Errorf("expected default RNG:002 facet count=2, got %+v", def.Facets.Rules)
 	}
-	// SUSE and UVI should have 0 active issues by default.
-	for _, zeroSrc := range []string{"suse", "uvi"} {
-		if !slices.ContainsFunc(def.Facets.Sources, func(s website.LinterSourceFacet) bool {
-			return s.Name == zeroSrc && s.Count == 0
-		}) {
-			t.Errorf("expected default %s facet count=0, got %+v", zeroSrc, def.Facets.Sources)
-		}
+	// SUSE should have 0 active issues by default.
+	if !slices.ContainsFunc(def.Facets.Sources, func(s website.LinterSourceFacet) bool {
+		return s.Name == "suse" && s.Count == 0
+	}) {
+		t.Errorf("expected default suse facet count=0, got %+v", def.Facets.Sources)
 	}
 
-	// 2. include_suppressed=true includes all 8 issues and surfaces Suppressed + SuppressedReason metadata.
+	// 2. include_suppressed=true includes all 7 issues and surfaces Suppressed + SuppressedReason metadata.
 	all := queryLinter(t, srv, "include_suppressed=true&sort=bug_id&order=asc")
-	if all.Total != 8 {
-		t.Fatalf("include_suppressed=true total = %d, want 8", all.Total)
+	if all.Total != 7 {
+		t.Fatalf("include_suppressed=true total = %d, want 7", all.Total)
 	}
 	var cgaMixed, ghsaPretagged *website.LinterIssueSummary
 	for i := range all.Issues {

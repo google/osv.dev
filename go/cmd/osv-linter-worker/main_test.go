@@ -127,7 +127,6 @@ func TestProcessLinterResult_HybridSuppressions(t *testing.T) {
 		"ASB-A-":    "android",
 		"SUSE-":     "suse",
 		"openSUSE-": "suse",
-		"GSD-":      "uvi",
 	}
 
 	linterJSON := `{
@@ -153,10 +152,6 @@ func TestProcessLinterResult_HybridSuppressions(t *testing.T) {
 		"tmp/openSUSE-SU-2024:0002-1.json": [
 			{"Code": "REC:003", "Message": "Invalid Upstream: upstream should not contain related IDs"},
 			{"Code": "REC:003", "Message": "Invalid Upstream: upstream should not contain itself"}
-		],
-		"tmp/GSD-2021-1000001.json": [
-			{"Code": "SCH:001", "Message": "Record does not conform to schema"},
-			{"Code": "REC:001", "Message": "Invalid Affected"}
 		]
 	}`
 
@@ -165,15 +160,12 @@ func TestProcessLinterResult_HybridSuppressions(t *testing.T) {
 		t.Fatalf("processLinterResult failed: %v", err)
 	}
 
-	// 1. Fully suppressed Chainguard, SUSE, and UVI records must not exist in Datastore.
+	// 1. Fully suppressed Chainguard and SUSE records must not exist in Datastore.
 	if _, exists := store.existing["CGA-ONLY-ZERO"]; exists {
 		t.Error("expected CGA-ONLY-ZERO to be deleted from Datastore ImportFindings")
 	}
 	if _, exists := store.existing["SUSE-SU-2024:0001-1"]; exists {
 		t.Error("expected SUSE-SU-2024:0001-1 to be excluded from Datastore ImportFindings")
-	}
-	if _, exists := store.existing["GSD-2021-1000001"]; exists {
-		t.Error("expected GSD-2021-1000001 (uvi) to be excluded from Datastore ImportFindings")
 	}
 	if opensuseRec, ok := store.existing["openSUSE-SU-2024:0002-1"]; !ok || !slices.Equal(opensuseRec.Findings, []internalmodels.ImportFindings{internalmodels.ImportFindingsInvalidUpstream}) {
 		t.Errorf("expected openSUSE-SU-2024:0002-1 to keep non-suppressed REC:003 finding in Datastore, got %+v", opensuseRec)

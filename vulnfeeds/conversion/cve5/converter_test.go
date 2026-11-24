@@ -723,6 +723,23 @@ func TestFromCVE5_ReferencesDeterminism(t *testing.T) {
 	}
 }
 
+func TestFromCVE5_NormalizesMalformedGitRepoRef(t *testing.T) {
+	t.Parallel()
+	cve := loadTestData(t, "CVE-2025-1110")
+	refs := identifyPossibleURLs(cve)
+	metrics := &models.ConversionMetrics{}
+	vuln := FromCVE5(cve, refs, metrics, "")
+
+	wantRefs := []*osvschema.Reference{
+		{Type: osvschema.Reference_PACKAGE, Url: "https://gitlab.com/gitlab-org/gitlab.git"},
+		{Type: osvschema.Reference_REPORT, Url: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693"},
+		{Type: osvschema.Reference_REPORT, Url: "https://hackerone.com/reports/2972576"},
+	}
+	if diff := cmp.Diff(wantRefs, vuln.References, protocmp.Transform()); diff != "" {
+		t.Errorf("FromCVE5() references mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestConvertAndExportCVEToOSV(t *testing.T) {
 	r := testutils.SetupGitVCR(t)
 	cve := loadTestData(t, "CVE-2022-23651")

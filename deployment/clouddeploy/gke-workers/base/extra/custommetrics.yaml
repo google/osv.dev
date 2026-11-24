@@ -16,6 +16,12 @@ spec:
       - name: custommetrics
         image: custommetrics
         imagePullPolicy: Always
+        env:
+          # Soft memory limit for the Go runtime, ~90% of limits.memory, so the GC
+          # works harder before the container gets OOM-killed.
+          # Keep in sync with limits.memory below.
+          - name: GOMEMLIMIT
+            value: "900MiB"
         ports:
         - name: metrics
           containerPort: 9090

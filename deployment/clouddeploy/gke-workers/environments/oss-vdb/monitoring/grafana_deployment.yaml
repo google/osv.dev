@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+spec:
+  template:
+    spec:
+      containers:
+      - name: grafana
+        env:
+        - name: PL_SERVER_ROOT_URL
+          value: "https://monitoring.osv.dev"
+      - name: gmp-frontend
+        env:
+        - name: GOOGLE_CLOUD_PROJECT
+          value: oss-vdb
+      - name: gmp-frontend-test
+        image: gke.gcr.io/prometheus-engine/frontend:v0.18.2-gke.1@sha256:35ab356d969255dd7694ae371bf0991b97907451b4c7e1574b58a096d3be5977
+        args:
+        - "--web.listen-address=127.0.0.1:9091"
+        - "--query.project-id=$(GOOGLE_CLOUD_PROJECT)"
+        env:
+        - name: GOOGLE_CLOUD_PROJECT
+          value: oss-vdb-test
+        ports:
+        - name: gmp-proxy-test
+          containerPort: 9091
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 256Mi

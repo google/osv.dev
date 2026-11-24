@@ -1,0 +1,8 @@
+resources:
+- ../../../base/monitoring
+
+patches:
+- path: grafana_service_account.yaml
+- path: grafana_deployment.yaml
+- path: grafana_datasources.yaml
+- path: grafana_ingress.yaml

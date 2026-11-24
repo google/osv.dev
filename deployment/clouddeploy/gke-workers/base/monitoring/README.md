@@ -1,13 +1,22 @@
 # OSV Monitoring (Metrics & Dashboards)
 
-This directory holds the Grafana-compatible dashboard stack for OSV. Go services expose
+This directory holds the shared Grafana-compatible dashboard stack for OSV. Go services expose
 Prometheus metrics, Google Cloud Managed Service for Prometheus (GMP) scrapes them, and
 dashboards query them through a GMP frontend.
 
-> **Note**: The stack currently lives only in the `oss-vdb-test` environment. It is included
-> from [`../kustomization.yaml`](../kustomization.yaml) and served at
-> `https://monitoring.test.osv.dev`. The production (`oss-vdb`) overlay does not include the
-> dashboards or the `PodMonitoring` resource in this directory.
+> **Layout**: This `base/monitoring/` directory contains the shared Plutono manifests,
+> provisioning configmaps, and dashboards. It is **not** included in `base/kustomization.yaml`;
+> instead, environments opt into the UI explicitly via overlays:
+> - [`environments/oss-vdb-test/monitoring/`](../../environments/oss-vdb-test/monitoring/kustomization.yaml):
+>   Included from [`environments/oss-vdb-test/kustomization.yaml`](../../environments/oss-vdb-test/kustomization.yaml)
+>   and served at `https://monitoring.test.osv.dev`.
+> - [`environments/oss-vdb/monitoring/`](../../environments/oss-vdb/monitoring/kustomization.yaml):
+>   Production overlay for `https://monitoring.osv.dev` (commented out in
+>   [`environments/oss-vdb/kustomization.yaml`](../../environments/oss-vdb/kustomization.yaml)
+>   until out-of-band IAP/IP/DNS prerequisites are applied).
+> - Pod scraping (`PodMonitoring`) lives separately in
+>   [`base/extra/worker_pod_monitoring.yaml`](../extra/worker_pod_monitoring.yaml), so GMP scrapes
+>   metrics in both `oss-vdb-test` and `oss-vdb` while `private` remains untouched.
 
 ## Architecture
 
@@ -16,33 +25,50 @@ flowchart LR
   svc["worker / recoverer / gitter / custommetrics<br/>:9090/metrics"] -->|PodMonitoring, 15s| gmp["GMP<br/>(Cloud Monitoring)"]
   ksm["kube-state-metrics"] -->|ClusterPodMonitoring| gmp
   gcp["GCP system metrics<br/>(Cloud Run, Pub/Sub)"] --> gmp
-  gmp --> fe["gmp-frontend sidecar<br/>127.0.0.1:9090"]
+  gmp --> fe["gmp-frontend sidecar(s)<br/>127.0.0.1:9090 (plus :9091 for oss-vdb-test)"]
   fe --> plutono["Plutono (Grafana 7.5 fork)<br/>behind IAP"]
 ```
 
-- **Metrics exposition**: [`go/internal/metrics`](../../../../../../go/internal/metrics/) defines
+- **Metrics exposition**: [`go/internal/metrics`](../../../../../go/internal/metrics/) defines
   every OSV metric and serves `/metrics` (plus `/healthz`) on port `9090` (`METRICS_PORT`).
   `worker`, `recoverer`, `gitter`, and `custommetrics` call `metrics.StartMetricsServer`, and each
   of their pods declares a container port named `metrics`.
-- **Scraping**: [`worker_pod_monitoring.yaml`](worker_pod_monitoring.yaml) is a GMP
-  `PodMonitoring` that scrapes the `metrics` port every 15s on pods whose `name` label is one of
-  `worker-private`, `workers-reimport`, `workers-cves`, `recoverer`, `gitter`, or `custommetrics`.
-- **kube-state-metrics**: [`base/ksm/`](../../../base/ksm/) deploys KSM to every environment.
+- **Scraping**: [`base/extra/worker_pod_monitoring.yaml`](../extra/worker_pod_monitoring.yaml) is
+  a GMP `PodMonitoring` that scrapes the `metrics` port every 15s on pods whose `name` label is
+  one of `worker-private`, `workers-reimport`, `workers-cves`, `recoverer`, `gitter`, or
+  `custommetrics`.
+- **kube-state-metrics**: [`base/ksm/`](../ksm/) deploys KSM to every environment.
   Its `osv-kube-state-metrics` `ClusterPodMonitoring` keeps only `kube_(cronjob|job)*` series to
   avoid duplicating `pod` and `deployment` metrics already collected by GKE's managed KSM and to keep
   costs down.
 - **Grafana**: [`grafana_deployment.yaml`](grafana_deployment.yaml) runs
   [Plutono](https://github.com/credativ/plutono), an Apache 2.0 fork of Grafana 7.5.
-  Configuration uses `PL_*` environment variables and
-  `/etc/plutono/...` paths. A `gmp-frontend` sidecar proxies PromQL queries to Cloud Monitoring
-  for project `oss-vdb-test`.
+  Configuration uses `PL_*` environment variables and `/etc/plutono/...` paths. In staging, a
+  `gmp-frontend` sidecar (`127.0.0.1:9090`) proxies PromQL queries to Cloud Monitoring for project
+  `oss-vdb-test`. In production
+  ([`environments/oss-vdb/monitoring/grafana_deployment.yaml`](../../environments/oss-vdb/monitoring/grafana_deployment.yaml)),
+  the primary `gmp-frontend` (`127.0.0.1:9090`) queries `oss-vdb` and a second `gmp-frontend-test`
+  sidecar (`127.0.0.1:9091`) queries `oss-vdb-test`.
+- **ServiceAccount / Workload Identity**: [`grafana_service_account.yaml`](grafana_service_account.yaml)
+  defines `ServiceAccount/grafana-sa` (referenced via `serviceAccountName: grafana-sa` in
+  `grafana_deployment.yaml`) and annotates it with `iam.gke.io/gcp-service-account` for
+  `osv-monitoring-sa@oss-vdb-test.iam.gserviceaccount.com` (overlaid in
+  [`environments/oss-vdb/monitoring/grafana_service_account.yaml`](../../environments/oss-vdb/monitoring/grafana_service_account.yaml)
+  to `osv-monitoring-sa@oss-vdb.iam.gserviceaccount.com`). On `GCE_METADATA` nodes this is a
+  harmless no-op; once `GKE_METADATA` is enabled, it binds Plutono to `osv-monitoring-sa`.
 - **Access**: [`grafana_ingress.yaml`](grafana_ingress.yaml) puts the service behind IAP with a
-  managed certificate. Plutono trusts the `X-Goog-Authenticated-User-Email` header only from Google
-  Cloud Load Balancer / IAP proxy ranges (`PL_AUTH_PROXY_WHITELIST: "35.191.0.0/16, 130.211.0.0/22"`),
-  and users are auto-created with the `Viewer` role. The login form and anonymous access are disabled.
+  managed certificate (`monitoring.test.osv.dev` in staging; overlaid to `monitoring.osv.dev` with
+  `grafana-ingress-ip` static IP in production). Plutono trusts the
+  `X-Goog-Authenticated-User-Email` header only from Google Cloud Load Balancer / IAP proxy ranges
+  (`PL_AUTH_PROXY_WHITELIST: "35.191.0.0/16, 130.211.0.0/22"`), and users are auto-created with
+  the `Viewer` role. The login form and anonymous access are disabled.
 - **Provisioning**:
   - [`configmaps/grafana_datasources.yaml`](configmaps/grafana_datasources.yaml) defines
-    `GMP (Prometheus)` (uid `gmp`, default) and `Cloud Monitoring` (uid `cloud-monitoring`).
+    `GMP (Prometheus)` (uid `gmp`, default) and `Cloud Monitoring` (uid `cloud-monitoring`) for
+    `oss-vdb-test`. The production overlay in
+    [`environments/oss-vdb/monitoring/grafana_datasources.yaml`](../../environments/oss-vdb/monitoring/grafana_datasources.yaml)
+    provides `GMP (Prod)` (uid `gmp-prod`, default), `GMP (Test)` (uid `gmp-test`), and
+    `Cloud Monitoring` (`defaultProject: oss-vdb`).
   - [`configmaps/grafana_dashboards_prov.yaml`](configmaps/grafana_dashboards_prov.yaml) loads
     every JSON file in `/etc/plutono/dashboards`, polling every 10s, with `editable: false`.
   - [`kustomization.yaml`](kustomization.yaml) generates the `grafana-dashboards` ConfigMap from
@@ -54,12 +80,12 @@ flowchart LR
 1. **Choose where to emit the metric.**
    - **In-process**: Use this for events in a long-running service (`worker`, `recoverer`,
      `gitter`), such as task counts, latencies, and errors. Record the value at the call site.
-   - **[`custommetrics`](../../../../../../go/cmd/custommetrics/) collector**: Use this for batch
+   - **[`custommetrics`](../../../../../go/cmd/custommetrics/) collector**: Use this for batch
      or dataset state. CronJobs exit too quickly for GMP to scrape them. Instead, have the job
      persist a summary (for example, in `JobData` in Datastore). Then read it in
-     [`collector.go`](../../../../../../go/cmd/custommetrics/collector.go), which polls Datastore
+     [`collector.go`](../../../../../go/cmd/custommetrics/collector.go), which polls Datastore
      and GCS every 5 minutes and sets gauges.
-2. **Define the metric** in [`metrics.go`](../../../../../../go/internal/metrics/metrics.go) with
+2. **Define the metric** in [`metrics.go`](../../../../../go/internal/metrics/metrics.go) with
    `promauto`, so it is registered with the default registry that `/metrics` serves. Follow the
    existing conventions:
    - Use the `osv_<component>_<name>` naming format.
@@ -71,12 +97,12 @@ flowchart LR
    - For counters with known label values, pre-initialize them in `initDefaultSeries()`, so
      panels show `0` instead of "No data".
 3. **Test it**: Extend
-   [`metrics_test.go`](../../../../../../go/internal/metrics/metrics_test.go) (or
+   [`metrics_test.go`](../../../../../go/internal/metrics/metrics_test.go) (or
    `collector_test.go`) to assert the exposition output.
 4. **Make sure the pod gets scraped.** If you emit from a new service:
    - Call `metrics.StartMetricsServer(ctx, port)` from its `main`.
    - Add a `metrics` container port (`9090`) to its manifest.
-   - Add its pod `name` label to [`worker_pod_monitoring.yaml`](worker_pod_monitoring.yaml).
+   - Add its pod `name` label to [`base/extra/worker_pod_monitoring.yaml`](../extra/worker_pod_monitoring.yaml).
 5. **Chart it**: Add or update a panel (see below). In PromQL, use the raw metric name (for
    example, `rate(osv_worker_tasks_processed_total[5m])`). GCP system metrics use the GMP form
    (for example, `run_googleapis_com:request_count`).
@@ -90,7 +116,7 @@ flowchart LR
    make run-grafana-local                  # defaults to oss-vdb-test; or: make run-grafana-local ARGS=oss-vdb
    ```
 
-   The script ([`tools/run_grafana_local.sh`](../../../../../../tools/run_grafana_local.sh)) does
+   The script ([`tools/run_grafana_local.sh`](../../../../../tools/run_grafana_local.sh)) does
    the following:
    - Starts the same `gmp-frontend` and Plutono images on a private Docker network.
    - Serves Plutono on `http://localhost:3000` with anonymous Admin access.
@@ -108,6 +134,8 @@ flowchart LR
    [`kustomization.yaml`](kustomization.yaml). Otherwise, it won't be deployed. The home page's
    dashboard list updates automatically, but the "Where Should I Start?" table in `home.json`
    is written by hand.
-5. **Validate**: Run `kubectl kustomize deployment/clouddeploy/gke-workers/environments/oss-vdb-test`
-   and check that the JSON parses. Changes deploy through the normal `gke-workers` Cloud Deploy
-   rollout to `oss-vdb-test`.
+5. **Validate**: Run `kubectl kustomize deployment/clouddeploy/gke-workers/environments/oss-vdb-test`,
+   `kubectl kustomize deployment/clouddeploy/gke-workers/environments/oss-vdb`, and
+   `kubectl kustomize deployment/clouddeploy/gke-workers/environments/oss-vdb/monitoring`,
+   and check that the dashboard JSON parses. Changes deploy through the normal `gke-workers`
+   Cloud Deploy rollout.

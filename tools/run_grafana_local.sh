@@ -18,7 +18,7 @@ if [ ! -f "$HOME/.config/gcloud/application_default_credentials.json" ]; then
 fi
 
 GCP_PROJECT=${1:-oss-vdb-test}
-MONITORING_DIR="deployment/clouddeploy/gke-workers/environments/oss-vdb-test/monitoring"
+MONITORING_DIR="deployment/clouddeploy/gke-workers/base/monitoring"
 
 # Create a temporary directory for local configuration
 TMP_DIR=$(mktemp -d)

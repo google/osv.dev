@@ -249,7 +249,7 @@ Many tests use expected outputs saved directly in the source tree:
 - Notable API environment variables: `OSV_NORMALIZE_MATCH_NAMES` (case-insensitive package name matching for ecosystems such as NuGet and crates.io), `POSTGRES_SHADOW_RATE` (fraction of requests shadow-read from PostgreSQL), and `POSTGRES_HOST/PORT/USER/PASSWORD/DB/SSLMODE`.
 
 ### Local Monitoring Development
-- To preview and edit dashboards locally (Plutono, a Grafana fork, against live GMP data), run `make run-grafana-local`. See the [monitoring README](deployment/clouddeploy/gke-workers/environments/oss-vdb-test/monitoring/README.md) for how metrics and dashboards are wired together.
+- To preview and edit dashboards locally (Plutono, a Grafana fork, against live GMP data), run `make run-grafana-local`. See the [monitoring README](deployment/clouddeploy/gke-workers/base/monitoring/README.md) for how metrics and dashboards are wired together.
 
 ---
 
@@ -432,7 +432,7 @@ See [`deployment/README.md`](deployment/README.md) for full details.
 - **Staging**: Pushes to `master` trigger [`deployment/build-and-stage.yaml`](deployment/build-and-stage.yaml), which builds images, applies Terraform to `oss-vdb-test`, and creates Cloud Deploy releases to staging.
 - **Production**: Releases are promoted via [`deployment/deploy-prod.yaml`](deployment/deploy-prod.yaml) (triggered by release tags, see `deployment/deploy.sh`), which also promotes to the private instance.
 - **Adding a new service or job**: Typically requires a new target in `go/Dockerfile`, build/tag steps and a staging release in `build-and-stage.yaml`, a promotion entry in `deploy-prod.yaml` if it is a new pipeline, and manifests under `deployment/clouddeploy/` (for GKE, `gke-workers/base/` plus environment overlays). In `deploy-prod.yaml`, the `tag-release-images` step automatically attaches the release tag (`$TAG_NAME`) to every image in the existing Cloud Deploy pipelines; if you add a **new pipeline** or a **non-Cloud-Deploy image** (e.g. a shared base image or standalone Cloud Run Job), add it to `pipelines` or `images` in `tag-release-images` so Artifact Registry cleanup policies preserve released versions. Remember to update this file's *Executables* list too.
-- **Monitoring**: Metrics are defined in `go/internal/metrics/` and scraped by Google Managed Prometheus; dashboards are served by Plutono (a Grafana 7.5 fork) and provisioned from `deployment/clouddeploy/gke-workers/environments/oss-vdb-test/monitoring/` (currently only in `oss-vdb-test`). See the [monitoring README](deployment/clouddeploy/gke-workers/environments/oss-vdb-test/monitoring/README.md).
+- **Monitoring**: Metrics are defined in `go/internal/metrics/` and scraped by Google Managed Prometheus (`PodMonitoring` in `deployment/clouddeploy/gke-workers/base/extra/worker_pod_monitoring.yaml` applies to `oss-vdb-test` and `oss-vdb`); Plutono (a Grafana 7.5 fork) UI manifests and dashboards live in `deployment/clouddeploy/gke-workers/base/monitoring/`, overlaid per environment in `deployment/clouddeploy/gke-workers/environments/oss-vdb-test/monitoring/` (active) and `deployment/clouddeploy/gke-workers/environments/oss-vdb/monitoring/` (staged behind prerequisites). See the [monitoring README](deployment/clouddeploy/gke-workers/base/monitoring/README.md).
 
 ---
 
@@ -452,7 +452,7 @@ Before working on one of these tasks, read the linked documentation:
 | Reimporting or fixing records | [`go/cmd/tools/reimport-tui/README.md`](go/cmd/tools/reimport-tui/README.md), [`tools/datafix/README.md`](tools/datafix/README.md) |
 | Exporter output layout | [`go/cmd/exporter/README.md`](go/cmd/exporter/README.md) |
 | Vulnfeeds converters / CVE5 extraction | [`vulnfeeds/README.md`](vulnfeeds/README.md), [`vulnfeeds/conversion/cve5/README.md`](vulnfeeds/conversion/cve5/README.md) |
-| Metrics and Grafana dashboards | [Monitoring README](deployment/clouddeploy/gke-workers/environments/oss-vdb-test/monitoring/README.md) |
+| Metrics and Grafana dashboards | [Monitoring README](deployment/clouddeploy/gke-workers/base/monitoring/README.md) |
 | Terraform, Cloud Deploy, Cloud SQL setup | [`deployment/README.md`](deployment/README.md), [`docker/terraform/README.md`](docker/terraform/README.md) |
 | Editing the documentation site | [`docs/README.md`](docs/README.md) |
 | Writing a blog post | [`website/blog/README.md`](website/blog/README.md) |

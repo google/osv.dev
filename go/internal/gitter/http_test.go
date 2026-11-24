@@ -1,12 +1,14 @@
 package gitter_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -683,13 +685,43 @@ func TestGetCommitPack(t *testing.T) {
 			wantErr:    gitter.ErrInvalidInput,
 		},
 		{
-			name: "payload too large error mapping",
+			name: "payload too large error mapping with detail",
 			req: &pb.CommitPackRequest{
 				Url:     "https://github.com/example/huge.git",
 				Commits: []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
 			},
 			statusCode: http.StatusRequestEntityTooLarge,
+			respData:   []byte("commit pack exceeds limit"),
 			wantErr:    gitter.ErrPackTooLarge,
+		},
+		{
+			name: "internal server error mapping",
+			req: &pb.CommitPackRequest{
+				Url:     "https://github.com/example/err.git",
+				Commits: []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+			},
+			statusCode: http.StatusInternalServerError,
+			respData:   []byte("boom"),
+			wantErr:    gitter.ErrInternalService,
+		},
+		{
+			name: "no content rejected as internal error",
+			req: &pb.CommitPackRequest{
+				Url:     "https://github.com/example/tagless.git",
+				Commits: []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+			},
+			statusCode: http.StatusNoContent,
+			wantErr:    gitter.ErrInternalService,
+		},
+		{
+			name: "empty 200 rejected as internal error",
+			req: &pb.CommitPackRequest{
+				Url:     "https://github.com/example/empty.git",
+				Commits: []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+			},
+			statusCode: http.StatusOK,
+			respData:   nil,
+			wantErr:    gitter.ErrInternalService,
 		},
 	}
 
@@ -698,7 +730,7 @@ func TestGetCommitPack(t *testing.T) {
 			t.Parallel()
 
 			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if tt.statusCode == http.StatusOK {
+				if tt.statusCode == http.StatusOK && len(tt.respData) > 0 {
 					if r.Method != http.MethodPost || r.URL.Path != "/commit-pack" {
 						t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 					}
@@ -727,6 +759,9 @@ func TestGetCommitPack(t *testing.T) {
 				if !errors.Is(err, tt.wantErr) {
 					t.Fatalf("GetCommitPack() error = %v, wantErr = %v", err, tt.wantErr)
 				}
+				if len(tt.respData) > 0 && !strings.Contains(err.Error(), string(tt.respData)) {
+					t.Errorf("GetCommitPack() error = %q, want detail %q", err.Error(), string(tt.respData))
+				}
 
 				return
 			}
@@ -738,4 +773,34 @@ func TestGetCommitPack(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("oversized chunked 200 response rejected by limit reader", func(t *testing.T) {
+		t.Parallel()
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/zstd")
+			if flusher, ok := w.(http.Flusher); ok {
+				w.WriteHeader(http.StatusOK)
+				flusher.Flush() // Force chunked transfer so ContentLength == -1 and io.LimitReader is exercised.
+			}
+			chunk := bytes.Repeat([]byte("A"), 1<<20)
+			for range (gitter.MaxCommitPackBytes / (1 << 20)) + 1 {
+				if _, err := w.Write(chunk); err != nil {
+					return
+				}
+			}
+		}))
+		t.Cleanup(ts.Close)
+
+		client, err := gitter.NewClient(ts.URL, nil)
+		if err != nil {
+			t.Fatalf("failed to create client: %v", err)
+		}
+		_, err = client.GetCommitPack(context.Background(), &pb.CommitPackRequest{
+			Url:     "https://github.com/example/huge.git",
+			Commits: []string{"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+		})
+		if !errors.Is(err, gitter.ErrPackTooLarge) {
+			t.Fatalf("GetCommitPack() error = %v, want ErrPackTooLarge", err)
+		}
+	})
 }

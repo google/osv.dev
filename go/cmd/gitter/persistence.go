@@ -18,6 +18,15 @@ var (
 	saveTimer   *time.Timer
 )
 
+func getLastFetch(url string) (time.Time, bool) {
+	lastFetchMu.Lock()
+	defer lastFetchMu.Unlock()
+
+	t, ok := lastFetch[url]
+
+	return t, ok
+}
+
 func updateLastFetch(url string) {
 	lastFetchMu.Lock()
 	defer lastFetchMu.Unlock()

@@ -71,31 +71,16 @@ func (c *httpClient) do(ctx context.Context, method, path string, query url.Valu
 	resp.Body.Close()
 	errMsg := strings.TrimSpace(string(bodyBytes))
 
+	var baseErr error
 	switch resp.StatusCode {
 	case http.StatusForbidden:
-		if errMsg != "" {
-			return nil, fmt.Errorf("%w: %s", ErrRepoInaccessible, errMsg)
-		}
-
-		return nil, ErrRepoInaccessible
+		baseErr = ErrRepoInaccessible
 	case http.StatusNotFound:
-		if errMsg != "" {
-			return nil, fmt.Errorf("%w: %s", ErrRepoNotFound, errMsg)
-		}
-
-		return nil, ErrRepoNotFound
+		baseErr = ErrRepoNotFound
 	case http.StatusBadRequest:
-		if errMsg != "" {
-			return nil, fmt.Errorf("%w: %s", ErrInvalidInput, errMsg)
-		}
-
-		return nil, ErrInvalidInput
+		baseErr = ErrInvalidInput
 	case http.StatusRequestEntityTooLarge:
-		if errMsg != "" {
-			return nil, fmt.Errorf("%w: %s", ErrPackTooLarge, errMsg)
-		}
-
-		return nil, ErrPackTooLarge
+		baseErr = ErrPackTooLarge
 	default:
 		if errMsg != "" {
 			return nil, fmt.Errorf("%w: status %d: %s", ErrInternalService, resp.StatusCode, errMsg)
@@ -103,6 +88,11 @@ func (c *httpClient) do(ctx context.Context, method, path string, query url.Valu
 
 		return nil, fmt.Errorf("%w: received unexpected status code %d", ErrInternalService, resp.StatusCode)
 	}
+	if errMsg != "" {
+		return nil, fmt.Errorf("%w: %s", baseErr, errMsg)
+	}
+
+	return nil, baseErr
 }
 
 func (c *httpClient) doAndUnmarshal(ctx context.Context, method, path string, query url.Values, reqBody, respMsg proto.Message) error {
@@ -209,7 +199,9 @@ func (c *httpClient) GetCommitDiffs(ctx context.Context, req *pb.CommitDiffsRequ
 	return &commitDiffsResp, nil
 }
 
-const maxCommitPackBytes = 44 << 20 // 44 MiB (matches gitter and vanir-sandbox payload budget)
+// MaxCommitPackBytes is the maximum allowed commit-pack archive size (44 MiB),
+// shared by the gitter server and client to fit within downstream base64 JSON payload limits.
+const MaxCommitPackBytes = 44 << 20
 
 // GetCommitPack handles POST /commit-pack (returns raw .tar.zst archive bytes)
 func (c *httpClient) GetCommitPack(ctx context.Context, req *pb.CommitPackRequest) ([]byte, error) {
@@ -219,12 +211,22 @@ func (c *httpClient) GetCommitPack(ctx context.Context, req *pb.CommitPackReques
 	}
 	defer resp.Body.Close()
 
-	data, err := io.ReadAll(io.LimitReader(resp.Body, maxCommitPackBytes+1))
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%w: unexpected status %d for /commit-pack", ErrInternalService, resp.StatusCode)
+	}
+	if resp.ContentLength > MaxCommitPackBytes {
+		return nil, fmt.Errorf("%w (%d > %d bytes)", ErrPackTooLarge, resp.ContentLength, MaxCommitPackBytes)
+	}
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, MaxCommitPackBytes+1))
 	if err != nil {
 		return nil, fmt.Errorf("failed reading commit pack response: %w", err)
 	}
-	if len(data) > maxCommitPackBytes {
-		return nil, fmt.Errorf("%w (%d bytes)", ErrPackTooLarge, maxCommitPackBytes)
+	if len(data) > MaxCommitPackBytes {
+		return nil, fmt.Errorf("%w (> %d bytes)", ErrPackTooLarge, MaxCommitPackBytes)
+	}
+	if len(data) == 0 {
+		return nil, fmt.Errorf("%w: empty commit pack response", ErrInternalService)
 	}
 
 	return data, nil

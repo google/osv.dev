@@ -235,6 +235,7 @@ func setupTest(t *testing.T) {
 
 	tmpDir := t.TempDir()
 	gitStorePath = tmpDir
+	commitPackTmpPath = tmpDir + "/" + commitPackTmpDirName
 	persistencePath = tmpDir + "/last-fetch.json" // Use simple path join for test
 	fetchTimeout = time.Minute
 

@@ -20,6 +20,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -83,6 +84,7 @@ var (
 	gLocalTags              singleflight.Group
 	persistencePath         = filepath.Join(defaultGitterWorkDir, persistenceFileName)
 	gitStorePath            = filepath.Join(defaultGitterWorkDir, gitStoreFileName)
+	commitPackTmpPath       = filepath.Join(defaultGitterWorkDir, commitPackTmpDirName)
 	fetchTimeout            time.Duration
 	reqConcurrencySemaphore chan struct{} // Request concurrency control
 	// LRU cache for recently loaded repositories (key: repo URL)
@@ -434,11 +436,12 @@ func main() {
 
 	persistencePath = filepath.Join(*workDir, persistenceFileName)
 	gitStorePath = filepath.Join(*workDir, gitStoreFileName)
+	commitPackTmpPath = filepath.Join(*workDir, commitPackTmpDirName)
 	if err := os.MkdirAll(gitStorePath, 0755); err != nil {
 		logger.Fatal("Failed to create git store path", slog.String("path", gitStorePath), slog.Any("error", err))
 	}
 	// Purge any stale temporary commit-pack staging directories left behind by prior crashes.
-	_ = os.RemoveAll(filepath.Join(*workDir, commitPackTmpDirName))
+	_ = os.RemoveAll(commitPackTmpPath)
 
 	repoMaxCostUint, err := humanize.ParseBytes(*repoMaxCostStr)
 	if err != nil {
@@ -1144,6 +1147,26 @@ func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func validateCommitHashes(rawCommits []string) ([]string, error) {
+	if len(rawCommits) == 0 || len(rawCommits) > maxCommitPackCommits {
+		return nil, fmt.Errorf("commits must contain between 1 and %d entries", maxCommitPackCommits)
+	}
+
+	commits := make([]string, 0, len(rawCommits))
+	seen := make(map[string]struct{}, len(rawCommits))
+	for _, c := range rawCommits {
+		if !commitHashRegex.MatchString(c) {
+			return nil, fmt.Errorf("invalid commit hash: %q", c)
+		}
+		if _, dup := seen[c]; !dup {
+			seen[c] = struct{}{}
+			commits = append(commits, c)
+		}
+	}
+
+	return commits, nil
+}
+
 func commitPackHandler(w http.ResponseWriter, req *http.Request) {
 	start := time.Now()
 	statusCode := http.StatusOK
@@ -1173,27 +1196,12 @@ func commitPackHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	rawCommits := body.GetCommits()
-	if len(rawCommits) == 0 || len(rawCommits) > maxCommitPackCommits {
+	commits, err := validateCommitHashes(body.GetCommits())
+	if err != nil {
 		statusCode = http.StatusBadRequest
-		http.Error(w, fmt.Sprintf("commits must contain between 1 and %d entries", maxCommitPackCommits), statusCode)
+		http.Error(w, err.Error(), statusCode)
 
 		return
-	}
-
-	commits := make([]string, 0, len(rawCommits))
-	seen := make(map[string]struct{}, len(rawCommits))
-	for _, c := range rawCommits {
-		if !commitHashRegex.MatchString(c) {
-			statusCode = http.StatusBadRequest
-			http.Error(w, fmt.Sprintf("invalid commit hash: %q", c), statusCode)
-
-			return
-		}
-		if _, dup := seen[c]; !dup {
-			seen[c] = struct{}{}
-			commits = append(commits, c)
-		}
 	}
 
 	refID := body.GetRefId()
@@ -1201,7 +1209,8 @@ func commitPackHandler(w http.ResponseWriter, req *http.Request) {
 	ctx = context.WithValue(ctx, refIDKey, refID)
 	logger.DebugContext(ctx, "Received request: /commit-pack", slog.Int("numCommits", len(commits)))
 
-	if code, found := checkInvalidRepoCache(ctx, repoURL); found {
+	// Ignore 204 entries cached by /tags: tagless repositories are still valid for commit packs.
+	if code, found := checkInvalidRepoCache(ctx, repoURL); found && code != http.StatusNoContent {
 		statusCode = code
 		w.WriteHeader(code)
 
@@ -1229,9 +1238,7 @@ func commitPackHandler(w http.ResponseWriter, req *http.Request) {
 
 	packData, err := createPack(false)
 	if errors.Is(err, errCommitNotFound) {
-		lastFetchMu.Lock()
-		lastFetchTime, hasFetch := lastFetch[repoURL]
-		lastFetchMu.Unlock()
+		lastFetchTime, hasFetch := getLastFetch(repoURL)
 
 		refreshed := false
 		if !hasFetch || time.Since(lastFetchTime) >= commitPackForceUpdateCooldown {
@@ -1257,27 +1264,25 @@ func commitPackHandler(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if err != nil {
-		if errors.Is(err, errCommitNotFound) || errors.Is(err, errNotCommitObject) {
+		switch {
+		case errors.Is(err, errCommitNotFound), errors.Is(err, errNotCommitObject):
 			statusCode = http.StatusNotFound
 			http.Error(w, err.Error(), statusCode)
-
-			return
-		}
-		if errors.Is(err, errCommitPackTooLarge) {
+		case errors.Is(err, errCommitPackTooLarge):
 			statusCode = http.StatusRequestEntityTooLarge
 			http.Error(w, err.Error(), statusCode)
-
-			return
+		default:
+			logger.ErrorContext(ctx, "Error creating commit pack", slog.Any("error", err))
+			statusCode = http.StatusInternalServerError
+			http.Error(w, fmt.Sprintf("Error creating commit pack: %v", err), statusCode)
 		}
-		logger.ErrorContext(ctx, "Error creating commit pack", slog.Any("error", err))
-		statusCode = http.StatusInternalServerError
-		http.Error(w, fmt.Sprintf("Error creating commit pack: %v", err), statusCode)
 
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/zstd")
 	w.Header().Set("Content-Disposition", "attachment; filename=\"commit-pack.tar.zst\"")
+	w.Header().Set("Content-Length", strconv.Itoa(len(packData)))
 	w.WriteHeader(http.StatusOK)
 	if _, err := io.Copy(w, bytes.NewReader(packData)); err != nil {
 		logger.ErrorContext(ctx, "Error writing commit pack response", slog.Any("error", err))

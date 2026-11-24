@@ -61,6 +61,8 @@ type SourceRepository struct {
 
 	// Apply strict validation (JSON Schema + linter checks) to this source.
 	Strictness bool
+	// Whether this source is archived and should no longer be polled or imported.
+	Archived bool
 	// Patterns of files to exclude (regex).
 	IgnorePatterns []string
 	// Default extension (".json", ".yaml").

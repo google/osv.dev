@@ -92,6 +92,10 @@ func readRecords(ctx context.Context, client *datastore.Client) {
 		fmt.Printf("(Go) Failed getting SourceRepository: %v\n", err)
 		os.Exit(1)
 	}
+	if !sourceRepo.Archived {
+		fmt.Println("(Go) Expected SourceRepository.Archived to be true")
+		os.Exit(1)
+	}
 
 	fmt.Println("(Go) Getting AffectedCommits")
 	key = datastore.NameKey("AffectedCommits", "CVE-123-456", nil)
@@ -245,6 +249,7 @@ func writeRecords(ctx context.Context, client *datastore.Client) {
 		HumanLink:               "https://example.com/go-source/human",
 		DBPrefix:                []string{"GO-TEST", "GO-2-TEST"},
 		StrictValidation:        true,
+		Archived:                true,
 		WorkPool:                "default",
 	}
 	if _, err := client.Put(ctx, key, &goSourceRepo); err != nil {

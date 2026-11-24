@@ -1523,6 +1523,8 @@ class SourceRepository(ndb.Model):
   db_prefix: list[str] = ndb.StringProperty(repeated=True)
   # Apply strict validation (JSON Schema + linter checks) to this source.
   strict_validation: bool = ndb.BooleanProperty(default=False)
+  # Whether this source is archived and should no longer be polled or imported.
+  archived: bool = ndb.BooleanProperty(default=False)
   # The name of the work pool to use for this source.
   work_pool: str = ndb.StringProperty()
 

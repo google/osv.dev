@@ -4,10 +4,15 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"net/http"
+	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/google/osv.dev/go/testutils"
 	"github.com/klauspost/compress/zstd"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
@@ -358,4 +363,143 @@ func TestIsReconcileOutdated(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestArchivedSourcesSkipped(t *testing.T) {
+	ctx := t.Context()
+
+	var archivedRESTHits atomic.Int32
+	archivedServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		archivedRESTHits.Add(1)
+		http.Error(w, "archived endpoint should never be called", http.StatusInternalServerError)
+	}))
+	defer archivedServer.Close()
+
+	activeBucket := testutils.NewMockStorage()
+	_ = activeBucket.WriteObject(ctx, "OSV-ACTIVE-1.json", []byte(`{"id":"OSV-ACTIVE-1","modified":"2026-01-01T00:00:00Z"}`), nil)
+	archivedBucket := testutils.NewMockStorage()
+	_ = archivedBucket.WriteObject(ctx, "GSD-2026-9999.json", []byte(`{"id":"GSD-2026-9999","modified":"2026-01-01T00:00:00Z"}`), nil)
+
+	provider := &mockCloudStorageStorageProvider{
+		buckets: map[string]clients.CloudStorage{
+			"active-bucket":   activeBucket,
+			"archived-bucket": archivedBucket,
+		},
+	}
+
+	sourceRepoStore := &mockSourceRepositoryStore{
+		repos: []*models.SourceRepository{
+			{
+				Name:       "archived-git",
+				Type:       models.SourceRepositoryTypeGit,
+				Archived:   true,
+				Extension:  ".json",
+				IDPrefixes: []string{"GSD-"},
+				// Intentionally shares URL with another branch to also verify RunReconcile skips archived repos before branch conflict checks.
+				Git: &models.SourceRepoGit{
+					URL:    "https://github.com/example/archived.git",
+					Branch: "old-branch",
+				},
+			},
+			{
+				Name:       "archived-bucket-src",
+				Type:       models.SourceRepositoryTypeBucket,
+				Archived:   true,
+				Extension:  ".json",
+				IDPrefixes: []string{"GSD-"},
+				Bucket:     &models.SourceRepoBucket{Name: "archived-bucket"},
+			},
+			{
+				Name:       "archived-rest-src",
+				Type:       models.SourceRepositoryTypeREST,
+				Archived:   true,
+				Extension:  ".json",
+				IDPrefixes: []string{"GSD-"},
+				REST:       &models.SourceRepoREST{URL: archivedServer.URL},
+			},
+			{
+				Name:       "active-bucket-src",
+				Type:       models.SourceRepositoryTypeBucket,
+				Archived:   false,
+				Extension:  ".json",
+				IDPrefixes: []string{"OSV-"},
+				Bucket:     &models.SourceRepoBucket{Name: "active-bucket"},
+			},
+		},
+		updates: make(map[string]any),
+	}
+
+	vulnStore := &mockVulnerabilityStore{
+		Entries: map[string][]*models.VulnSourceRef{
+			// Archived bucket has an entry missing from archivedBucket (empty check) that would be withdrawn if not skipped.
+			"archived-bucket-src": {
+				{ID: "GSD-2021-1", Source: "archived-bucket-src", Path: "GSD-2021-1.json"},
+			},
+		},
+	}
+
+	t.Run("Run skips archived sources", func(t *testing.T) {
+		pub := &testutils.MockPublisher{}
+		cfg := Config{
+			NumWorkers:         2,
+			SourceRepoStore:    sourceRepoStore,
+			VulnerabilityStore: vulnStore,
+			Publisher:          pub,
+			GCSProvider:        provider,
+			HTTPClient:         archivedServer.Client(),
+			// GitterClient intentionally nil: handleImportGit would fail if archived-git were not skipped.
+		}
+		if err := Run(ctx, cfg); err != nil {
+			t.Fatalf("Run() unexpected error: %v", err)
+		}
+		if archivedRESTHits.Load() != 0 {
+			t.Errorf("expected 0 hits to archived REST endpoint, got %d", archivedRESTHits.Load())
+		}
+		if len(pub.Messages) != 1 || pub.Messages[0].Attributes["source"] != "active-bucket-src" {
+			t.Fatalf("expected only active-bucket-src message published, got %+v", pub.Messages)
+		}
+	})
+
+	t.Run("RunDeletions skips archived sources", func(t *testing.T) {
+		pub := &testutils.MockPublisher{}
+		cfg := Config{
+			NumWorkers:         2,
+			SourceRepoStore:    sourceRepoStore,
+			VulnerabilityStore: vulnStore,
+			Publisher:          pub,
+			GCSProvider:        provider,
+			HTTPClient:         archivedServer.Client(),
+			DeleteThreshold:    100.0,
+		}
+		if err := RunDeletions(ctx, cfg); err != nil {
+			t.Fatalf("RunDeletions() unexpected error: %v", err)
+		}
+		if archivedRESTHits.Load() != 0 {
+			t.Errorf("expected 0 hits to archived REST endpoint during deletions, got %d", archivedRESTHits.Load())
+		}
+		if len(pub.Messages) != 0 {
+			t.Fatalf("expected 0 deletion messages for archived sources, got %+v", pub.Messages)
+		}
+	})
+
+	t.Run("RunReconcile skips archived sources", func(t *testing.T) {
+		pub := &testutils.MockPublisher{}
+		cfg := Config{
+			NumWorkers:         2,
+			SourceRepoStore:    sourceRepoStore,
+			VulnerabilityStore: vulnStore,
+			Publisher:          pub,
+			GCSProvider:        provider,
+			HTTPClient:         archivedServer.Client(),
+		}
+		if err := RunReconcile(ctx, cfg); err != nil {
+			t.Fatalf("RunReconcile() unexpected error: %v", err)
+		}
+		if archivedRESTHits.Load() != 0 {
+			t.Errorf("expected 0 hits to archived REST endpoint during reconcile, got %d", archivedRESTHits.Load())
+		}
+		if len(pub.Messages) != 1 || pub.Messages[0].Attributes["source"] != "active-bucket-src" {
+			t.Fatalf("expected only active-bucket-src reconciled, got %+v", pub.Messages)
+		}
+	})
 }

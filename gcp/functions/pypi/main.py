@@ -18,6 +18,7 @@ import json
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.hashes import SHA256
+import functions_framework
 from google.cloud import secretmanager
 import requests
 
@@ -36,11 +37,10 @@ def _get_private_key():
   return json.loads(response.payload.data)
 
 
-def publish(event, context):
+@functions_framework.cloud_event
+def publish(cloud_event):
   """Publish PyPI vulnerability."""
-  del context
-
-  data = json.loads(base64.b64decode(event['data']))
+  data = json.loads(base64.b64decode(cloud_event.data['message']['data']))
   vulnerability = osv.parse_vulnerability_from_dict(data)
 
   key_data = _get_private_key()

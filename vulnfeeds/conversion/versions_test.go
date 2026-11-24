@@ -8,6 +8,7 @@ import (
 	"os"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -898,6 +899,87 @@ func TestExtractVersionInfo(t *testing.T) {
 				t.Errorf("test %q: VersionInfo for %#v was incorrect: %s", tc.description, tc.inputCVEItem, diff)
 			}
 		})
+	}
+}
+
+func TestExtractVersionInfoRangeOrder(t *testing.T) {
+	str := func(s string) *string { return &s }
+	cveWith := func(match models.CPEMatch) models.NVDCVE {
+		match.Vulnerable = true
+		match.Criteria = "cpe:2.3:a:example:example:*:*:*:*:*:*:*:*"
+		return models.NVDCVE{Configurations: []models.Config{{Nodes: []models.Node{{Operator: "OR", CPEMatch: []models.CPEMatch{match}}}}}}
+	}
+	validVersions := []string{"0.9", "1.0a1", "1.0b4", "1.0", "1.0.1", "1.1"}
+	tests := []struct {
+		description string
+		match       models.CPEMatch
+		wantNote    string
+	}{
+		{
+			description: "introduced before fixed",
+			match:       models.CPEMatch{VersionStartIncluding: str("1.0"), VersionEndExcluding: str("1.1")},
+		},
+		{
+			description: "fixed is a pre-release of introduced",
+			match:       models.CPEMatch{VersionStartIncluding: str("1.0"), VersionEndExcluding: str("1.0b4")},
+			wantNote:    "Warning: introduced version 1.0 does not come before fixed version 1.0b4",
+		},
+		{
+			description: "introduced equals fixed",
+			match:       models.CPEMatch{VersionStartIncluding: str("1.0.1"), VersionEndExcluding: str("1.0.1")},
+			wantNote:    "Warning: introduced version 1.0.1 does not come before fixed version 1.0.1",
+		},
+		{
+			description: "fixed inferred from an included end before introduced",
+			match:       models.CPEMatch{VersionStartIncluding: str("1.0.1"), VersionEndIncluding: str("1.0a1")},
+			wantNote:    "Warning: introduced version 1.0.1 does not come before fixed version 1.0b4",
+		},
+		{
+			description: "included end just before introduced",
+			match:       models.CPEMatch{VersionStartIncluding: str("1.0.1"), VersionEndIncluding: str("1.0")},
+			wantNote:    "Warning: introduced version 1.0.1 does not come before fixed version 1.0.1",
+		},
+		{
+			description: "last_affected equals introduced",
+			match:       models.CPEMatch{VersionStartIncluding: str("1.1"), VersionEndIncluding: str("1.1")},
+		},
+		{
+			description: "last_affected after introduced, no later version to infer fixed from",
+			match:       models.CPEMatch{VersionStartIncluding: str("1.0.1"), VersionEndIncluding: str("1.1")},
+		},
+		{
+			description: "unknown version is not compared",
+			match:       models.CPEMatch{VersionStartIncluding: str("2.0"), VersionEndExcluding: str("1.0")},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			metrics := &models.ConversionMetrics{}
+			ExtractVersionInfo(cveWith(tc.match), validVersions, metrics)
+			var got []string
+			for _, note := range metrics.Notes {
+				if strings.Contains(note, "does not come before") || strings.Contains(note, "comes after last_affected") {
+					got = append(got, note)
+				}
+			}
+			var want []string
+			if tc.wantNote != "" {
+				want = []string{tc.wantNote}
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("range order notes (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCheckRangeOrderLastAffected(t *testing.T) {
+	validVersions := []string{"1.0", "1.1", "1.2"}
+	metrics := &models.ConversionMetrics{}
+	checkRangeOrder(validVersions, "1.2", "", "1.0", metrics)
+	want := []string{"Warning: introduced version 1.2 comes after last_affected version 1.0"}
+	if diff := cmp.Diff(want, metrics.Notes); diff != "" {
+		t.Errorf("notes (-want +got):\n%s", diff)
 	}
 }
 

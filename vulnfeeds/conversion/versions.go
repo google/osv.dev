@@ -642,6 +642,34 @@ func nextVersion(validVersions []string, version string) (string, error) {
 	return validVersions[idx], nil
 }
 
+// checkRangeOrder adds a warning note when introduced does not come before
+// fixed, or comes after last_affected, in validVersions. validVersions must be
+// sorted in ascending order. Versions that are not in validVersions are not
+// checked, since their position is unknown.
+//
+// Such a range is almost always bad data. For example, introduced 1.0 and
+// fixed 1.0b4 in PyPI marks every version from 1.0 on as affected, because
+// 1.0b4 comes before 1.0.
+func checkRangeOrder(validVersions []string, introduced, fixed, lastAffected string, metrics *models.ConversionMetrics) {
+	if introduced == "" || introduced == "0" {
+		return
+	}
+	introducedIdx := versionIndex(validVersions, introduced)
+	if introducedIdx == -1 {
+		return
+	}
+	if fixed != "" {
+		if fixedIdx := versionIndex(validVersions, fixed); fixedIdx != -1 && fixedIdx <= introducedIdx {
+			metrics.AddNotef("Warning: introduced version %s does not come before fixed version %s", introduced, fixed)
+		}
+	}
+	if lastAffected != "" {
+		if lastAffectedIdx := versionIndex(validVersions, lastAffected); lastAffectedIdx != -1 && lastAffectedIdx < introducedIdx {
+			metrics.AddNotef("Warning: introduced version %s comes after last_affected version %s", introduced, lastAffected)
+		}
+	}
+}
+
 func processExtractedVersion(version string) string {
 	version = strings.Trim(version, ".")
 	// Version should contain at least a "." or a number.
@@ -1025,6 +1053,8 @@ func ExtractVersionInfo(cve models.NVDCVE, validVersions []string, metrics *mode
 				if fixed != "" && !HasVersion(validVersions, fixed) {
 					metrics.AddNotef("Warning: %s is not a valid fixed version", fixed)
 				}
+
+				checkRangeOrder(validVersions, introduced, fixed, lastaffected, metrics)
 
 				// gotVersions = true
 				possibleNewAffectedVersion := models.AffectedVersion{

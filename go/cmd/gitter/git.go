@@ -143,6 +143,17 @@ func fetchRepo(ctx context.Context, repoPath string) error {
 	return nil
 }
 
+func hasCachedGitDir(repoDirName string) bool {
+	root, err := os.OpenRoot(gitStorePath)
+	if err != nil {
+		return false
+	}
+	defer root.Close()
+	_, err = root.Stat(filepath.Join(repoDirName, ".git"))
+
+	return err == nil
+}
+
 // refreshRepo updates the local repository on disk if it is stale or if forceUpdate is true.
 // It clones the repository if it doesn't exist, or fetches it with error recovery and fallback recloning.
 func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
@@ -156,9 +167,9 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 	if !forceUpdate {
 		if lastFetchTime, ok := getLastFetch(repoURL); ok && time.Since(lastFetchTime) <= fetchTimeout {
 			repoLock.RLock()
-			_, statErr := os.Stat(filepath.Join(repoPath, ".git"))
+			exists := hasCachedGitDir(repoDirName)
 			repoLock.RUnlock()
-			if statErr == nil {
+			if exists {
 				logger.DebugContext(ctx, "Repository is fresh on disk, skipping exclusive lock")
 				return nil
 			}

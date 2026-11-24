@@ -67,9 +67,13 @@ func (m *mockVulnerabilityStore) GetSourceModified(_ context.Context, vuln strin
 type mockSourceRecord struct {
 	DataToRead []byte
 	ReadError  error
+	OnOpen     func()
 }
 
 func (m mockSourceRecord) Open(_ context.Context) (io.ReadCloser, error) {
+	if m.OnOpen != nil {
+		m.OnOpen()
+	}
 	if m.ReadError != nil {
 		return nil, m.ReadError
 	}

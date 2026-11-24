@@ -151,3 +151,24 @@ resource "google_pubsub_topic" "pypi_bridge" {
   project = var.project_id
   name    = "pypi-bridge"
 }
+
+# Public read access on public OSV feed, import log, indexer config, and sitemap buckets
+resource "google_storage_bucket_iam_member" "public_bucket_viewers" {
+  for_each = var.public_buckets ? toset(compact([
+    google_storage_bucket.osv_public_import_logs.name,
+    google_storage_bucket.cve_osv_conversion.name,
+    google_storage_bucket.debian_osv_conversion_bucket.name,
+    var.indexer_configs_bucket,
+  ])) : toset([])
+
+  bucket = each.value
+  role   = "roles/storage.objectViewer"
+  member = "allUsers"
+}
+
+resource "google_storage_bucket_iam_member" "public_sitemap_reader" {
+  count  = var.public_buckets ? 1 : 0
+  bucket = google_storage_bucket.osv_dev_sitemap_bucket.name
+  role   = "roles/storage.legacyObjectReader"
+  member = "allUsers"
+}

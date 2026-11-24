@@ -49,6 +49,17 @@ resource "google_storage_bucket_iam_member" "worker_export_bucket" {
   member = "serviceAccount:${google_service_account.worker_sa.email}"
 }
 
+resource "google_storage_bucket_iam_member" "public_export_bucket" {
+  for_each = var.public_export_bucket ? toset([
+    "roles/storage.objectViewer",
+    "roles/storage.legacyBucketReader",
+  ]) : toset([])
+
+  bucket = google_storage_bucket.osv_vulnerabilities_export.name
+  role   = each.value
+  member = "allUsers"
+}
+
 resource "google_storage_bucket_iam_member" "worker_backup_bucket" {
   bucket = google_storage_bucket.affected_commits_backups_bucket.name
   role   = "roles/storage.objectAdmin"

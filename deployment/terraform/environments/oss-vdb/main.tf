@@ -32,6 +32,7 @@ module "osv_pipeline" {
   project_id                                     = "oss-vdb"
   deployment_service_account_email               = "${google_service_account.deployment_service.account_id}@${google_service_account.deployment_service.project}.iam.gserviceaccount.com"
   vulnerabilities_export_bucket                  = "osv-vulnerabilities"
+  public_export_bucket                           = true
   affected_commits_backups_bucket                = "osv-affected-commits"
   affected_commits_backups_bucket_retention_days = 3
   logs_bucket                                    = "osv-logs"
@@ -74,6 +75,7 @@ module "osv" {
 
   indexer_configs_bucket = "osv-indexer-configs"
   indexer_repos_bucket   = "osv-indexer-repos"
+  public_buckets         = true
 }
 
 module "osv_api" {

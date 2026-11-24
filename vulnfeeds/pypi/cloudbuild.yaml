@@ -28,3 +28,8 @@ steps:
 - name: 'gcr.io/google.com/cloudsdktool/google-cloud-cli'
   entrypoint: 'gcloud'
   args: ['storage', 'cp', 'pypi_links.json', 'pypi_versions.json', 'gs://pypa-advisory-db/triage/']
+
+# Also set in Cloud Build trigger:
+serviceAccount: 'projects/oss-vdb/serviceAccounts/pypa-triage@oss-vdb.iam.gserviceaccount.com'
+options:
+  logging: CLOUD_LOGGING_ONLY

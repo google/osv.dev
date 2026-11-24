@@ -315,6 +315,18 @@ steps:
 #   Vulnfeeds Lane 1: alpine-cve-convert -> cve5-to-osv -> debian-convert -> cpe-repo-gen
 #   Vulnfeeds Lane 2: debian-cve-convert -> debian-copyright-mirror -> nvd-cve-osv -> nvd-mirror
 - name: gcr.io/cloud-builders/docker
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/combine-to-osv:latest', '-t', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', '--target', 'combine-to-osv', '-f', 'Dockerfile', '--pull', '.']
+  dir: 'vulnfeeds'
+  id: 'build-combine-to-osv'
+  waitFor: ['setup', 'setup-buildx']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/combine-to-osv']
+  waitFor: ['build-combine-to-osv', 'cloud-build-queue']
+
+- name: gcr.io/cloud-builders/docker
   args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:latest', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA', '--target', 'alpine-cve-convert', '-f', 'Dockerfile', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-alpine-cve-convert'
@@ -337,18 +349,6 @@ steps:
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/debian-cve-convert']
   waitFor: ['build-debian-cve-convert', 'cloud-build-queue']
-
-- name: gcr.io/cloud-builders/docker
-  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/combine-to-osv:latest', '-t', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', '--target', 'combine-to-osv', '-f', 'Dockerfile', '--pull', '.']
-  dir: 'vulnfeeds'
-  id: 'build-combine-to-osv'
-  waitFor: ['setup', 'setup-buildx']
-  volumes:
-  - name: 'docker-config'
-    path: '/root/.docker'
-- name: gcr.io/cloud-builders/docker
-  args: ['push', '--all-tags', 'gcr.io/oss-vdb/combine-to-osv']
-  waitFor: ['build-combine-to-osv', 'cloud-build-queue']
 
 - name: gcr.io/cloud-builders/docker
   args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/cve5-to-osv:latest', '-t', 'gcr.io/oss-vdb/cve5-to-osv:$COMMIT_SHA', '--target', 'cve5-to-osv', '-f', 'Dockerfile', '--pull', '.']

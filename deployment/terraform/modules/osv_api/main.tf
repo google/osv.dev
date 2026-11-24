@@ -107,8 +107,7 @@ resource "null_resource" "grpc_proxy_image" {
         -s ${var.api_url} \
         -c ${google_endpoints_service.grpc_service.config_id} \
         -p ${var.project_id} \
-        -v ${var.esp_version} \
-        ${var.gcs_log_dir != "" ? format("-l %s", var.gcs_log_dir) : ""}
+        -v ${var.esp_version}
     EOS
   }
 }

@@ -25,30 +25,38 @@
 # 
 # Select which service to build using the --target flag (e.g. importer, worker, exporter, exporter-deleter,
 # relations, recordchecker, generatesitemap, custommetrics, gitter, first_package_finder,
-# api, recoverer, vanir-signatures, ubuntubinarymapper, staging-api-test, website).
+# api, recoverer, vanir-signatures, ubuntubinarymapper, staging-api-test, website, osv-linter).
 # ====================================================================================
 
 # ========================================================
 # Shared Builder Stage
 # ========================================================
-FROM golang:1.27.3-alpine@sha256:fa3d596898d9f126af7c01d14ee7597bab3f39cccf392ef36b69fe77cd681f18 AS builder
+FROM golang:1.27.4-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS builder
+# Cap compile-time Go parallelism to avoid CPU/RAM oversubscription when multiple
+# targets build concurrently on E2_HIGHCPU_32 (32 vCPU / 32 GB RAM).
+ENV GOMAXPROCS=8
 
 WORKDIR /workspace
 
 # Mount the 'bindings' context into the container's filesystem
 COPY --from=bindings . /workspace/bindings/
 
+# Download modules before copying source so .go edits don't invalidate go mod download
+WORKDIR /workspace/go
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download && go mod verify
+
 # Copy the main Go module (strictly go/)
 COPY . /workspace/go/
-
-WORKDIR /workspace/go
-RUN go mod download && go mod verify
 
 # ========================================================
 # Target: Importer
 # ========================================================
 FROM builder AS importer-build
-RUN CGO_ENABLED=0 go build -o /app/importer ./cmd/importer/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/importer ./cmd/importer/
 
 FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS importer
 # Need to install the full tar package, to not use the busybox version, which doesn't have --zstd support.
@@ -60,7 +68,9 @@ ENTRYPOINT ["/importer"]
 # Target: Worker
 # ========================================================
 FROM builder AS worker-build
-RUN CGO_ENABLED=0 go build -o /app/worker ./cmd/worker/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/worker ./cmd/worker/
 
 FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS worker
 COPY --from=worker-build /app/worker /
@@ -70,7 +80,9 @@ ENTRYPOINT ["/worker"]
 # Target: Exporter
 # ========================================================
 FROM builder AS exporter-build
-RUN CGO_ENABLED=0 go build -o /app/exporter ./cmd/exporter/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/exporter ./cmd/exporter/
 
 FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS exporter
 COPY --from=exporter-build /app/exporter /
@@ -80,7 +92,9 @@ ENTRYPOINT ["/exporter"]
 # Target: Exporter Deleter
 # ========================================================
 FROM builder AS exporter-deleter-build
-RUN CGO_ENABLED=0 go build -o /app/exporter-deleter ./cmd/exporter-deleter/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/exporter-deleter ./cmd/exporter-deleter/
 
 FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS exporter-deleter
 COPY --from=exporter-deleter-build /app/exporter-deleter /
@@ -90,7 +104,9 @@ ENTRYPOINT ["/exporter-deleter"]
 # Target: Record Checker
 # ========================================================
 FROM builder AS recordchecker-build
-RUN CGO_ENABLED=0 go build -o /app/recordchecker ./cmd/recordchecker/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/recordchecker ./cmd/recordchecker/
 
 FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS recordchecker
 COPY --from=recordchecker-build /app/recordchecker /
@@ -100,7 +116,9 @@ ENTRYPOINT ["/recordchecker"]
 # Target: Relations
 # ========================================================
 FROM builder AS relations-build
-RUN CGO_ENABLED=0 go build -o /app/relations ./cmd/relations/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/relations ./cmd/relations/
 
 FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS relations
 COPY --from=relations-build /app/relations /
@@ -110,7 +128,9 @@ ENTRYPOINT ["/relations"]
 # Target: Generate Sitemap
 # ========================================================
 FROM builder AS generatesitemap-build
-RUN CGO_ENABLED=0 go build -o /app/generatesitemap ./cmd/generatesitemap/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/generatesitemap ./cmd/generatesitemap/
 
 FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS generatesitemap
 COPY --from=generatesitemap-build /app/generatesitemap /
@@ -120,7 +140,9 @@ ENTRYPOINT ["/generatesitemap"]
 # Target: Custom Metrics
 # ========================================================
 FROM builder AS custommetrics-build
-RUN CGO_ENABLED=0 go build -o /app/custommetrics ./cmd/custommetrics/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/custommetrics ./cmd/custommetrics/
 
 FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS custommetrics
 COPY --from=custommetrics-build /app/custommetrics /
@@ -130,7 +152,9 @@ ENTRYPOINT ["/custommetrics"]
 # Target: Gitter
 # ========================================================
 FROM builder AS gitter-build
-RUN CGO_ENABLED=0 go build -o /app/gitter ./cmd/gitter/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/gitter ./cmd/gitter/
 
 FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS gitter
 # Need to install the full tar package, to not use the busybox version, which doesn't have --zstd support.
@@ -144,7 +168,9 @@ ENTRYPOINT ["/gitter"]
 # Target: First Package Finder
 # ========================================================
 FROM builder AS first_package_finder-build
-RUN CGO_ENABLED=0 go build -o /app/first_package_finder ./cmd/first_package_finder/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/first_package_finder ./cmd/first_package_finder/
 
 FROM alpine:3.24@sha256:f59abe656b692d901e184be3445e084786602108599d2a51d229c0f5a48c71bf AS first_package_finder
 COPY --from=first_package_finder-build /app/first_package_finder /
@@ -154,7 +180,9 @@ ENTRYPOINT ["/first_package_finder"]
 # Target: OSV API
 # ========================================================
 FROM builder AS api-build
-RUN CGO_ENABLED=0 go build -o /app/api ./cmd/api/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/api ./cmd/api/
 
 FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS api
 COPY --from=api-build /app/api /
@@ -164,7 +192,9 @@ ENTRYPOINT ["/api"]
 # Target: Recoverer
 # ========================================================
 FROM builder AS recoverer-build
-RUN CGO_ENABLED=0 go build -o /app/recoverer ./cmd/recoverer/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/recoverer ./cmd/recoverer/
 
 FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS recoverer
 COPY --from=recoverer-build /app/recoverer /
@@ -174,7 +204,9 @@ ENTRYPOINT ["/recoverer"]
 # Target: Staging API Test
 # ========================================================
 FROM builder AS staging-api-test-build
-RUN CGO_ENABLED=0 go build -o /app/staging_api_test ./cmd/staging_api_test/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/staging_api_test ./cmd/staging_api_test/
 
 FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS staging-api-test
 COPY --from=staging-api-test-build /app/staging_api_test /
@@ -186,7 +218,9 @@ ENTRYPOINT ["/staging_api_test"]
 FROM builder AS website-build
 COPY --from=website-dist . /workspace/go/cmd/website/dist/
 COPY --from=docs osv_service_v1.swagger.json /workspace/go/cmd/website/docs/
-RUN CGO_ENABLED=0 go build -tags embedstatic -o /app/website ./cmd/website/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -tags embedstatic -o /app/website ./cmd/website/
 
 FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS website
 COPY --from=website-build /app/website /
@@ -196,7 +230,9 @@ ENTRYPOINT ["/website"]
 # Target: Vanir Signatures
 # ========================================================
 FROM builder AS vanir-signatures-build
-RUN CGO_ENABLED=0 go build -o /app/vanir_signatures ./cmd/vanir_signatures/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/vanir_signatures ./cmd/vanir_signatures/
 
 FROM python:3.13-slim@sha256:8d9d0b8bcf6506481eae4907c18f5e3e7902e629f5f6d684f9e7c32e85e3ddf0 AS vanir-python-deps
 ENV POETRY_HOME="/opt/poetry"
@@ -222,9 +258,36 @@ ENTRYPOINT ["/usr/local/bin/vanir_signatures"]
 # Target: Ubuntu Binary Mapper
 # ========================================================
 FROM builder AS ubuntubinarymapper-build
-RUN CGO_ENABLED=0 go build -o /app/ubuntubinarymapper ./cmd/ubuntubinarymapper/
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/ubuntubinarymapper ./cmd/ubuntubinarymapper/
 
 FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS ubuntubinarymapper
 COPY --from=ubuntubinarymapper-build /app/ubuntubinarymapper /
 ENTRYPOINT ["/ubuntubinarymapper"]
 
+# ========================================================
+# Target: OSV Linter
+# ========================================================
+FROM golang:1.27.4-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS osv-linter-cli-build
+ENV GOMAXPROCS=8
+RUN apk add --no-cache "git>=2.54.1"
+WORKDIR /src
+# Using osv-schema v1.9.0
+RUN git clone https://github.com/ossf/osv-schema.git osv-schema && cd osv-schema && git checkout 091feabc002e5c0a038639a765cded0448eeb202
+WORKDIR /src/osv-schema/tools/osv-linter
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    go mod download && go generate ./... && \
+    CGO_ENABLED=0 go build -o /app/osv-linter ./cmd/osv
+
+FROM builder AS osv-linter-worker-build
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/osv-linter-worker ./cmd/osv-linter-worker
+
+FROM gcr.io/distroless/static-debian12@sha256:d75cdd72874d4790092fcb1b058493ecf6bb5bf2b2b897045b00ff01d91843f2 AS osv-linter
+COPY --from=osv-linter-cli-build /app/osv-linter /usr/local/bin/osv-linter
+COPY --from=osv-linter-worker-build /app/osv-linter-worker /usr/local/bin/osv-linter-worker
+WORKDIR /linter
+ENTRYPOINT ["/usr/local/bin/osv-linter-worker"]

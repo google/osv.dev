@@ -33,3 +33,8 @@ moved {
   from = google_compute_router_nat.nat_config_west
   to   = google_compute_router_nat.nat_config
 }
+
+moved {
+  from = google_sql_user.deployment
+  to   = google_sql_user.deployment[0]
+}

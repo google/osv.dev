@@ -109,13 +109,26 @@ resource "google_secret_manager_secret_iam_member" "worker_postgres_secret_acces
 
 # Cloud SQL IAM authentication permissions for the Cloud Build deployment service account (goose migrations)
 resource "google_project_iam_member" "deployment_cloudsql_roles" {
-  for_each = toset([
+  for_each = var.deployment_service_account_email != "" ? toset([
     "roles/cloudsql.client",
     "roles/cloudsql.instanceUser",
-  ])
+  ]) : toset([])
 
   project = var.project_id
   role    = each.value
-  member  = "serviceAccount:deployment@oss-vdb.iam.gserviceaccount.com"
+  member  = "serviceAccount:${var.deployment_service_account_email}"
+}
+
+# GKE cluster-scoped RBAC and Cloud Deploy execution permissions for gke-workers
+resource "google_project_iam_member" "deployment_clouddeploy_roles" {
+  for_each = var.deployment_service_account_email != "" ? toset([
+    "roles/container.admin",
+    "roles/clouddeploy.jobRunner",
+    "roles/logging.logWriter",
+  ]) : toset([])
+
+  project = var.project_id
+  role    = each.value
+  member  = "serviceAccount:${var.deployment_service_account_email}"
 }
 

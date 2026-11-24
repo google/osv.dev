@@ -49,10 +49,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "com.example:hello-tester",
-          "ecosystem": "Maven"
-        },
+        "package": { "name": "com.example:hello-tester", "ecosystem": "Maven" },
         "version": "1.0-SNAPSHOT"
       },
       "vulns": []
@@ -345,10 +342,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "joda-time:joda-time",
-          "ecosystem": "Maven"
-        },
+        "package": { "name": "joda-time:joda-time", "ecosystem": "Maven" },
         "version": "2.8.1"
       },
       "vulns": []
@@ -547,10 +541,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "com.example:hello-tester",
-          "ecosystem": "Maven"
-        },
+        "package": { "name": "com.example:hello-tester", "ecosystem": "Maven" },
         "version": "1.0-SNAPSHOT"
       },
       "vulns": []
@@ -843,10 +834,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "joda-time:joda-time",
-          "ecosystem": "Maven"
-        },
+        "package": { "name": "joda-time:joda-time", "ecosystem": "Maven" },
         "version": "2.8.1"
       },
       "vulns": []

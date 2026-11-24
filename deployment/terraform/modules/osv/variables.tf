@@ -94,3 +94,15 @@ variable "website_ingress" {
   default     = null
 }
 
+variable "deployment_service_account_email" {
+  type        = string
+  description = "Optional email of the CI/CD deployment service account granted Cloud Run deploy permissions."
+  default     = ""
+}
+
+variable "frontend_deployer_service_account_emails" {
+  type        = list(string)
+  description = "Service account emails permitted to actAs the Cloud Run frontend service account during deployments."
+  default     = []
+}
+

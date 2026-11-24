@@ -116,9 +116,10 @@ resource "google_sql_user" "worker" {
 }
 
 resource "google_sql_user" "deployment" {
+  count          = var.deployment_service_account_email != "" ? 1 : 0
   project        = var.project_id
   instance       = google_sql_database_instance.postgres.name
-  name           = "deployment@oss-vdb.iam"
+  name           = trimsuffix(var.deployment_service_account_email, ".gserviceaccount.com")
   type           = "CLOUD_IAM_SERVICE_ACCOUNT"
   database_roles = ["cloudsqlsuperuser"]
 

@@ -52,6 +52,7 @@ PROJECT_DENYLIST = {
 }
 
 REPO_DENYLIST = {
+    'https://github.com/google/AFL',
     'https://github.com/google/AFL.git',
 }
 
@@ -152,7 +153,11 @@ def do_bisect(bisect_type, source_id, project_name, engine, sanitizer,
     return result
 
 
-def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
+def process_bisect_task(oss_fuzz_dir,
+                        bisect_type,
+                        source_id,
+                        message,
+                        enable_bisect=False):
   """Process a bisect task."""
   bisect_type = message.attributes['type']
   project_name = message.attributes['project_name']
@@ -171,17 +176,25 @@ def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
       architecture, sanitizer, fuzz_target, old_commit, new_commit)
 
   result = None
+  repo_url = None
   if project_name in PROJECT_DENYLIST:
     logging.info('Skipping bisect for denylisted project %s', project_name)
   elif not old_commit:
     logging.info('Skipping bisect since there is no old_commit.')
+  elif not enable_bisect:
+    logging.info('Skipping bisect because bisection is disabled.')
+    repo_url = (
+        message.attributes.get('repo_url') or
+        get_main_repo(oss_fuzz_dir, project_name))
   else:
     result = do_bisect(bisect_type, source_id, project_name, engine, sanitizer,
                        architecture, fuzz_target, old_commit, new_commit,
                        testcase)
+    if result:
+      repo_url = result.repo_url
 
-  if result and result.repo_url in REPO_DENYLIST:
-    logging.info('Skipping because of denylisted repo %s.', result.repo_url)
+  if repo_url in REPO_DENYLIST:
+    logging.info('Skipping because of denylisted repo %s.', repo_url)
     return
 
   if bisect_type == 'fixed':
@@ -195,13 +208,13 @@ def process_bisect_task(oss_fuzz_dir, bisect_type, source_id, message):
   if result and result.commit:
     logging.info('Bisected to %s', result.commit)
     entity.commit = result.commit
-    entity.repo_url = result.repo_url
+    entity.repo_url = repo_url
   else:
     logging.info(
         'Bisect not successfully performed. Setting commit range from request.')
     entity.commit = format_commit_range(old_commit, new_commit)
-    entity.repo_url = result.repo_url if result else None
-    entity.error = 'Bisect error'
+    entity.repo_url = repo_url
+    entity.error = 'Bisect error' if enable_bisect else 'Bisect disabled'
 
   entity.put()
 
@@ -451,13 +464,27 @@ def process_impact_task(source_id, message):
   existing_bug.put()
 
 
-def get_ecosystem(oss_fuzz_dir, project_name):
-  """Get ecosystem."""
+def _load_project_yaml(oss_fuzz_dir, project_name):
+  """Load OSS-Fuzz project.yaml."""
   project_yaml_path = os.path.join(oss_fuzz_dir, 'projects', project_name,
                                    'project.yaml')
-
   with open(project_yaml_path) as f:
-    project_yaml = yaml.safe_load(f)
+    return yaml.safe_load(f) or {}
+
+
+def get_main_repo(oss_fuzz_dir, project_name):
+  """Get main_repo from OSS-Fuzz project.yaml."""
+  try:
+    project_yaml = _load_project_yaml(oss_fuzz_dir, project_name)
+  except OSError:
+    logging.warning('Failed to read project.yaml for %s', project_name)
+    return None
+  return project_yaml.get('main_repo') or None
+
+
+def get_ecosystem(oss_fuzz_dir, project_name):
+  """Get ecosystem."""
+  project_yaml = _load_project_yaml(oss_fuzz_dir, project_name)
 
   language = project_yaml.get('language', '')
 

@@ -151,6 +151,8 @@ kubectl create clusterrolebinding cluster-admin-binding \
 kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/k8s-stackdriver/master/custom-metrics-stackdriver-adapter/deploy/production/adapter_new_resource_model.yaml
 ```
 
+On clusters with GKE Workload Identity enabled (such as `oss-fuzz-workers`), the adapter's `custom-metrics/custom-metrics-stackdriver-adapter` ServiceAccount must carry the `iam.gke.io/gcp-service-account` annotation bound to a GCP ServiceAccount with `roles/monitoring.viewer` (for `oss-fuzz-workers`, this is managed declaratively in `deployment/clouddeploy/oss-fuzz-workers/service-accounts.yaml`).
+
 ## Build and deploy remote builds to `oss-vdb-test`
 
 Done automatically with Cloud Deploy, as part of `build-and-stage.yaml`, which is triggered on pushes to the master branch.

@@ -38,8 +38,7 @@ function error_exit() {
 # IMAGE_REPOSITORY as following:
 #   'LOCATION-docker.pkg.dev/PROJECT-ID/REPOSITORY'
 
-GCS_LOG_DIR=""
-while getopts :c:s:p:v:z:g:i:l: arg; do
+while getopts :c:s:p:v:z:g:i: arg; do
   case ${arg} in
     c) CONFIG_ID="${OPTARG}";;
     s) SERVICE="${OPTARG}";;
@@ -51,7 +50,6 @@ while getopts :c:s:p:v:z:g:i:l: arg; do
       BASE_IMAGE="${OPTARG}"
       ESP_FULL_VERSION="custom"
       ;;
-    l) GCS_LOG_DIR="${OPTARG}";;
     \?) error_exit "Unrecognized argument -${OPTARG}";;
   esac
 done
@@ -124,11 +122,17 @@ COPY service.json \${ENDPOINTS_SERVICE_PATH}
 EOF
 
 NEW_IMAGE="${IMAGE_REPOSITORY}/endpoints-runtime-serverless:${ESP_FULL_VERSION}-${SERVICE}-${CONFIG_ID}"
-GCLOUD_BUILD_ARGS=("--tag" "${NEW_IMAGE}" "." "--project=${PROJECT}")
-if [[ -n "${GCS_LOG_DIR}" ]]; then
-  GCLOUD_BUILD_ARGS+=("--gcs-log-dir=${GCS_LOG_DIR}")
-fi
-gcloud builds submit "${GCLOUD_BUILD_ARGS[@]}"
+
+cat <<EOF > cloudbuild.yaml
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', '${NEW_IMAGE}', '.']
+images: ['${NEW_IMAGE}']
+options:
+  logging: CLOUD_LOGGING_ONLY
+EOF
+
+gcloud builds submit --config=cloudbuild.yaml . --project="${PROJECT}"
 )
 
 # Delete the temporary directory we created earlier.

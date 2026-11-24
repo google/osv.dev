@@ -8,3 +8,7 @@ output "frontend_service_account_email" {
   description = "The email of the dedicated Cloud Run frontend service account."
 }
 
+output "public_import_logs_bucket_name" {
+  value       = google_storage_bucket.osv_public_import_logs.name
+  description = "The name of the public import logs bucket."
+}

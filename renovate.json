@@ -275,7 +275,7 @@
     {
       "customType": "regex",
       "managerFilePatterns": [
-        "go/cmd/osv-linter-worker/Dockerfile"
+        "go/Dockerfile"
       ],
       "matchStrings": [
         "git clone https://github\\.com/ossf/osv-schema\\.git.*checkout (?<currentDigest>[a-f0-9]{40})"

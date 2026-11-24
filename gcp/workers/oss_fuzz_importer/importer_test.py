@@ -75,6 +75,9 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     storage_patcher = mock.patch('google.cloud.storage.Client')
     self.addCleanup(storage_patcher.stop)
     self.mock_storage_client = storage_patcher.start()
+    self._mock_buckets = {}
+    self.mock_storage_client.return_value.bucket.side_effect = (
+        lambda name: self._mock_buckets.setdefault(name, mock.MagicMock()))
 
     self.remote_source_repo_path = self.mock_repo.path
     self.source_repo = osv.SourceRepository(
@@ -205,8 +208,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
     self.assertEqual(str(commit.id), source_repo.last_synced_hash)
 
-    self.mock_storage_client().get_bucket.assert_called_with('bucket')
-    bucket = self.mock_storage_client().get_bucket('bucket')
+    self.mock_storage_client().bucket.assert_any_call('bucket')
+    bucket = self.mock_storage_client().bucket('bucket')
 
     expected_json = bucket.blob().upload_from_string.call_args[0][0]
     self.expect_equal('expected.json', expected_json)

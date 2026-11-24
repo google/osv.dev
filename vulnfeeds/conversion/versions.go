@@ -192,8 +192,9 @@ func repo(u string) (string, error) {
 		}
 	}
 
+	pathParts := strings.Split(parsedURL.Path, "/")
+
 	if strings.ToLower(parsedURL.Hostname()) == "github.com" {
-		pathParts := strings.Split(parsedURL.Path, "/")
 		if len(pathParts) >= 2 && strings.ToLower(pathParts[1]) == "advisories" {
 			return "", fmt.Errorf("%q is a GHSA reference link, not a repository", u)
 		}
@@ -201,7 +202,6 @@ func repo(u string) (string, error) {
 
 	// Were we handed a base repository URL from the get go?
 	if slices.Contains(supportedHosts, parsedURL.Hostname()) || slices.Contains(supportedHostPrefixes, strings.Split(parsedURL.Hostname(), ".")[0]) {
-		pathParts := strings.Split(parsedURL.Path, "/")
 		if len(pathParts) == 3 && !strings.Contains(parsedURL.Path, "gitweb") && parsedURL.Hostname() != "sourceware.org" {
 			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
 					parsedURL.Hostname(), parsedURL.Path),
@@ -325,6 +325,8 @@ func repo(u string) (string, error) {
 	// https://gitlab.com/gitlab-org/cves/-/blob/master/2022/CVE-2022-2501.json
 	if strings.HasPrefix(parsedURL.Hostname(), "gitlab.") && strings.Contains(parsedURL.Path, "/-/") &&
 		(strings.Contains(parsedURL.Path, "commit") ||
+			strings.Contains(parsedURL.Path, "compare") ||
+			strings.Contains(parsedURL.Path, "merge_requests") ||
 			strings.Contains(parsedURL.Path, "blob") ||
 			strings.Contains(parsedURL.Path, "releases/tag") ||
 			strings.Contains(parsedURL.Path, "releases") ||
@@ -352,70 +354,62 @@ func repo(u string) (string, error) {
 	// This also supports GitHub Security Advisory URLs, e.g.
 	// https://github.com/ballcat-projects/ballcat-codegen/security/advisories/GHSA-fv3m-xhqw-9m79
 
-	if (parsedURL.Hostname() == "github.com" || strings.HasPrefix(parsedURL.Hostname(), "gitlab.")) &&
-		(strings.Contains(parsedURL.Path, "commit") ||
-			strings.Contains(parsedURL.Path, "blob") ||
-			strings.Contains(parsedURL.Path, "releases/tag") ||
-			strings.Contains(parsedURL.Path, "releases") ||
-			strings.Contains(parsedURL.Path, "tags") ||
-			strings.Contains(parsedURL.Path, "security/advisories") ||
-			strings.Contains(parsedURL.Path, "issues")) {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
-				parsedURL.Hostname(),
-				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
-			nil
-	}
+	if len(pathParts) >= 3 && pathParts[1] != "" && pathParts[2] != "" {
+		baseRepoURL := fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+			parsedURL.Hostname(),
+			strings.Join(pathParts[0:3], "/"))
 
-	// GitHub pull request and comparison URLs are structured differently, e.g.
-	// https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.2
-	// https://gitlab.com/mayan-edms/mayan-edms/-/compare/development...master
-	// https://git.drupalcode.org/project/views/-/compare/7.x-3.21...7.x-3.x
-	if strings.Contains(parsedURL.Path, "compare") {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
-				parsedURL.Hostname(),
-				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
-			nil
-	}
+		if (parsedURL.Hostname() == "github.com" || strings.HasPrefix(parsedURL.Hostname(), "gitlab.")) &&
+			(strings.Contains(parsedURL.Path, "commit") ||
+				strings.Contains(parsedURL.Path, "blob") ||
+				strings.Contains(parsedURL.Path, "releases/tag") ||
+				strings.Contains(parsedURL.Path, "releases") ||
+				strings.Contains(parsedURL.Path, "tags") ||
+				strings.Contains(parsedURL.Path, "security/advisories") ||
+				strings.Contains(parsedURL.Path, "issues")) {
+			return baseRepoURL, nil
+		}
 
-	// GitHub pull request URLs are structured differently, e.g.
-	// https://github.com/google/osv.dev/pull/738
-	if parsedURL.Hostname() == "github.com" &&
-		strings.Contains(parsedURL.Path, "pull") {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
-				parsedURL.Hostname(),
-				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
-			nil
-	}
+		// GitHub pull request and comparison URLs are structured differently, e.g.
+		// https://github.com/kovidgoyal/kitty/compare/v0.26.1...v0.26.2
+		// https://gitlab.com/mayan-edms/mayan-edms/-/compare/development...master
+		// https://git.drupalcode.org/project/views/-/compare/7.x-3.21...7.x-3.x
+		if (slices.Contains(supportedHosts, parsedURL.Hostname()) || slices.Contains(supportedHostPrefixes, strings.Split(parsedURL.Hostname(), ".")[0])) &&
+			strings.Contains(parsedURL.Path, "compare") {
+			return baseRepoURL, nil
+		}
 
-	// Gitlab merge request URLs are structured differently, e.g.
-	// https://gitlab.com/libtiff/libtiff/-/merge_requests/378
-	if strings.HasPrefix(parsedURL.Hostname(), "gitlab.") &&
-		strings.Contains(parsedURL.Path, "merge_requests") {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
-				parsedURL.Hostname(),
-				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
-			nil
-	}
+		// GitHub pull request URLs are structured differently, e.g.
+		// https://github.com/google/osv.dev/pull/738
+		if parsedURL.Hostname() == "github.com" &&
+			strings.Contains(parsedURL.Path, "pull") {
+			return baseRepoURL, nil
+		}
 
-	// Bitbucket.org URLs are another snowflake, e.g.
-	// https://bitbucket.org/ianb/pastescript/changeset/a19e462769b4
-	// https://bitbucket.org/jespern/django-piston/commits/91bdaec89543/
-	// https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1
-	// https://bitbucket.org/snakeyaml/snakeyaml/pull-requests/35
-	// https://bitbucket.org/snakeyaml/snakeyaml/issues/566
-	// https://bitbucket.org/snakeyaml/snakeyaml/downloads/?tab=tags
-	if parsedURL.Hostname() == "bitbucket.org" &&
-		(strings.Contains(parsedURL.Path, "changeset") ||
-			strings.Contains(parsedURL.Path, "downloads") ||
-			strings.Contains(parsedURL.Path, "wiki") ||
-			strings.Contains(parsedURL.Path, "issues") ||
-			strings.Contains(parsedURL.Path, "security") ||
-			strings.Contains(parsedURL.Path, "pull-requests") ||
-			strings.Contains(parsedURL.Path, "commits")) {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
-				parsedURL.Hostname(),
-				strings.Join(strings.Split(parsedURL.Path, "/")[0:3], "/")),
-			nil
+		// Gitlab merge request URLs are structured differently, e.g.
+		// https://gitlab.com/libtiff/libtiff/-/merge_requests/378
+		if strings.HasPrefix(parsedURL.Hostname(), "gitlab.") &&
+			strings.Contains(parsedURL.Path, "merge_requests") {
+			return baseRepoURL, nil
+		}
+
+		// Bitbucket.org URLs are another snowflake, e.g.
+		// https://bitbucket.org/ianb/pastescript/changeset/a19e462769b4
+		// https://bitbucket.org/jespern/django-piston/commits/91bdaec89543/
+		// https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1
+		// https://bitbucket.org/snakeyaml/snakeyaml/pull-requests/35
+		// https://bitbucket.org/snakeyaml/snakeyaml/issues/566
+		// https://bitbucket.org/snakeyaml/snakeyaml/downloads/?tab=tags
+		if parsedURL.Hostname() == "bitbucket.org" &&
+			(strings.Contains(parsedURL.Path, "changeset") ||
+				strings.Contains(parsedURL.Path, "downloads") ||
+				strings.Contains(parsedURL.Path, "wiki") ||
+				strings.Contains(parsedURL.Path, "issues") ||
+				strings.Contains(parsedURL.Path, "security") ||
+				strings.Contains(parsedURL.Path, "pull-requests") ||
+				strings.Contains(parsedURL.Path, "commits")) {
+			return baseRepoURL, nil
+		}
 	}
 
 	// If we get to here, we've encountered an unsupported URL.

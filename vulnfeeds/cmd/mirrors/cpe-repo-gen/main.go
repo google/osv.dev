@@ -233,20 +233,26 @@ func MaybeTranslateSavannahURL(u string) (string, bool) {
 	// Get hostname out of URL
 	parsedURL, err := url.Parse(u)
 	if err != nil {
-		panic(err)
+		logger.Warn("Failed to parse Savannah URL", slog.String("url", u), slog.Any("err", err))
+		return u, false
 	}
 
 	if slices.Contains(supportedHostnames, parsedURL.Hostname()) {
 		hostnameParts := strings.Split(parsedURL.Hostname(), ".")
+		if len(hostnameParts) < 2 {
+			return u, false
+		}
 		// Pull out the "nongnu" or "gnu" part of the hostname
 		domain := GNUPlaceholder{hostnameParts[len(hostnameParts)-2], path.Base(parsedURL.Path)}
 		savannahGitRepoTemplate, err := template.New("SavannahGitRepoURL").Parse("https://git.savannah.{{ .GNUOrNonGNU }}.org/git/{{ .Path }}.git")
 		if err != nil {
-			panic(err)
+			logger.Warn("Failed to parse Savannah template", slog.Any("err", err))
+			return u, false
 		}
 		err = savannahGitRepoTemplate.Execute(&tpl, domain)
 		if err != nil {
-			panic(err)
+			logger.Warn("Failed to execute Savannah template", slog.String("url", u), slog.Any("err", err))
+			return u, false
 		}
 
 		return tpl.String(), true
@@ -288,8 +294,11 @@ func MaybeGetSourceFromDebianCopyright(copyrightFile string) (string, bool) {
 
 // Tries to find a Debian copyright file for the package and returns the source URL if IsRepoURL() agrees.
 func MaybeGetSourceRepoFromDebian(mdir string, pkg string) string {
+	if pkg == "" {
+		return ""
+	}
 	var metadata string
-	if strings.HasPrefix(pkg, "lib") {
+	if strings.HasPrefix(pkg, "lib") && len(pkg) >= 4 {
 		metadata = path.Join(mdir, "changelogs/main", pkg[0:4], pkg, "unstable_copyright")
 	} else {
 		metadata = path.Join(mdir, "changelogs/main", string(pkg[0]), pkg, "unstable_copyright")

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"slices"
 	"strconv"
 	"strings"
@@ -194,112 +195,126 @@ func shouldSkipCVE(cve models.CVE5, deniedCNAs []string) bool {
 func worker(wg *sync.WaitGroup, jobs <-chan string, gcsHelper *gcs.Helper, outDir string, metricsDir string, cnas []string, rejectFailed bool, outputMetrics bool, gcsMetricsPrefix string, cache git.RepoTagsCache) {
 	defer wg.Done()
 	for path := range jobs {
-		data, err := os.ReadFile(path)
+		processCVEFile(path, gcsHelper, outDir, metricsDir, cnas, rejectFailed, outputMetrics, gcsMetricsPrefix, cache)
+	}
+}
+
+func processCVEFile(path string, gcsHelper *gcs.Helper, outDir string, metricsDir string, cnas []string, rejectFailed bool, outputMetrics bool, gcsMetricsPrefix string, cache git.RepoTagsCache) {
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Error("Recovered from panic while processing CVE file",
+				slog.String("path", path),
+				slog.Any("panic", r),
+				slog.String("stack", string(debug.Stack())),
+			)
+		}
+	}()
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		logger.Info("Failed to read file", slog.String("path", path), slog.Any("err", err))
+		return
+	}
+
+	var cve models.CVE5
+	if err := json.Unmarshal(data, &cve); err != nil {
+		logger.Info("Failed to unmarshal JSON", slog.String("path", path), slog.Any("err", err))
+		return
+	}
+
+	if shouldSkipCVE(cve, cnas) {
+		return
+	}
+	cveID := cve.Metadata.CVEID
+	logger.Info("Processing "+string(cveID), slog.String("cve", string(cveID)))
+	totalConversionsCount.Add(1)
+
+	httpClient := http.DefaultClient
+
+	sourceLink := ""
+	baseDirCVEList := "cves/" // The base folder for the CVEListV5 repository.
+	idx := strings.Index(path, baseDirCVEList)
+	if idx != -1 {
+		relPath := path[idx:]
+		sourceLink = "https://github.com/CVEProject/cvelistV5/tree/main/" + relPath
+	}
+
+	if gcsHelper != nil {
+		vuln, metrics := cve5.CVEToOSV(cve, sourceLink, cache, httpClient)
+		if metrics.Outcome == models.Successful {
+			successfulConversionsCount.Add(1)
+		}
+		if !metrics.Outcome.ShouldEmit(rejectFailed) {
+			logger.Info("Rejecting failed OSV record", slog.String("cve", string(cveID)), slog.String("outcome", metrics.Outcome.String()))
+		} else {
+			if metrics.Outcome == models.Rejected {
+				logger.Info("Queueing withdrawn OSV record for "+string(cveID), slog.String("cve", string(cveID)))
+			} else {
+				logger.Info("Queueing OSV record for "+string(cveID), slog.String("cve", string(cveID)))
+			}
+			if err := writer.UploadVulnIfChangedAsync(gcsHelper, *gcsPrefix, vuln.Vulnerability); err != nil {
+				logger.Error("Failed to queue vulnerability upload", slog.String("cve", string(cveID)), slog.Any("err", err))
+			}
+
+			if outputMetrics {
+				if err := writer.UploadMetricsToGCSAsync(gcsHelper, gcsMetricsPrefix, cveID, metrics); err != nil {
+					logger.Error("Failed to queue metrics upload", slog.String("cve", string(cveID)), slog.Any("err", err))
+				}
+			}
+		}
+
+		// Always write metrics locally for outcomes CSV auditing
+		if outputMetrics {
+			metricsFile, err := writer.CreateMetricsFile(cveID, metricsDir)
+			if err == nil {
+				err = writer.WriteMetricsFile(metrics, metricsFile)
+				if err != nil {
+					logger.Error("Failed to write metrics file", slog.String("cve", string(cveID)), slog.Any("err", err))
+				}
+				metricsFile.Close()
+			}
+		}
+	} else {
+		osvFile, errCVE := writer.CreateOSVFile(cveID, outDir)
+		if errCVE != nil {
+			logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cveID)))
+		}
+
+		var metricsFile *os.File
+		var metricsSink io.Writer
+		if outputMetrics {
+			var errMetrics error
+			metricsFile, errMetrics = writer.CreateMetricsFile(cveID, metricsDir)
+			if errMetrics != nil {
+				logger.Fatal("File failed to be created for CVE metrics", slog.String("cve", string(cveID)))
+			}
+			metricsSink = metricsFile
+		}
+
+		// Perform the conversion and export the results.
+		metrics, err := cve5.ConvertAndExportCVEToOSV(cve, osvFile, metricsSink, sourceLink, cache, httpClient)
 		if err != nil {
-			logger.Info("Failed to read file", slog.String("path", path), slog.Any("err", err))
-			continue
-		}
-
-		var cve models.CVE5
-		if err := json.Unmarshal(data, &cve); err != nil {
-			logger.Info("Failed to unmarshal JSON", slog.String("path", path), slog.Any("err", err))
-			continue
-		}
-
-		if shouldSkipCVE(cve, cnas) {
-			continue
-		}
-		cveID := cve.Metadata.CVEID
-		logger.Info("Processing "+string(cveID), slog.String("cve", string(cveID)))
-		totalConversionsCount.Add(1)
-
-		httpClient := http.DefaultClient
-
-		sourceLink := ""
-		baseDirCVEList := "cves/" // The base folder for the CVEListV5 repository.
-		idx := strings.Index(path, baseDirCVEList)
-		if idx != -1 {
-			relPath := path[idx:]
-			sourceLink = "https://github.com/CVEProject/cvelistV5/tree/main/" + relPath
-		}
-
-		if gcsHelper != nil {
-			vuln, metrics := cve5.CVEToOSV(cve, sourceLink, cache, httpClient)
+			logger.Warn("Failed to generate an OSV record", slog.String("cve", string(cveID)), slog.Any("err", err))
+		} else {
 			if metrics.Outcome == models.Successful {
 				successfulConversionsCount.Add(1)
 			}
 			if !metrics.Outcome.ShouldEmit(rejectFailed) {
 				logger.Info("Rejecting failed OSV record", slog.String("cve", string(cveID)), slog.String("outcome", metrics.Outcome.String()))
+				osvFile.Close()
+				os.Remove(osvFile.Name())
 			} else {
 				if metrics.Outcome == models.Rejected {
-					logger.Info("Queueing withdrawn OSV record for "+string(cveID), slog.String("cve", string(cveID)))
+					logger.Info("Generated withdrawn OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cve.Metadata.AssignerShortName))
 				} else {
-					logger.Info("Queueing OSV record for "+string(cveID), slog.String("cve", string(cveID)))
-				}
-				if err := writer.UploadVulnIfChangedAsync(gcsHelper, *gcsPrefix, vuln.Vulnerability); err != nil {
-					logger.Error("Failed to queue vulnerability upload", slog.String("cve", string(cveID)), slog.Any("err", err))
-				}
-
-				if outputMetrics {
-					if err := writer.UploadMetricsToGCSAsync(gcsHelper, gcsMetricsPrefix, cveID, metrics); err != nil {
-						logger.Error("Failed to queue metrics upload", slog.String("cve", string(cveID)), slog.Any("err", err))
-					}
+					logger.Info("Generated OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cve.Metadata.AssignerShortName), slog.String("outcome", metrics.Outcome.String()))
 				}
 			}
-
-			// Always write metrics locally for outcomes CSV auditing
-			if outputMetrics {
-				metricsFile, err := writer.CreateMetricsFile(cveID, metricsDir)
-				if err == nil {
-					err = writer.WriteMetricsFile(metrics, metricsFile)
-					if err != nil {
-						logger.Error("Failed to write metrics file", slog.String("cve", string(cveID)), slog.Any("err", err))
-					}
-					metricsFile.Close()
-				}
-			}
-		} else {
-			osvFile, errCVE := writer.CreateOSVFile(cveID, outDir)
-			if errCVE != nil {
-				logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cveID)))
-			}
-
-			var metricsFile *os.File
-			var metricsSink io.Writer
-			if outputMetrics {
-				var errMetrics error
-				metricsFile, errMetrics = writer.CreateMetricsFile(cveID, metricsDir)
-				if errMetrics != nil {
-					logger.Fatal("File failed to be created for CVE metrics", slog.String("cve", string(cveID)))
-				}
-				metricsSink = metricsFile
-			}
-
-			// Perform the conversion and export the results.
-			metrics, err := cve5.ConvertAndExportCVEToOSV(cve, osvFile, metricsSink, sourceLink, cache, httpClient)
-			if err != nil {
-				logger.Warn("Failed to generate an OSV record", slog.String("cve", string(cveID)), slog.Any("err", err))
-			} else {
-				if metrics.Outcome == models.Successful {
-					successfulConversionsCount.Add(1)
-				}
-				if !metrics.Outcome.ShouldEmit(rejectFailed) {
-					logger.Info("Rejecting failed OSV record", slog.String("cve", string(cveID)), slog.String("outcome", metrics.Outcome.String()))
-					osvFile.Close()
-					os.Remove(osvFile.Name())
-				} else {
-					if metrics.Outcome == models.Rejected {
-						logger.Info("Generated withdrawn OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cve.Metadata.AssignerShortName))
-					} else {
-						logger.Info("Generated OSV record for "+string(cveID), slog.String("cve", string(cveID)), slog.String("cna", cve.Metadata.AssignerShortName), slog.String("outcome", metrics.Outcome.String()))
-					}
-				}
-			}
-
-			if metricsFile != nil {
-				metricsFile.Close()
-			}
-			osvFile.Close()
 		}
+
+		if metricsFile != nil {
+			metricsFile.Close()
+		}
+		osvFile.Close()
 	}
 }

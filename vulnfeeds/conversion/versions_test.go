@@ -475,6 +475,42 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "",
 			expectedOk:      false,
 		},
+		{
+			description:     "Short GitHub pull path without owner/repo",
+			inputLink:       "https://github.com/pull",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Short GitHub commit path without owner/repo",
+			inputLink:       "https://github.com/commit",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Short GitLab merge_requests path without owner/repo",
+			inputLink:       "https://gitlab.com/merge_requests",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Short Bitbucket commits path without owner/repo",
+			inputLink:       "https://bitbucket.org/commits",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Short compare path on arbitrary host",
+			inputLink:       "https://example.com/compare",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
+		{
+			description:     "Compare path on non-supported host",
+			inputLink:       "https://example.com/a/b/compare/1...2",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
 	}
 
 	for _, tc := range tests {

@@ -359,3 +359,72 @@ func TestIsReconcileOutdated(t *testing.T) {
 		})
 	}
 }
+
+func TestProcessUpdate_KnownModifiedCheck(t *testing.T) {
+	baseTime := time.Date(2026, 1, 10, 12, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name          string
+		dbMod         time.Time
+		knownModified time.Time
+		wantOpened    bool
+		wantPublished bool
+	}{
+		{
+			name:          "skips Open when KnownModified matches dbMod at whole-second precision",
+			dbMod:         baseTime,
+			knownModified: baseTime.Add(861 * time.Millisecond),
+			wantOpened:    false,
+			wantPublished: false,
+		},
+		{
+			name:          "opens and publishes when KnownModified is newer than dbMod",
+			dbMod:         baseTime,
+			knownModified: baseTime.Add(time.Second),
+			wantOpened:    true,
+			wantPublished: true,
+		},
+		{
+			name:          "opens and publishes when missing from database",
+			knownModified: baseTime,
+			wantOpened:    true,
+			wantPublished: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rawMods := map[string]time.Time{}
+			if !tt.dbMod.IsZero() {
+				rawMods["CGA-1234"] = tt.dbMod
+			}
+			pub := &testutils.MockPublisher{}
+			cfg := Config{
+				Publisher:          pub,
+				VulnerabilityStore: &mockVulnerabilityStore{RawMods: rawMods},
+			}
+
+			opened := false
+			processUpdate(t.Context(), cfg, WorkItem{
+				SourceRecord: mockSourceRecord{
+					DataToRead: []byte(`{"id": "CGA-1234", "modified": "2026-01-10T12:00:01Z"}`),
+					OnOpen:     func() { opened = true },
+				},
+				SourceRepository:       "chainguard",
+				SourcePath:             "CGA-1234.json",
+				KnownID:                "CGA-1234",
+				KnownModified:          tt.knownModified,
+				Format:                 RecordFormatJSON,
+				Action:                 ActionImport,
+				CompareAgainstDatabase: true,
+			})
+
+			if opened != tt.wantOpened {
+				t.Errorf("SourceRecord.Open called = %v, want %v", opened, tt.wantOpened)
+			}
+			if (len(pub.Messages) == 1) != tt.wantPublished {
+				t.Errorf("published %d messages, wantPublished %v", len(pub.Messages), tt.wantPublished)
+			}
+		})
+	}
+}

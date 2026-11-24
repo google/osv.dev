@@ -511,6 +511,18 @@ func TestRepo(t *testing.T) {
 			expectedRepoURL: "",
 			expectedOk:      false,
 		},
+		{
+			description:     "GitLab merge request URL",
+			inputLink:       "https://gitlab.com/libtiff/libtiff/-/merge_requests/378",
+			expectedRepoURL: "https://gitlab.com/libtiff/libtiff",
+			expectedOk:      true,
+		},
+		{
+			description:     "Short GitLab /-/ compare path without owner/repo",
+			inputLink:       "https://gitlab.com/-/compare/1...2",
+			expectedRepoURL: "",
+			expectedOk:      false,
+		},
 	}
 
 	for _, tc := range tests {

@@ -279,15 +279,15 @@ func processCVEFile(path string, gcsHelper *gcs.Helper, outDir string, metricsDi
 		if errCVE != nil {
 			logger.Fatal("File failed to be created for CVE", slog.String("cve", string(cveID)))
 		}
+		defer osvFile.Close()
 
-		var metricsFile *os.File
 		var metricsSink io.Writer
 		if outputMetrics {
-			var errMetrics error
-			metricsFile, errMetrics = writer.CreateMetricsFile(cveID, metricsDir)
+			metricsFile, errMetrics := writer.CreateMetricsFile(cveID, metricsDir)
 			if errMetrics != nil {
 				logger.Fatal("File failed to be created for CVE metrics", slog.String("cve", string(cveID)))
 			}
+			defer metricsFile.Close()
 			metricsSink = metricsFile
 		}
 
@@ -311,10 +311,5 @@ func processCVEFile(path string, gcsHelper *gcs.Helper, outDir string, metricsDi
 				}
 			}
 		}
-
-		if metricsFile != nil {
-			metricsFile.Close()
-		}
-		osvFile.Close()
 	}
 }

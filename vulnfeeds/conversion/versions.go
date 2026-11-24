@@ -212,6 +212,7 @@ func repo(u string) (string, error) {
 		if len(pathParts) >= 3 && strings.HasPrefix(parsedURL.Hostname(), "gitlab.") &&
 			!(strings.Contains(parsedURL.Path, "commit") ||
 				strings.Contains(parsedURL.Path, "compare") ||
+				strings.Contains(parsedURL.Path, "merge_requests") ||
 				strings.Contains(parsedURL.Path, "blob") ||
 				strings.Contains(parsedURL.Path, "releases/tag") ||
 				strings.Contains(parsedURL.Path, "releases") ||
@@ -333,10 +334,16 @@ func repo(u string) (string, error) {
 			strings.Contains(parsedURL.Path, "tags") ||
 			strings.Contains(parsedURL.Path, "security/advisories") ||
 			strings.Contains(parsedURL.Path, "issues")) {
-		return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
-				parsedURL.Hostname(),
-				strings.Split(parsedURL.Path, "/-/")[0]),
-			nil
+		repoPath, _, _ := strings.Cut(parsedURL.Path, "/-/")
+		repoParts := strings.Split(repoPath, "/")
+		if len(repoParts) >= 3 && repoParts[1] != "" && repoParts[2] != "" {
+			return fmt.Sprintf("%s://%s%s", parsedURL.Scheme,
+					parsedURL.Hostname(),
+					repoPath),
+				nil
+		}
+
+		return "", fmt.Errorf("Repo(): unsupported URL: %s", u)
 	}
 
 	// GitHub and GitLab URLs not matching the previous e.g.

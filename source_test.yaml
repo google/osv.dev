@@ -707,6 +707,7 @@
   key_path: 'OSV'
   repo_username: 'git'
   strict_validation: True
+  archived: True
 
 - name: 'V8'
   versions_from_repo: True

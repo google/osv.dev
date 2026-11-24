@@ -103,16 +103,91 @@ import {
 # Project-Level IAM Bindings in oss-vdb
 # ---------------------------------------------------------------------------
 
-resource "google_project_iam_member" "terraform_plan_roles" {
-  for_each = toset([
-    "roles/viewer",
-    "roles/iam.securityReviewer",
-    "roles/compute.networkViewer",
-    "roles/logging.logWriter",
-  ])
+# Least-privilege control-plane read-only role for PR terraform-plan builds.
+# When adding a new GCP resource type to Terraform, add its .get / .getIamPolicy
+# permission here AND update the matching role in oss-vdb-test (see deployment/README.md).
+resource "google_project_iam_custom_role" "terraform_plan_reader" {
+  project     = "oss-vdb"
+  role_id     = "terraformPlanReader"
+  title       = "Terraform Plan Reader"
+  description = "Least-privilege control-plane read-only role for terraform-plan@oss-vdb (metadata and IAM policy reads only; zero data-plane or export permissions)."
+  permissions = [
+    "artifactregistry.repositories.get",
+    "artifactregistry.repositories.getIamPolicy",
+    "certificatemanager.certmapentries.get",
+    "certificatemanager.certmaps.get",
+    "certificatemanager.certs.get",
+    "certificatemanager.dnsauthorizations.get",
+    "cloudsql.databases.get",
+    "cloudsql.instances.get",
+    "cloudsql.users.get",
+    "cloudsql.users.list",
+    "compute.backendBuckets.get",
+    "compute.backendServices.get",
+    "compute.disks.get",
+    "compute.globalAddresses.get",
+    "compute.globalForwardingRules.get",
+    "compute.instanceGroupManagers.get",
+    "compute.instanceGroupManagers.list",
+    "compute.networks.get",
+    "compute.projects.get",
+    "compute.regionNetworkEndpointGroups.get",
+    "compute.regions.get",
+    "compute.reservationBlocks.list",
+    "compute.reservations.get",
+    "compute.routers.get",
+    "compute.subnetworks.get",
+    "compute.targetHttpProxies.get",
+    "compute.targetHttpsProxies.get",
+    "compute.urlMaps.get",
+    "compute.zones.get",
+    "container.clusters.get",
+    "datastore.databases.get",
+    "datastore.databases.getMetadata",
+    "iam.roles.get",
+    "iam.serviceAccounts.get",
+    "iam.serviceAccounts.getIamPolicy",
+    "monitoring.alertPolicies.get",
+    "pubsub.subscriptions.get",
+    "pubsub.subscriptions.getIamPolicy",
+    "pubsub.topics.get",
+    "pubsub.topics.getIamPolicy",
+    "redis.instances.get",
+    "resourcemanager.projects.get",
+    "resourcemanager.projects.getIamPolicy",
+    "run.configurations.get",
+    "run.domainmappings.get",
+    "run.locations.list",
+    "run.revisions.get",
+    "run.routes.get",
+    "run.services.get",
+    "run.services.getIamPolicy",
+    "secretmanager.secrets.get",
+    "secretmanager.secrets.getIamPolicy",
+    "servicemanagement.services.get",
+    "servicenetworking.services.get",
+    "serviceusage.services.get",
+    "serviceusage.services.list",
+    "storage.buckets.get",
+    "storage.buckets.getIamPolicy",
+    "vpcaccess.connectors.get",
+  ]
+}
 
+import {
+  to = google_project_iam_custom_role.terraform_plan_reader
+  id = "projects/oss-vdb/roles/terraformPlanReader"
+}
+
+resource "google_project_iam_member" "terraform_plan_reader" {
   project = "oss-vdb"
-  role    = each.value
+  role    = google_project_iam_custom_role.terraform_plan_reader.name
+  member  = "serviceAccount:${google_service_account.terraform_plan.email}"
+}
+
+resource "google_project_iam_member" "terraform_plan_log_writer" {
+  project = "oss-vdb"
+  role    = "roles/logging.logWriter"
   member  = "serviceAccount:${google_service_account.terraform_plan.email}"
 }
 
@@ -187,4 +262,22 @@ resource "google_storage_bucket_iam_member" "pypa_triage_bucket_admin" {
   bucket = "pypa-advisory-db"
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.pypa_triage.email}"
+}
+
+resource "google_storage_bucket_iam_member" "terraform_plan_tfstate_lister" {
+  bucket = "oss-vdb-tf"
+  role   = "roles/storage.legacyBucketReader"
+  member = "serviceAccount:${google_service_account.terraform_plan.email}"
+}
+
+resource "google_storage_bucket_iam_member" "terraform_plan_tfstate_viewer" {
+  bucket = "oss-vdb-tf"
+  role   = "roles/storage.objectViewer"
+  member = "serviceAccount:${google_service_account.terraform_plan.email}"
+
+  condition {
+    title       = "PublicTerraformStateOnly"
+    description = "Allows terraform-plan SA to read only oss-vdb and oss-vdb-test Terraform state, blocking access to private-osv and superosv state."
+    expression  = "resource.name.startsWith(\"projects/_/buckets/oss-vdb-tf/objects/oss-vdb/\") || resource.name.startsWith(\"projects/_/buckets/oss-vdb-tf/objects/oss-vdb-test/\")"
+  }
 }

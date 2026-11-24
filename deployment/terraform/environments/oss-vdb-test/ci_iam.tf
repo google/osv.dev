@@ -12,15 +12,19 @@ variable "api_e2e_tester_service_account_email" {
   default     = "api-e2e-tester@oss-vdb.iam.gserviceaccount.com"
 }
 
-resource "google_project_iam_member" "terraform_plan_roles" {
-  for_each = var.terraform_plan_service_account_email != "" ? toset([
-    "roles/viewer",
-    "roles/iam.securityReviewer",
-    "roles/compute.networkViewer",
-  ]) : toset([])
-
+# Least-privilege control-plane read-only role for PR terraform-plan builds.
+# Managed out-of-band in oss-vdb-test because deployment@oss-vdb intentionally does not
+# hold roles/iam.roleAdmin on oss-vdb-test. Keep in sync with
+# deployment/terraform/environments/oss-vdb/ci_iam.tf (see deployment/README.md).
+data "google_project_iam_custom_role" "terraform_plan_reader" {
   project = "oss-vdb-test"
-  role    = each.value
+  role_id = "terraformPlanReader"
+}
+
+resource "google_project_iam_member" "terraform_plan_reader" {
+  count   = var.terraform_plan_service_account_email != "" ? 1 : 0
+  project = "oss-vdb-test"
+  role    = data.google_project_iam_custom_role.terraform_plan_reader.name
   member  = "serviceAccount:${var.terraform_plan_service_account_email}"
 }
 

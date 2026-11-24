@@ -14,6 +14,7 @@ var (
 	ErrRepoInaccessible = errors.New("repository is inaccessible (forbidden)")
 	ErrRepoNotFound     = errors.New("repository not found")
 	ErrInvalidInput     = errors.New("invalid request payload or query parameters")
+	ErrPackTooLarge     = errors.New("commit pack exceeds maximum allowed size")
 	ErrInternalService  = errors.New("gitter internal server error")
 )
 
@@ -39,4 +40,8 @@ type Client interface {
 
 	// GetCommitDiffs retrieves structured commit data and diff patches since a given last synced commit or timestamp.
 	GetCommitDiffs(ctx context.Context, req *pb.CommitDiffsRequest) (*pb.CommitDiffsResponse, error)
+
+	// GetCommitPack retrieves a standalone shallow bare Git repository archive (.tar.zst)
+	// containing only the requested commits, their immediate parents, and touched blobs.
+	GetCommitPack(ctx context.Context, req *pb.CommitPackRequest) ([]byte, error)
 }

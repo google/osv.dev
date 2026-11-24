@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"log/slog"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,6 +18,15 @@ import (
 	"github.com/google/osv.dev/go/internal/osvutil"
 	"github.com/google/osv.dev/go/logger"
 )
+
+var (
+	errCommitNotFound     = errors.New("commit not found in repository")
+	errNotCommitObject    = errors.New("object is not a commit")
+	errCommitPackTooLarge = errors.New("commit pack exceeds maximum allowed size")
+)
+
+// Aligns with vanir-sandbox's usable commit-pack limit (44 MiB raw keeps base64 JSON under 64 MiB).
+const maxCommitPackArchiveBytes = 44 << 20
 
 // maxLogOutputBytes is the maximum length of command output included in debug logs (4 KB),
 // preventing overwhelming log entries while preserving useful context.
@@ -34,15 +47,16 @@ func truncateLogOutput(out []byte) string {
 }
 
 // prepareCmd prepares the command with context cancellation handled by sending SIGINT.
-func prepareCmd(ctx context.Context, dir string, env []string, name string, args ...string) *exec.Cmd {
+// Git commands automatically set GIT_TERMINAL_PROMPT=0.
+func prepareCmd(ctx context.Context, dir string, name string, args ...string) *exec.Cmd {
 	//nolint: gosec // G702: The command arguments are mostly from within gitter
 	// The only user controlled input is the repoURL, which is still from internal services
 	cmd := exec.CommandContext(ctx, name, args...)
 	if dir != "" {
 		cmd.Dir = dir
 	}
-	if len(env) > 0 {
-		cmd.Env = append(os.Environ(), env...)
+	if name == "git" {
+		cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
 	}
 	// Use SIGINT instead of SIGKILL for graceful shutdown of subprocesses
 	cmd.Cancel = func() error {
@@ -57,8 +71,8 @@ func prepareCmd(ctx context.Context, dir string, env []string, name string, args
 
 // runCmd executes a command with context cancellation handled by sending SIGINT.
 // It logs cancellation errors separately as requested
-func runCmd(ctx context.Context, dir string, env []string, name string, args ...string) ([]byte, error) {
-	cmd := prepareCmd(ctx, dir, env, name, args...)
+func runCmd(ctx context.Context, dir string, name string, args ...string) ([]byte, error) {
+	cmd := prepareCmd(ctx, dir, name, args...)
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
@@ -82,7 +96,7 @@ func runCmd(ctx context.Context, dir string, env []string, name string, args ...
 
 // cloneRepo clones a git repository into repoPath.
 func cloneRepo(ctx context.Context, repoURL string, repoPath string) error {
-	_, err := runCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "clone", "--", repoURL, repoPath)
+	_, err := runCmd(ctx, "", "git", "clone", "--", repoURL, repoPath)
 	return err
 }
 
@@ -97,7 +111,7 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 	// We can try removing stale remote-tracking branches and retry
 	if isRefConflictError(err) {
 		logger.WarnContext(ctx, "Ref conflict detected, running git remote prune origin")
-		if _, err := runCmd(ctx, repoPath, nil, "git", "remote", "prune", "origin"); err != nil {
+		if _, err := runCmd(ctx, repoPath, "git", "remote", "prune", "origin"); err != nil {
 			logger.WarnContext(ctx, "Failed to prune origin", slog.Any("err", err))
 			return false
 		}
@@ -120,7 +134,7 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 // --force lets a tag that was moved upstream be updated rather than failing the fetch.
 // --prune and --prune-tags remove branches and tags that were deleted upstream.
 func fetchRepo(ctx context.Context, repoPath string) error {
-	_, err := runCmd(ctx, repoPath, []string{"GIT_TERMINAL_PROMPT=0"}, "git", "-c", "remote.origin.followRemoteHead=always", "fetch", "--tags", "--prune", "--prune-tags", "--force", "origin")
+	_, err := runCmd(ctx, repoPath, "git", "-c", "remote.origin.followRemoteHead=always", "fetch", "--tags", "--prune", "--prune-tags", "--force", "origin")
 	if err != nil {
 		return fmt.Errorf("git fetch failed: %w", err)
 	}
@@ -315,14 +329,14 @@ func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
 		startArchive := time.Now()
 
 		// Reset working tree to origin/HEAD before creating archive
-		if _, err := runCmd(ctx, repoPath, nil, "git", "reset", "--hard", "origin/HEAD"); err != nil {
+		if _, err := runCmd(ctx, repoPath, "git", "reset", "--hard", "origin/HEAD"); err != nil {
 			return nil, fmt.Errorf("git reset failed: %w", err)
 		}
 
 		// Archive
 		// tar --zstd -cf <archivePath> -C "<gitStorePath>/<repoDirName>" .
 		// using -C to archive the relative path so it unzips nicely
-		_, err := runCmd(ctx, "", nil, "tar", "--zstd", "-cf", archivePath, "-C", filepath.Join(gitStorePath, repoDirName), ".")
+		_, err := runCmd(ctx, "", "tar", "--zstd", "-cf", archivePath, "-C", filepath.Join(gitStorePath, repoDirName), ".")
 		if err != nil {
 			return nil, fmt.Errorf("tar zstd failed: %w", err)
 		}
@@ -341,4 +355,194 @@ func ArchiveRepo(ctx context.Context, repoURL string) ([]byte, error) {
 	}
 
 	return fileData, nil
+}
+
+// classifyCommits runs a single batched `git cat-file --batch-check` against the
+// cached repository to partition requested object hashes into valid commit hashes
+// while reporting whether any hashes were missing or pointed to non-commit objects
+// (such as tags, trees, or blobs). This avoids spawning one git process per hash.
+func classifyCommits(ctx context.Context, absRepoPath string, commits []string) ([]string, bool, bool, error) {
+	cmd := prepareCmd(ctx, absRepoPath, "git", "cat-file", "--batch-check=%(objectname) %(objecttype)")
+	cmd.Stdin = strings.NewReader(strings.Join(commits, "\n") + "\n")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		if ctx.Err() != nil {
+			return nil, false, false, ctx.Err()
+		}
+
+		return nil, false, false, fmt.Errorf("git cat-file --batch-check failed: %w, output: %s", err, truncateLogOutput(stderr.Bytes()))
+	}
+
+	lines := strings.Split(strings.TrimSuffix(stdout.String(), "\n"), "\n")
+	if len(lines) != len(commits) {
+		return nil, false, false, fmt.Errorf("unexpected git cat-file line count: got %d, want %d", len(lines), len(commits))
+	}
+
+	validCommits := make([]string, 0, len(commits))
+	var hasMissing, hasNonCommit bool
+	for i, line := range lines {
+		fields := strings.Fields(line)
+		if len(fields) < 2 {
+			return nil, false, false, fmt.Errorf("unexpected git cat-file output for %s: %q", commits[i], line)
+		}
+		switch fields[1] {
+		case "commit":
+			validCommits = append(validCommits, commits[i])
+		case "missing":
+			hasMissing = true
+		default:
+			hasNonCommit = true
+		}
+	}
+
+	return validCommits, hasMissing, hasNonCommit, nil
+}
+
+// CreateCommitPack creates a standalone shallow bare Git repository archive (.tar.zst)
+// containing only the requested commit(s), their immediate parent(s), and the trees/blobs
+// touched by each commit diff. It holds only a read lock on the cached repository during
+// object extraction and releases it before config cleanup and compression.
+func CreateCommitPack(ctx context.Context, repoURL string, commits []string, allowPartial bool) ([]byte, error) {
+	absGitStore, err := filepath.Abs(gitStorePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve git store path: %w", err)
+	}
+	repoDirName := getRepoDirName(repoURL)
+	absRepoPath := filepath.Clean(filepath.Join(absGitStore, repoDirName))
+	if !strings.HasPrefix(absRepoPath, absGitStore+string(os.PathSeparator)) {
+		return nil, fmt.Errorf("invalid repository path for %q", repoURL)
+	}
+
+	// Stage temp bare repos under gitter's work volume rather than limited node /tmp.
+	packTmpRoot := filepath.Join(filepath.Dir(gitStorePath), commitPackTmpDirName)
+	if err := os.MkdirAll(packTmpRoot, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create commit-pack temp root: %w", err)
+	}
+	tmpDir, err := os.MkdirTemp(packTmpRoot, "pack-*")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp dir for commit pack: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	shallowDir := filepath.Join(tmpDir, "repo.git")
+	gitShallow := func(args ...string) error {
+		fullArgs := make([]string, 0, len(args)+1)
+		fullArgs = append(fullArgs, "--git-dir="+shallowDir)
+		fullArgs = append(fullArgs, args...)
+		_, err := runCmd(ctx, "", "git", fullArgs...)
+
+		return err
+	}
+
+	repoLock := GetRepoLock(repoURL)
+	repoLock.RLock()
+	unlocked := false
+	unlockRepo := func() {
+		if !unlocked {
+			unlocked = true
+			repoLock.RUnlock()
+		}
+	}
+	defer unlockRepo()
+
+	storeRoot, err := os.OpenRoot(absGitStore)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open git store root: %w", err)
+	}
+	defer storeRoot.Close()
+
+	if _, err := storeRoot.Stat(filepath.Join(repoDirName, ".git")); err != nil {
+		return nil, fmt.Errorf("cached repository unavailable: %w", err)
+	}
+
+	// Verify all requested hashes in one batched git cat-file invocation.
+	validCommits, hasMissing, hasNonCommit, err := classifyCommits(ctx, absRepoPath, commits)
+	if err != nil {
+		return nil, err
+	}
+	if !allowPartial && hasMissing {
+		return nil, fmt.Errorf("%w: one or more requested commits missing", errCommitNotFound)
+	}
+	if len(validCommits) == 0 {
+		if hasMissing {
+			return nil, fmt.Errorf("%w: none of the requested commits exist", errCommitNotFound)
+		}
+		if hasNonCommit {
+			return nil, fmt.Errorf("%w: requested objects are not commits", errNotCommitObject)
+		}
+
+		return nil, fmt.Errorf("%w: no valid commits", errCommitNotFound)
+	}
+
+	// 1. Init bare repo.
+	if err := gitShallow("init", "--bare", "--quiet"); err != nil {
+		return nil, fmt.Errorf("git init bare failed: %w", err)
+	}
+
+	// 2. Fetch ONLY the target commit(s) + immediate parents without blobs.
+	// Configuring remote.origin.uploadpack avoids modifying the source repo's .git/config
+	// and ensures both the initial fetch and subsequent promisor lazy fetches work under RLock.
+	fileRemoteURL := (&url.URL{Scheme: "file", Path: absRepoPath}).String()
+	if err := gitShallow("remote", "add", "origin", fileRemoteURL); err != nil {
+		return nil, fmt.Errorf("git remote add failed: %w", err)
+	}
+	uploadPackCmd := "git -c uploadpack.allowFilter=true -c uploadpack.allowAnySHA1InWant=true upload-pack"
+	if err := gitShallow("config", "remote.origin.uploadpack", uploadPackCmd); err != nil {
+		return nil, fmt.Errorf("git config uploadpack failed: %w", err)
+	}
+
+	fetchArgs := make([]string, 0, 6+len(validCommits))
+	fetchArgs = append(fetchArgs, "fetch", "--quiet", "--filter=blob:none", "--depth=2", "--no-tags", "origin")
+	fetchArgs = append(fetchArgs, validCommits...)
+	if err := gitShallow(fetchArgs...); err != nil {
+		return nil, fmt.Errorf("git shallow fetch failed: %w", err)
+	}
+
+	// 3. Materialize ONLY the trees & blobs touched by each commit diff (for both <rev> and <rev>^).
+	for _, rev := range validCommits {
+		cmd := prepareCmd(ctx, "", "git", "--git-dir="+shallowDir, "--no-pager", "format-patch", "--stdout", "-1", rev)
+		cmd.Stdout = io.Discard
+		var stderr bytes.Buffer
+		cmd.Stderr = &stderr
+		if err := cmd.Run(); err != nil {
+			if ctx.Err() != nil {
+				return nil, fmt.Errorf("git format-patch cancelled: %w", ctx.Err())
+			}
+
+			return nil, fmt.Errorf("git format-patch failed for %s: %w, output: %s", rev, err, truncateLogOutput(stderr.Bytes()))
+		}
+	}
+
+	// All reads from absRepoPath are complete; release RLock before config cleanup & compression.
+	unlockRepo()
+
+	// 4. Detach from gitter's promisor path & enable local filtered fetches for vanir.
+	for _, cfgArgs := range [][]string{
+		{"config", "--remove-section", "remote.origin"},
+		{"config", "uploadpack.allowFilter", "true"},
+		{"config", "uploadpack.allowAnySHA1InWant", "true"},
+	} {
+		if err := gitShallow(cfgArgs...); err != nil {
+			return nil, fmt.Errorf("git %s failed: %w", strings.Join(cfgArgs, " "), err)
+		}
+	}
+	// Drop sample hooks to minimize archive size.
+	_ = os.RemoveAll(filepath.Join(shallowDir, "hooks"))
+
+	// 5. Compress bare repo using tar --zstd (matching ArchiveRepo).
+	archivePath := filepath.Join(tmpDir, "commit-pack.tar.zst")
+	if _, err := runCmd(ctx, "", "tar", "--zstd", "-cf", archivePath, "-C", shallowDir, "."); err != nil {
+		return nil, fmt.Errorf("tar zstd failed: %w", err)
+	}
+	info, err := os.Stat(archivePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to stat commit pack archive: %w", err)
+	}
+	if info.Size() > maxCommitPackArchiveBytes {
+		return nil, fmt.Errorf("%w (%d > %d bytes)", errCommitPackTooLarge, info.Size(), maxCommitPackArchiveBytes)
+	}
+
+	return os.ReadFile(archivePath)
 }

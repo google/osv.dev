@@ -19,6 +19,7 @@ import (
 	"os/signal"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"syscall"
@@ -50,6 +51,7 @@ const (
 const defaultGitterWorkDir = "/work/gitter"
 const persistenceFileName = "last-fetch.json"
 const gitStoreFileName = "git-store"
+const commitPackTmpDirName = "commit-pack-tmp"
 
 // API Endpoints
 var endpointHandlers = map[string]http.HandlerFunc{
@@ -60,7 +62,18 @@ var endpointHandlers = map[string]http.HandlerFunc{
 	"POST /file-diffs":       fileDiffsHandler,
 	"POST /file-content":     fileContentHandler,
 	"POST /commit-diffs":     commitDiffsHandler,
+	"POST /commit-pack":      commitPackHandler,
 }
+
+const (
+	maxCommitPackCommits      = 64
+	maxCommitPackRequestBytes = 1 << 20 // 1 MiB max /commit-pack JSON/protobuf request
+)
+
+// Minimum interval between upstream ForceUpdate fetches triggered by a missing commit in /commit-pack.
+var commitPackForceUpdateCooldown = 1 * time.Minute
+
+var commitHashRegex = regexp.MustCompile(`^[0-9a-f]{40}([0-9a-f]{24})?$`)
 
 var (
 	gFetch                  singleflight.Group
@@ -424,6 +437,8 @@ func main() {
 	if err := os.MkdirAll(gitStorePath, 0755); err != nil {
 		logger.Fatal("Failed to create git store path", slog.String("path", gitStorePath), slog.Any("error", err))
 	}
+	// Purge any stale temporary commit-pack staging directories left behind by prior crashes.
+	_ = os.RemoveAll(filepath.Join(*workDir, commitPackTmpDirName))
 
 	repoMaxCostUint, err := humanize.ParseBytes(*repoMaxCostStr)
 	if err != nil {
@@ -1125,6 +1140,147 @@ func commitDiffsHandler(w http.ResponseWriter, req *http.Request) {
 
 	if err := writeResponse(w, req, resp); err != nil {
 		logger.ErrorContext(ctx, "Error writing commit diffs response", slog.Any("error", err))
+		statusCode = http.StatusInternalServerError
+	}
+}
+
+func commitPackHandler(w http.ResponseWriter, req *http.Request) {
+	start := time.Now()
+	statusCode := http.StatusOK
+	ctx := req.Context()
+	defer func() { logRequestCompletion(ctx, "/commit-pack", start, statusCode) }()
+
+	req.Body = http.MaxBytesReader(w, req.Body, maxCommitPackRequestBytes)
+	body := &pb.CommitPackRequest{}
+	if err := unmarshalRequest(req, body); err != nil {
+		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+			statusCode = http.StatusRequestEntityTooLarge
+			http.Error(w, "request body too large", statusCode)
+
+			return
+		}
+		statusCode = http.StatusBadRequest
+		http.Error(w, fmt.Sprintf("Error unmarshaling request: %v", err), statusCode)
+
+		return
+	}
+
+	repoURL, err := prepareURL(req, body.GetUrl())
+	if err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, err.Error(), statusCode)
+
+		return
+	}
+
+	rawCommits := body.GetCommits()
+	if len(rawCommits) == 0 || len(rawCommits) > maxCommitPackCommits {
+		statusCode = http.StatusBadRequest
+		http.Error(w, fmt.Sprintf("commits must contain between 1 and %d entries", maxCommitPackCommits), statusCode)
+
+		return
+	}
+
+	commits := make([]string, 0, len(rawCommits))
+	seen := make(map[string]struct{}, len(rawCommits))
+	for _, c := range rawCommits {
+		if !commitHashRegex.MatchString(c) {
+			statusCode = http.StatusBadRequest
+			http.Error(w, fmt.Sprintf("invalid commit hash: %q", c), statusCode)
+
+			return
+		}
+		if _, dup := seen[c]; !dup {
+			seen[c] = struct{}{}
+			commits = append(commits, c)
+		}
+	}
+
+	refID := body.GetRefId()
+	ctx = context.WithValue(ctx, urlKey, repoURL)
+	ctx = context.WithValue(ctx, refIDKey, refID)
+	logger.DebugContext(ctx, "Received request: /commit-pack", slog.Int("numCommits", len(commits)))
+
+	if code, found := checkInvalidRepoCache(ctx, repoURL); found {
+		statusCode = code
+		w.WriteHeader(code)
+
+		return
+	}
+
+	if _, err := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: false, SkipReqConcurrencySemaphore: false}); err != nil {
+		statusCode = errorToHTTPStatusCode(err)
+		cacheInvalidRepo(ctx, repoURL, statusCode, err)
+		http.Error(w, fmt.Sprintf("Error getting repo: %v", err), statusCode)
+
+		return
+	}
+
+	createPack := func(allowPartial bool) ([]byte, error) {
+		dataAny, err := runWithConcurrencyControl(ctx, false, func() (any, error) {
+			return CreateCommitPack(ctx, repoURL, commits, allowPartial)
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return dataAny.([]byte), nil
+	}
+
+	packData, err := createPack(false)
+	if errors.Is(err, errCommitNotFound) {
+		lastFetchMu.Lock()
+		lastFetchTime, hasFetch := lastFetch[repoURL]
+		lastFetchMu.Unlock()
+
+		refreshed := false
+		if !hasFetch || time.Since(lastFetchTime) >= commitPackForceUpdateCooldown {
+			logger.DebugContext(ctx, "Commit not found in cached repo, forcing update and retrying", slog.Any("error", err))
+			if _, syncErr := SyncRepoOnDisk(ctx, repoURL, FetchOptions{ForceUpdate: true, SkipReqConcurrencySemaphore: false}); syncErr != nil {
+				statusCode = errorToHTTPStatusCode(syncErr)
+				cacheInvalidRepo(ctx, repoURL, statusCode, syncErr)
+				http.Error(w, fmt.Sprintf("Error refreshing repo: %v", syncErr), statusCode)
+
+				return
+			}
+			refreshed = true
+		} else {
+			logger.DebugContext(ctx, "Commit not found in recently fetched repo; skipping ForceUpdate cooldown",
+				slog.Duration("sinceLastFetch", time.Since(lastFetchTime)))
+		}
+
+		// Retry with allowPartial=true when refreshed or when multiple commits were requested
+		// so a single force-pushed/deleted commit does not drop other valid commits in the repo.
+		if refreshed || len(commits) > 1 {
+			packData, err = createPack(true)
+		}
+	}
+
+	if err != nil {
+		if errors.Is(err, errCommitNotFound) || errors.Is(err, errNotCommitObject) {
+			statusCode = http.StatusNotFound
+			http.Error(w, err.Error(), statusCode)
+
+			return
+		}
+		if errors.Is(err, errCommitPackTooLarge) {
+			statusCode = http.StatusRequestEntityTooLarge
+			http.Error(w, err.Error(), statusCode)
+
+			return
+		}
+		logger.ErrorContext(ctx, "Error creating commit pack", slog.Any("error", err))
+		statusCode = http.StatusInternalServerError
+		http.Error(w, fmt.Sprintf("Error creating commit pack: %v", err), statusCode)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/zstd")
+	w.Header().Set("Content-Disposition", "attachment; filename=\"commit-pack.tar.zst\"")
+	w.WriteHeader(http.StatusOK)
+	if _, err := io.Copy(w, bytes.NewReader(packData)); err != nil {
+		logger.ErrorContext(ctx, "Error writing commit pack response", slog.Any("error", err))
 		statusCode = http.StatusInternalServerError
 	}
 }

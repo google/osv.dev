@@ -90,6 +90,12 @@ func (c *httpClient) do(ctx context.Context, method, path string, query url.Valu
 		}
 
 		return nil, ErrInvalidInput
+	case http.StatusRequestEntityTooLarge:
+		if errMsg != "" {
+			return nil, fmt.Errorf("%w: %s", ErrPackTooLarge, errMsg)
+		}
+
+		return nil, ErrPackTooLarge
 	default:
 		if errMsg != "" {
 			return nil, fmt.Errorf("%w: status %d: %s", ErrInternalService, resp.StatusCode, errMsg)
@@ -201,6 +207,27 @@ func (c *httpClient) GetCommitDiffs(ctx context.Context, req *pb.CommitDiffsRequ
 	}
 
 	return &commitDiffsResp, nil
+}
+
+const maxCommitPackBytes = 44 << 20 // 44 MiB (matches gitter and vanir-sandbox payload budget)
+
+// GetCommitPack handles POST /commit-pack (returns raw .tar.zst archive bytes)
+func (c *httpClient) GetCommitPack(ctx context.Context, req *pb.CommitPackRequest) ([]byte, error) {
+	resp, err := c.do(ctx, http.MethodPost, "/commit-pack", nil, req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxCommitPackBytes+1))
+	if err != nil {
+		return nil, fmt.Errorf("failed reading commit pack response: %w", err)
+	}
+	if len(data) > maxCommitPackBytes {
+		return nil, fmt.Errorf("%w (%d bytes)", ErrPackTooLarge, maxCommitPackBytes)
+	}
+
+	return data, nil
 }
 
 // Verify interface compliance at compile time.

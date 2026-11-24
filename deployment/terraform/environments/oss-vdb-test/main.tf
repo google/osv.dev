@@ -24,6 +24,8 @@ locals {
     "${try(manifest.kind, "")}--${try(manifest.metadata.name, "")}" => manifest
     if try(manifest.kind, "") == "CronJob"
   }
+
+  enable_workload_identity = false
 }
 
 module "osv_pipeline" {
@@ -46,6 +48,8 @@ module "osv_pipeline" {
   ]
 
   cluster_location = "us-west2-b"
+
+  enable_workload_identity = local.enable_workload_identity
 
   postgres_tier              = "db-perf-optimized-N-8"
   postgres_availability_type = "ZONAL"
@@ -123,6 +127,47 @@ module "k8s_cron_alert" {
   cronjob_expected_latency_minutes = lookup(each.value.metadata.labels, "cronLastSuccessfulTimeMins", null)
   notification_channel             = "projects/oss-vdb-test/notificationChannels/14282948683609643269"
 }
+
+# Monitoring (Plutono / GMP) dedicated Workload Identity SA
+resource "google_service_account" "monitoring_sa" {
+  project      = "oss-vdb-test"
+  account_id   = "osv-monitoring-sa"
+  display_name = "OSV Monitoring (Plutono / GMP) Service Account"
+}
+
+resource "google_project_iam_member" "monitoring_sa_roles" {
+  for_each = toset([
+    "roles/monitoring.viewer",
+    "roles/logging.viewer",
+  ])
+
+  project = "oss-vdb-test"
+  role    = each.value
+  member  = "serviceAccount:${google_service_account.monitoring_sa.email}"
+}
+
+resource "google_service_account_iam_member" "monitoring_sa_wi" {
+  count = local.enable_workload_identity ? 1 : 0
+
+  service_account_id = google_service_account.monitoring_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:oss-vdb-test.svc.id.goog[default/grafana-sa]"
+
+  depends_on = [module.osv_pipeline]
+}
+
+# Uncomment after osv-monitoring-sa@oss-vdb.iam.gserviceaccount.com is created by applying oss-vdb Terraform:
+# allows production Plutono's gmp-frontend-test sidecar to query oss-vdb-test Cloud Monitoring.
+# resource "google_project_iam_member" "prod_monitoring_sa_roles" {
+#   for_each = toset([
+#     "roles/monitoring.viewer",
+#     "roles/logging.viewer",
+#   ])
+#
+#   project = "oss-vdb-test"
+#   role    = each.value
+#   member  = "serviceAccount:osv-monitoring-sa@oss-vdb.iam.gserviceaccount.com"
+# }
 
 import {
   to = module.osv_pipeline.google_firestore_database.datastore

@@ -186,3 +186,13 @@ resource "google_project_iam_member" "deployment_clouddeploy_roles" {
   member  = "serviceAccount:${var.deployment_service_account_email}"
 }
 
+# Workload Identity binding for the default Kubernetes ServiceAccount
+resource "google_service_account_iam_member" "worker_sa_wi" {
+  count = var.enable_workload_identity ? 1 : 0
+
+  service_account_id = google_service_account.worker_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[default/default]"
+
+  depends_on = [google_container_cluster.workers]
+}

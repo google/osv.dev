@@ -211,3 +211,14 @@ variable "create_oss_fuzz_subnet" {
   default     = false
 }
 
+variable "enable_workload_identity" {
+  type        = bool
+  description = "Whether to enable GKE Workload Identity Federation on the workers cluster."
+  default     = false
+}
+
+variable "enable_default_pool_workload_metadata" {
+  type        = bool
+  description = "Whether to enable GKE_METADATA workload metadata mode on the default node pool. Apply enable_workload_identity = true first and annotate the default Kubernetes ServiceAccount with iam.gke.io/gcp-service-account=osv-worker@<project>.iam.gserviceaccount.com before flipping this to true, otherwise existing workloads on default_pool will lose GCP access."
+  default     = false
+}

@@ -58,6 +58,13 @@ resource "google_container_cluster" "workers" {
       enabled = true
     }
   }
+
+  dynamic "workload_identity_config" {
+    for_each = var.enable_workload_identity ? [1] : []
+    content {
+      workload_pool = "${var.project_id}.svc.id.goog"
+    }
+  }
 }
 
 resource "google_container_node_pool" "default_pool" {
@@ -88,6 +95,13 @@ resource "google_container_node_pool" "default_pool" {
     disk_size_gb    = 128
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+
+    dynamic "workload_metadata_config" {
+      for_each = var.enable_workload_identity ? [1] : []
+      content {
+        mode = var.enable_default_pool_workload_metadata ? "GKE_METADATA" : "GCE_METADATA"
+      }
+    }
   }
 }
 
@@ -131,6 +145,12 @@ resource "google_container_node_pool" "highend" {
       value  = "highend"
     }
 
+    dynamic "workload_metadata_config" {
+      for_each = var.enable_workload_identity ? [1] : []
+      content {
+        mode = "GCE_METADATA"
+      }
+    }
   }
 }
 

@@ -309,58 +309,81 @@ steps:
   waitFor: ['build-cron', 'cloud-build-queue']
 
 # Build/push vulnfeeds images
+# build-combine-to-osv warms the shared vulnfeeds/Dockerfile builder, gcloud-alpine-jq base,
+# and BuildKit Go caches (/go/pkg/mod, /root/.cache/go-build). Subsequent vulnfeeds targets
+# fan out into 2 bounded lanes via waitFor to cap BuildKit concurrency on E2_HIGHCPU_32:
+#   Vulnfeeds Lane 1: alpine-cve-convert -> cve5-to-osv -> debian-convert -> cpe-repo-gen
+#   Vulnfeeds Lane 2: debian-cve-convert -> debian-copyright-mirror -> nvd-cve-osv -> nvd-mirror
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:latest', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA', '-f', 'cmd/converters/alpine/Dockerfile', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:latest', '-t', 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA', '--target', 'alpine-cve-convert', '-f', 'Dockerfile', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-alpine-cve-convert'
-  waitFor: ['setup']
+  waitFor: ['build-combine-to-osv']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/alpine-cve-convert']
   waitFor: ['build-alpine-cve-convert', 'cloud-build-queue']
 
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/debian-cve-convert:latest', '-t', 'gcr.io/oss-vdb/debian-cve-convert:$COMMIT_SHA', '-f', 'cmd/converters/debian/Dockerfile', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/debian-cve-convert:latest', '-t', 'gcr.io/oss-vdb/debian-cve-convert:$COMMIT_SHA', '--target', 'debian-cve-convert', '-f', 'Dockerfile', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-debian-cve-convert'
-  waitFor: ['setup']
+  waitFor: ['build-combine-to-osv']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/debian-cve-convert']
   waitFor: ['build-debian-cve-convert', 'cloud-build-queue']
 
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/combine-to-osv:latest', '-t', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', '-f', 'cmd/combine-to-osv/Dockerfile', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/combine-to-osv:latest', '-t', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', '--target', 'combine-to-osv', '-f', 'Dockerfile', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-combine-to-osv'
-  waitFor: ['setup']
+  waitFor: ['setup', 'setup-buildx']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/combine-to-osv']
   waitFor: ['build-combine-to-osv', 'cloud-build-queue']
 
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/cve5-to-osv:latest', '-t', 'gcr.io/oss-vdb/cve5-to-osv:$COMMIT_SHA', '-f', 'cmd/converters/cve/cve5/bulk-converter/Dockerfile', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/cve5-to-osv:latest', '-t', 'gcr.io/oss-vdb/cve5-to-osv:$COMMIT_SHA', '--target', 'cve5-to-osv', '-f', 'Dockerfile', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-cve5-to-osv'
-  waitFor: ['setup']
+  waitFor: ['build-alpine-cve-convert']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/cve5-to-osv']
   waitFor: ['build-cve5-to-osv', 'cloud-build-queue']
 
 # Build/push indexer image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/indexer:latest', '-t', 'gcr.io/oss-vdb/indexer:$COMMIT_SHA', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/indexer:latest', '-t', 'gcr.io/oss-vdb/indexer:$COMMIT_SHA', '--pull', '.']
   dir: 'gcp/indexer'
   id: 'build-indexer'
-  waitFor: ['setup']
+  waitFor: ['setup', 'setup-buildx']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/indexer']
   waitFor: ['build-indexer', 'cloud-build-queue']
 
 # Build/push debian converter image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/debian-convert:latest', '-t', 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA', '-f', 'cmd/converters/dsa-dla-dtsa/Dockerfile', '--pull', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/debian-convert:latest', '-t', 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA', '--target', 'debian-convert', '-f', 'Dockerfile', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-debian-convert'
-  waitFor: ['setup']
+  waitFor: ['build-cve5-to-osv']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/debian-convert']
   waitFor: ['build-debian-convert', 'cloud-build-queue']
@@ -380,30 +403,39 @@ steps:
 
 # Build/push Debian copyright mirror image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/debian-copyright-mirror:latest', '-t', 'gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA', '-f', 'cmd/mirrors/debian-copyright-mirror/Dockerfile', '.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/debian-copyright-mirror:latest', '-t', 'gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA', '--target', 'debian-copyright-mirror', '-f', 'Dockerfile', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-debian-copyright-mirror'
-  waitFor: ['setup']
+  waitFor: ['build-debian-cve-convert']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/debian-copyright-mirror']
   waitFor: ['build-debian-copyright-mirror', 'cloud-build-queue']
 
 # Build/push CPE repo map generating image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:latest', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA', '-f', 'cmd/mirrors/cpe-repo-gen/Dockerfile','.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:latest', '-t', 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA', '--target', 'cpe-repo-gen', '-f', 'Dockerfile', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-cpe-repo-gen'
-  waitFor: ['setup']
+  waitFor: ['build-debian-convert']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/cpe-repo-gen']
   waitFor: ['build-cpe-repo-gen', 'cloud-build-queue']
 
 # Build/push NVD CVE to OSV conversion image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/nvd-cve-osv:latest', '-t', 'gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA', '-f', 'cmd/converters/cve/nvd-cve-osv/Dockerfile','.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/nvd-cve-osv:latest', '-t', 'gcr.io/oss-vdb/nvd-cve-osv:$COMMIT_SHA', '--target', 'nvd-cve-osv', '-f', 'Dockerfile', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-nvd-cve-osv'
-  waitFor: ['setup']
+  waitFor: ['build-debian-copyright-mirror']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/nvd-cve-osv']
   waitFor: ['build-nvd-cve-osv', 'cloud-build-queue']
@@ -455,10 +487,13 @@ steps:
 
 # Build/push NVD mirror image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '-t', 'gcr.io/oss-vdb/nvd-mirror:latest', '-t', 'gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA', '-f', 'cmd/mirrors/download-cves/Dockerfile','.']
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/nvd-mirror:latest', '-t', 'gcr.io/oss-vdb/nvd-mirror:$COMMIT_SHA', '--target', 'nvd-mirror', '-f', 'Dockerfile', '--pull', '.']
   dir: 'vulnfeeds'
   id: 'build-nvd-mirror'
-  waitFor: ['setup']
+  waitFor: ['build-nvd-cve-osv']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/nvd-mirror']
   waitFor: ['build-nvd-mirror', 'cloud-build-queue']

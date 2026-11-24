@@ -5,11 +5,11 @@ set -x
 # Set working dir to script dir
 cd "$(dirname "$0")"
 
-docker build -t gcr.io/oss-vdb/alpine-cve-convert -f cmd/converters/alpine/Dockerfile .
-docker build -t gcr.io/oss-vdb/debian-cve-convert -f cmd/converters/debian/Dockerfile .
-docker build -t gcr.io/oss-vdb/combine-to-osv -f cmd/combine-to-osv/Dockerfile .
-docker build -t gcr.io/oss-vdb/debian-copyright-mirror -f cmd/mirrors/debian-copyright-mirror/Dockerfile .
-docker build -t gcr.io/oss-vdb/cpe-repo-gen -f cmd/mirrors/cpe-repo-gen/Dockerfile .
+docker build -t gcr.io/oss-vdb/alpine-cve-convert --target alpine-cve-convert -f Dockerfile .
+docker build -t gcr.io/oss-vdb/debian-cve-convert --target debian-cve-convert -f Dockerfile .
+docker build -t gcr.io/oss-vdb/combine-to-osv --target combine-to-osv -f Dockerfile .
+docker build -t gcr.io/oss-vdb/debian-copyright-mirror --target debian-copyright-mirror -f Dockerfile .
+docker build -t gcr.io/oss-vdb/cpe-repo-gen --target cpe-repo-gen -f Dockerfile .
 
 if [ "$1" = "deploy" ]
 then

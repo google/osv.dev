@@ -327,3 +327,77 @@ func TestSourceRepositoryStore_All(t *testing.T) {
 		t.Errorf("All() mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestSourceRepositoryStore_ArchivedOmitEmpty(t *testing.T) {
+	ctx := context.Background()
+	dsClient := testutils.MustNewDatastoreClientForTesting(t)
+	store := NewSourceRepositoryStore(dsClient)
+
+	active := &models.SourceRepository{
+		Name: "active-repo",
+		Type: models.SourceRepositoryTypeGit,
+		Git:  &models.SourceRepoGit{URL: "http://git.url/active"},
+	}
+	if err := store.Update(ctx, active.Name, active); err != nil {
+		t.Fatalf("Update(active) error = %v", err)
+	}
+
+	var props datastore.PropertyList
+	if err := dsClient.Get(ctx, datastore.NameKey("SourceRepository", active.Name, nil), &props); err != nil {
+		t.Fatalf("Get(active PropertyList) error = %v", err)
+	}
+	for _, p := range props {
+		if p.Name == "archived" {
+			t.Errorf("expected non-archived SourceRepository to omit 'archived' property, got %v", p.Value)
+		}
+	}
+}
+
+func TestSourceRepositoryStore_IgnoresUnknownFields(t *testing.T) {
+	ctx := context.Background()
+	dsClient := testutils.MustNewDatastoreClientForTesting(t)
+	store := NewSourceRepositoryStore(dsClient)
+
+	key := datastore.NameKey("SourceRepository", "future-repo", nil)
+	props := datastore.PropertyList{
+		{Name: "name", Value: "future-repo"},
+		{Name: "type", Value: int64(models.SourceRepositoryTypeGit)},
+		{Name: "repo_url", Value: "http://git.url/future"},
+		{Name: "future_unknown_field", Value: true},
+	}
+	if _, err := dsClient.Put(ctx, key, &props); err != nil {
+		t.Fatalf("Put(future-repo) error = %v", err)
+	}
+
+	got, err := store.Get(ctx, "future-repo")
+	if err != nil {
+		t.Fatalf("Get(future-repo) unexpected error: %v", err)
+	}
+	if got.Name != "future-repo" || got.Git == nil || got.Git.URL != "http://git.url/future" {
+		t.Errorf("Get(future-repo) = %+v, want Name=future-repo and Git.URL=http://git.url/future", got)
+	}
+
+	var all []*models.SourceRepository
+	for r, iterErr := range store.All(ctx) {
+		if iterErr != nil {
+			t.Fatalf("All() unexpected error: %v", iterErr)
+		}
+		all = append(all, r)
+	}
+	if len(all) != 1 || all[0].Name != "future-repo" {
+		t.Errorf("All() = %+v, want single repo future-repo", all)
+	}
+
+	// Verify real type mismatches are still surfaced as errors.
+	badKey := datastore.NameKey("SourceRepository", "bad-type-repo", nil)
+	badProps := datastore.PropertyList{
+		{Name: "name", Value: "bad-type-repo"},
+		{Name: "archived", Value: "not-a-bool"},
+	}
+	if _, err := dsClient.Put(ctx, badKey, &badProps); err != nil {
+		t.Fatalf("Put(bad-type-repo) error = %v", err)
+	}
+	if _, err := store.Get(ctx, "bad-type-repo"); err == nil {
+		t.Errorf("Get(bad-type-repo) expected error for type mismatch, got nil")
+	}
+}

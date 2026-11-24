@@ -54,13 +54,6 @@ def main() -> None:
   if args.verbose:
     print(f'Loaded {len(local_sourcerepos)} local source repositories')
 
-  if os.getcwd().endswith('tools/sourcerepo-sync'):
-    default_file = 'source_repo_default.yaml'
-  else:
-    default_file = 'tools/sourcerepo-sync/source_repo_default.yaml'
-  with open(default_file, 'r') as f:
-    default_entity = yaml.safe_load(f)
-
   # Validate the yaml file
   # Check sourcerepo for duplicates:
   def validate_repository(repository, local=True):
@@ -77,8 +70,6 @@ def main() -> None:
       # Make sure the link ends with a /
       if 'link' in repo and repo['link'][-1] != '/':
         raise ValueError(f'Link in {repo["name"]} missing ending /')
-      if 'archived' in repo and not isinstance(repo['archived'], bool):
-        raise ValueError(f'archived in {repo["name"]} must be a boolean')
       # Check for a dynamic field being mistakenly pushed
       if local:
         dynamic_fields = {
@@ -87,14 +78,18 @@ def main() -> None:
         for field in dynamic_fields:
           if field in repo:
             raise ValueError(f'Dynamic field {field} found in {repo["name"]}')
-        for attr in repo:
-          if attr != 'name' and attr not in default_entity:
-            raise ValueError(f'Unknown field {attr} found in {repo["name"]}')
     if args.verbose:
       print(f'Validated {len(repository)} source repositories')
 
   def create_sourcerepo(repo):
     """Create a new source repo."""
+    # check whether the working directory is tools/sourcerepo-sync
+    if os.getcwd().endswith('tools/sourcerepo-sync'):
+      default_file = 'source_repo_default.yaml'
+    else:
+      default_file = 'tools/sourcerepo-sync/source_repo_default.yaml'
+    with open(default_file, 'r') as f:
+      default_entity = yaml.safe_load(f)
     if args.verbose:
       print(f'New source repository {repo["name"]}')
     key = client.key(args.kind, repo['name'])
@@ -114,20 +109,17 @@ def main() -> None:
   def update_sourcerepo(repo, ds_repo):
     """Check the attributes of the source repo and update if needed."""
     entity = None
-    desired = dict(repo)
-    if 'archived' not in desired and ds_repo.get('archived', False):
-      desired['archived'] = default_entity['archived']
-    for attr, val in desired.items():
-      # Check whether the attribute has changed (or was newly added)
-      if attr in ds_repo and val == ds_repo[attr]:
+    for attr in repo:
+      #Check whether the attribute has changed
+      if attr not in ds_repo or repo[attr] == ds_repo[attr]:
         continue
       if entity is None:
         key = client.key(args.kind, ds_repo['name'])
         entity = client.get(key)
       if args.verbose:
         name = repo['name']
-        print(f'Found diff in {name}: {attr} - {val} != {ds_repo.get(attr)}')
-      entity.update({attr: val})
+        print(f'Found diff in {name}: {attr} - {repo[attr]} != {ds_repo[attr]}')
+      entity.update({attr: repo[attr]})
 
     if entity is not None and not args.dryrun:
       client.put(entity)

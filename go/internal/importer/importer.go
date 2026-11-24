@@ -237,6 +237,9 @@ func RunDeletions(ctx context.Context, config Config) error {
 
 // reconcileSkipSources is a list of source names to skip during reconciliation.
 var reconcileSkipSources = []string{
+	// Upstream records are completely deprecated and archived now.
+	// Remove once uvi is marked archived: True in source.yaml.
+	"uvi",
 	// Currently an upstream issue that we can't fix. (https://github.com/AlmaLinux/osv-database/issues/363)
 	"almalinux-alsa",
 	// Has a bunch of 404s

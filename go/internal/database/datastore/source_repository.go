@@ -5,12 +5,23 @@ import (
 	"errors"
 	"fmt"
 	"iter"
+	"log/slog"
 
 	"cloud.google.com/go/datastore"
 	"github.com/google/osv.dev/go/internal/models"
+	"github.com/google/osv.dev/go/logger"
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"google.golang.org/api/iterator"
 )
+
+func isIgnorableFieldMismatch(err error) (*datastore.ErrFieldMismatch, bool) {
+	var mismatch *datastore.ErrFieldMismatch
+	if errors.As(err, &mismatch) && mismatch.Reason == "no such struct field" {
+		return mismatch, true
+	}
+
+	return nil, false
+}
 
 type SourceRepositoryStore struct {
 	client *datastore.Client
@@ -32,7 +43,9 @@ func (s *SourceRepositoryStore) Get(ctx context.Context, name string) (*models.S
 	if errors.Is(err, datastore.ErrNoSuchEntity) {
 		return nil, models.ErrNotFound
 	}
-	if err != nil {
+	if mismatch, ok := isIgnorableFieldMismatch(err); ok {
+		logger.WarnContext(ctx, "Ignoring unknown field on SourceRepository", slog.String("source", name), slog.String("field", mismatch.FieldName))
+	} else if err != nil {
 		return nil, fmt.Errorf("failed to get source repository: %w", err)
 	}
 
@@ -61,11 +74,17 @@ func (s *SourceRepositoryStore) All(ctx context.Context) iter.Seq2[*models.Sourc
 		it := s.client.Run(ctx, q)
 		for {
 			var sr SourceRepository
-			_, err := it.Next(&sr)
+			key, err := it.Next(&sr)
 			if errors.Is(err, iterator.Done) {
 				return
 			}
-			if err != nil {
+			if mismatch, ok := isIgnorableFieldMismatch(err); ok {
+				sourceName := sr.Name
+				if sourceName == "" && key != nil {
+					sourceName = key.Name
+				}
+				logger.WarnContext(ctx, "Ignoring unknown field on SourceRepository", slog.String("source", sourceName), slog.String("field", mismatch.FieldName))
+			} else if err != nil {
 				yield(nil, fmt.Errorf("failed to get source repository: %w", err))
 				return
 			}

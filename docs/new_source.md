@@ -74,7 +74,6 @@ Advanced and optional fields
   consider_all_branches: False # Whether to consider all branches when analyzing GIT ranges.
   versions_from_repo: False # Whether to populate "affected[].versions" from Git ranges.
   strict_validation: False # Apply strict validation (JSON Schema + linter checks) to this source.
-  archived: False # Whether this source is archived and should no longer be imported.
 ```
 
 ### REST
@@ -97,7 +96,6 @@ Advanced and optional fields
   editable: False # Whether this repository is editable.
   versions_from_repo: False # Whether to populate "affected[].versions" from Git ranges.
   strict_validation: False # Apply strict validation (JSON Schema + linter checks) to this source.
-  archived: False # Whether this source is archived and should no longer be imported.
 ```
 
 ### GCS
@@ -121,7 +119,6 @@ Advanced and optional fields
   editable: False # Whether this repository is editable.
   versions_from_repo: False # Whether to populate "affected[].versions" from Git ranges.
   strict_validation: False # Apply strict validation (JSON Schema + linter checks) to this source.
-  archived: False # Whether this source is archived and should no longer be imported.
 ```
 
 ### `human_link` templates

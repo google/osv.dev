@@ -70,7 +70,7 @@ You must install:
 1.  `protobuf-compiler` (e.g. `protoc` command, install via `sudo apt install protobuf-compiler` on Debian/Ubuntu)
 1.  `protoc-gen-go` and `protoc-gen-go-grpc` (Go proto plugins, install via `go install google.golang.org/protobuf/cmd/protoc-gen-go@latest` and `go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest`. Ensure your Go bin directory, e.g. `~/go/bin`, is in your `PATH`)
 1.  [sqlc](https://docs.sqlc.dev/en/latest/overview/install.html) (optional, only if modifying PostgreSQL queries/schema; install via `go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest`)
-1.  `kubectl` (optional, maintainers only for inspecting GKE clusters or tunneling to private-IP Cloud SQL via `make run-pg-tunnel-staging` / `tools/pg_tunnel.sh`)
+1.  `kubectl` (optional, maintainers only for inspecting GKE clusters or port-forwarding to private-IP Cloud SQL via `make run-pg-tunnel-staging` / `deploy/pg-tunnel`)
 
 Then you can set up the development environment by cloning the OSV repo and
 installing the Poetry dependencies.

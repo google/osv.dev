@@ -87,7 +87,7 @@ unset PG_RO_PASS
 
 ### Cloud SQL PostgreSQL Schema Migrations & IAM Access
 
-Cloud SQL instances use `ssl_mode = "ENCRYPTED_ONLY"`; `osv-db-read-pool` is **private IP only** (`ipv4_enabled = false`), and `osv-db` defaults to `postgres_ipv4_enabled = true` only while `osv-db-migrate` and `tools/pg_tunnel.sh` are rolled out and verified (flip `postgres_ipv4_enabled` to `false` once confirmed).
+Cloud SQL instances use `ssl_mode = "ENCRYPTED_ONLY"`; `osv-db-read-pool` is **private IP only** (`ipv4_enabled = false`), and `osv-db` defaults to `postgres_ipv4_enabled = true` only while `osv-db-migrate` and the `pg-tunnel` GKE deployment are rolled out and verified (flip `postgres_ipv4_enabled` to `false` once confirmed).
 
 Database schema migrations live in `go/internal/database/postgres/migrations/` and are managed with [goose](https://github.com/pressly/goose). Each commit to `master` builds `gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA` (via `docker/goose/migrations.Dockerfile` layered on `gcr.io/oss-vdb/goose:latest`).
 
@@ -119,12 +119,16 @@ To connect or run `goose` manually from your workstation via IAM authentication 
      --type=CLOUD_IAM_USER \
      --database-roles=cloudsqlsuperuser
    ```
-3. Start an ephemeral TCP tunnel via `workers` GKE (`tools/pg_tunnel.sh`, which spins up a temporary `batch/v1` `Job` running `socat`, executes `kubectl port-forward`, deletes the job on Ctrl+C, and sets an 8-hour auto-expiry `TTL_SECONDS=28800` as a safeguard against orphaned pods):
+3. Port-forward to the loopback-only `socat` tunnel `Deployment` inside the `workers` cluster (`pg-tunnel` for `osv-db`, `pg-tunnel-read-pool` for `osv-db-read-pool`; port `5432` = direct Postgres, `6432` = Managed Connection Pooling):
    ```bash
    make run-pg-tunnel-staging   # oss-vdb-test primary (:5432)
    # or make run-pg-tunnel      # oss-vdb primary (:5432)
-   # or make run-pg-tunnel INSTANCE=osv-db-read-pool REMOTE_PORT=6432
+   # or make run-pg-tunnel TARGET=pg-tunnel-read-pool REMOTE_PORT=6432
    # or make run-pg-tunnel-private
+   ```
+   Or directly with `kubectl` (if your context is already pointing at the cluster):
+   ```bash
+   kubectl port-forward -n default deploy/pg-tunnel 5432:5432
    ```
    *(For local sessions longer than ~1 hour, IAM tokens from `gcloud sql generate-login-token` expire — connect as `osv-readonly` with `gcloud secrets versions access latest --secret=osv-db-readonly-password` instead. To also verify the database server certificate against the instance CA instead of `sslmode=require`, fetch it with `gcloud sql instances describe osv-db --project="$PROJECT_ID" --format='value(serverCaCert.cert)' > /tmp/osv-db-ca.pem` and pass `PGSSLMODE=verify-ca PGSSLROOTCERT=/tmp/osv-db-ca.pem`.)*
 4. Set your IAM user's default login role to `cloudsqlsuperuser` (once per instance):

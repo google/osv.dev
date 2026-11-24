@@ -36,7 +36,7 @@ variable "postgres_availability_type" {
 
 variable "postgres_ipv4_enabled" {
   type        = bool
-  description = "Whether to assign a public IPv4 address to the primary Cloud SQL instance (keep true during rollout until osv-db-migrate and pg_tunnel.sh are verified, then flip to false)."
+  description = "Whether to assign a public IPv4 address to the primary Cloud SQL instance (keep true during rollout until osv-db-migrate and pg-tunnel are verified, then flip to false)."
   default     = true
 }
 

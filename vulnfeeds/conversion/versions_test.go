@@ -569,24 +569,18 @@ func TestExtractGitCommit(t *testing.T) {
 			},
 		},
 		{
-			description:     "Valid bitbucket.org commit URL",
-			inputLink:       "https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1",
-			inputCommitType: models.Fixed,
-			expectedAffectedCommit: models.AffectedCommit{
-				Repo:   "https://bitbucket.org/openpyxl/openpyxl",
-				Fixed:  "3b4905f428e1",
-				Source: models.VersionSourceRefsCommit,
-			},
+			description:            "Short bitbucket.org commit URL rejected",
+			inputLink:              "https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1",
+			inputCommitType:        models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{},
+			expectFailure:          true,
 		},
 		{
-			description:     "Valid bitbucket.org commit URL with trailing slash",
-			inputLink:       "https://bitbucket.org/utmandrew/pcrs/commits/5f18bcb/",
-			inputCommitType: models.Fixed,
-			expectedAffectedCommit: models.AffectedCommit{
-				Repo:   "https://bitbucket.org/utmandrew/pcrs",
-				Fixed:  "5f18bcb",
-				Source: models.VersionSourceRefsCommit,
-			},
+			description:            "Short bitbucket.org commit URL with trailing slash rejected",
+			inputLink:              "https://bitbucket.org/utmandrew/pcrs/commits/5f18bcb/",
+			inputCommitType:        models.Fixed,
+			expectedAffectedCommit: models.AffectedCommit{},
+			expectFailure:          true,
 		},
 		{
 			description:     "Valid cGit commit URL",
@@ -1167,27 +1161,108 @@ func TestCommit(t *testing.T) {
 		{
 			name: "Valid GitHub commit URL",
 			args: args{
-				u: "https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a",
+				u: "https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8",
 			},
-			want:       "b1351c15946349f9daa7e5297fb2ac6f3139e4a",
+			want:       "b1351c15946349f9daa7e5297fb2ac6f3139e4a8",
 			wantSource: models.VersionSourceRefsCommit,
 			wantErr:    false,
 		},
 		{
 			name: "Valid FreeDesktop GitLab commit URL",
 			args: args{
-				u: "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129",
+				u: "https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c",
 			},
-			want:       "b05bb61f454eeb8a85164c8a31510aeb9d79129",
+			want:       "b05bb61f454eeb8a85164c8a31510aeb9d79129c",
 			wantSource: models.VersionSourceRefsCommit,
 			wantErr:    false,
 		},
 		{
-			name: "Valid GitLab commit URL with a shorter hash",
+			name: "Valid Bitbucket commit URL with full SHA and trailing slash",
+			args: args{
+				u: "https://bitbucket.org/openpyxl/openpyxl/commits/b1351c15946349f9daa7e5297fb2ac6f3139e4a8/",
+			},
+			want:       "b1351c15946349f9daa7e5297fb2ac6f3139e4a8",
+			wantSource: models.VersionSourceRefsCommit,
+			wantErr:    false,
+		},
+		{
+			name: "Uppercase 40-char GitHub commit hash is lowercased",
+			args: args{
+				u: "https://github.com/MariaDB/server/commit/B1351C15946349F9DAA7E5297FB2AC6F3139E4A8",
+			},
+			want:       "b1351c15946349f9daa7e5297fb2ac6f3139e4a8",
+			wantSource: models.VersionSourceRefsCommit,
+			wantErr:    false,
+		},
+		{
+			name: "Valid 64-char SHA-256 commit URL",
+			args: args{
+				u: "https://github.com/example/repo/commit/0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			},
+			want:       "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+			wantSource: models.VersionSourceRefsCommit,
+			wantErr:    false,
+		},
+		{
+			name: "Reject GitLab commit URL with a shorter hash",
 			args: args{
 				u: "https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc",
 			},
-			want:       "4367a20cc",
+			want:       "",
+			wantSource: models.VersionSourceNone,
+			wantErr:    true,
+		},
+		{
+			name: "Reject 39-char truncated commit hash",
+			args: args{
+				u: "https://github.com/file/file/commit/9611f31313a93aa036389c5f3b15eea53510d4d",
+			},
+			want:       "",
+			wantSource: models.VersionSourceNone,
+			wantErr:    true,
+		},
+		{
+			name: "Reject cGit URL with short hash",
+			args: args{
+				u: "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=054aa8d439b9",
+			},
+			want:       "",
+			wantSource: models.VersionSourceNone,
+			wantErr:    true,
+		},
+		{
+			name: "Reject GitWeb URL with short hash",
+			args: args{
+				u: "https://git.gnupg.org/cgi-bin/gitweb.cgi?p=libksba.git;a=commit;h=f61a5ea4",
+			},
+			want:       "",
+			wantSource: models.VersionSourceNone,
+			wantErr:    true,
+		},
+		{
+			name: "Reject FFmpeg GitWeb tag URL",
+			args: args{
+				u: "https://git.ffmpeg.org/gitweb/ffmpeg.git/tag/n4.1.4",
+			},
+			want:       "",
+			wantSource: models.VersionSourceNone,
+			wantErr:    true,
+		},
+		{
+			name: "Reject FFmpeg GitWeb commit URL with short hash",
+			args: args{
+				u: "https://git.ffmpeg.org/gitweb/ffmpeg.git/commit/c9487547",
+			},
+			want:       "",
+			wantSource: models.VersionSourceNone,
+			wantErr:    true,
+		},
+		{
+			name: "Valid FFmpeg GitWeb commitdiff URL",
+			args: args{
+				u: "https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/c94875471e3ba3dc396c6919ff3ec9b14539cd71",
+			},
+			want:       "c94875471e3ba3dc396c6919ff3ec9b14539cd71",
 			wantSource: models.VersionSourceRefsCommit,
 			wantErr:    false,
 		},
@@ -1747,6 +1822,15 @@ func TestIsDirectGitRange(t *testing.T) {
 		}
 	})
 
+	t.Run("Range_GIT with abbreviated commit SHA", func(t *testing.T) {
+		r := models.RangeWithMetadata{
+			Range: BuildGitVersionRange("0", "", "6187a4e", "https://github.com/foo/bar"),
+		}
+		if IsDirectGitRange(r) {
+			t.Errorf("expected IsDirectGitRange to be false for Range_GIT with abbreviated commit SHA")
+		}
+	})
+
 	t.Run("Semver tags", func(t *testing.T) {
 		r := models.RangeWithMetadata{
 			Range: BuildVersionRange("1.0.0", "", "2.0.0"),
@@ -1755,6 +1839,45 @@ func TestIsDirectGitRange(t *testing.T) {
 			t.Errorf("expected IsDirectGitRange to be false for semver strings")
 		}
 	})
+}
+
+func TestProcessRanges_AbbreviatedGitSHAUnresolved(t *testing.T) {
+	metrics := &models.ConversionMetrics{}
+	shortRange := models.RangeWithMetadata{
+		Range: BuildGitVersionRange("0", "", "6187a4e", "https://github.com/foo/bar"),
+		Metadata: models.Metadata{
+			Source: models.VersionSourceDescription,
+		},
+	}
+	resolved, unresolved, successfulRepos := ProcessRanges([]models.RangeWithMetadata{shortRange}, nil, metrics, git.NewRepoTagsCache(), &http.Client{})
+	if len(resolved) != 0 {
+		t.Errorf("expected 0 resolved ranges for abbreviated SHA, got %d", len(resolved))
+	}
+	if len(unresolved) != 1 {
+		t.Errorf("expected 1 unresolved range for abbreviated SHA, got %d", len(unresolved))
+	}
+	if len(successfulRepos) != 0 {
+		t.Errorf("expected 0 successful repos for abbreviated SHA, got %d", len(successfulRepos))
+	}
+}
+
+func TestProcessRanges_NormalizesUppercaseGitSHA(t *testing.T) {
+	metrics := &models.ConversionMetrics{}
+	upperRange := models.RangeWithMetadata{
+		Range: BuildGitVersionRange("0", "", "FC300780DA21F4BB92C148BC90257201220CF174", "https://github.com/foo/bar"),
+		Metadata: models.Metadata{
+			Source: models.VersionSourceAffected,
+		},
+	}
+	resolved, unresolved, _ := ProcessRanges([]models.RangeWithMetadata{upperRange}, nil, metrics, git.NewRepoTagsCache(), &http.Client{})
+	if len(resolved) != 1 || len(unresolved) != 0 {
+		t.Fatalf("expected 1 resolved and 0 unresolved, got %d and %d", len(resolved), len(unresolved))
+	}
+	gotFixed := resolved[0].Range.GetEvents()[1].GetFixed()
+	wantFixed := "fc300780da21f4bb92c148bc90257201220cf174"
+	if gotFixed != wantFixed {
+		t.Errorf("fixed SHA = %q, want %q", gotFixed, wantFixed)
+	}
 }
 
 func TestProcessRanges_DirectGitRange(t *testing.T) {

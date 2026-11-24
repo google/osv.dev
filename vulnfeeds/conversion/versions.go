@@ -422,7 +422,7 @@ func repo(u string) (string, error) {
 	return "", fmt.Errorf("Repo(): unsupported URL: %s", u)
 }
 
-// Commit returns the commit ID, the original tag (if resolved from a release tag URL),
+// Commit returns the full-length lowercase commit ID, the original tag (if resolved from a release tag URL),
 // and the version source from supported links.
 func Commit(u string, httpClient *http.Client) (string, string, models.VersionSource, error) {
 	parsedURL, err := url.Parse(u)
@@ -430,24 +430,20 @@ func Commit(u string, httpClient *http.Client) (string, string, models.VersionSo
 		return "", "", models.VersionSourceNone, err
 	}
 
-	gitSHA1Regex := regexp.MustCompile("^[0-9a-f]{7,40}")
-
-	// "https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3"
-
-	// cGit URLs are structured another way, e.g.
+	// cGit URLs and canonicalized git.kernel.org URLs, e.g.
 	// https://git.dpkg.org/cgit/dpkg/dpkg.git/commit/?id=faa4c92debe45412bfcf8a44f26e827800bb24be
 	// https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/?id=817b8b9c5396d2b2d92311b46719aad5d3339dbe
-	if strings.HasPrefix(parsedURL.Path, "/cgit") &&
-		strings.HasSuffix(parsedURL.Path, "commit/") &&
-		strings.HasPrefix(parsedURL.RawQuery, "id=") {
-		return strings.Split(parsedURL.RawQuery, "=")[1], "", models.VersionSourceRefsCommit, nil
-	}
-
-	// Canonicalized git.kernel.org URLs lose /cgit in the path...
-	if parsedURL.Hostname() == "git.kernel.org" &&
-		strings.HasSuffix(parsedURL.Path, "commit/") &&
-		strings.HasPrefix(parsedURL.RawQuery, "id=") {
-		return strings.Split(parsedURL.RawQuery, "=")[1], "", models.VersionSourceRefsCommit, nil
+	// https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=ee1fee900537b5d9560e9f937402de5ddc8412f3
+	if (strings.HasPrefix(parsedURL.Path, "/cgit") || parsedURL.Hostname() == "git.kernel.org") &&
+		strings.HasSuffix(parsedURL.Path, "commit/") {
+		params := strings.FieldsFunc(parsedURL.RawQuery, func(r rune) bool { return r == ';' || r == '&' })
+		for _, param := range params {
+			if val, ok := strings.CutPrefix(param, "id="); ok {
+				if sha, ok := normalizeCommitSHA(val); ok {
+					return sha, "", models.VersionSourceRefsCommit, nil
+				}
+			}
+		}
 	}
 
 	// GitWeb cgi-bin URLs are structured another way, e.g.
@@ -456,41 +452,47 @@ func Commit(u string, httpClient *http.Client) (string, string, models.VersionSo
 		strings.Contains(parsedURL.RawQuery, "a=commit") {
 		params := strings.FieldsFunc(parsedURL.RawQuery, func(r rune) bool { return r == ';' || r == '&' })
 		for _, param := range params {
-			if !strings.HasPrefix(param, "h=") {
-				continue
+			if val, ok := strings.CutPrefix(param, "h="); ok {
+				if sha, ok := normalizeCommitSHA(val); ok {
+					return sha, "", models.VersionSourceRefsCommit, nil
+				}
 			}
-
-			return strings.Split(param, "=")[1], "", models.VersionSourceRefsCommit, nil
 		}
 	}
 
-	// FFMpeg's GitWeb seems to be it's own unique snowflake, e.g.
+	// FFMpeg's GitWeb seems to be its own unique snowflake, e.g.
 	// https://git.ffmpeg.org/gitweb/ffmpeg.git/commit/c94875471e3ba3dc396c6919ff3ec9b14539cd71
-	if strings.HasPrefix(parsedURL.Path, "/gitweb/") && len(strings.Split(parsedURL.Path, "/")) == 5 {
-		return strings.Split(parsedURL.Path, "/")[4], "", models.VersionSourceRefsCommit, nil
+	// https://git.ffmpeg.org/gitweb/ffmpeg.git/commitdiff/c94875471e3ba3dc396c6919ff3ec9b14539cd71
+	if strings.HasPrefix(parsedURL.Path, "/gitweb/") {
+		parts := strings.Split(strings.TrimSuffix(parsedURL.Path, "/"), "/")
+		if len(parts) == 5 && (parts[3] == "commit" || parts[3] == "commitdiff") {
+			if sha, ok := normalizeCommitSHA(parts[4]); ok {
+				return sha, "", models.VersionSourceRefsCommit, nil
+			}
+		}
 	}
 
 	// GitHub and GitLab commit URLs are structured one way, e.g.
 	// https://github.com/MariaDB/server/commit/b1351c15946349f9daa7e5297fb2ac6f3139e4a8
 	// https://gitlab.freedesktop.org/virgl/virglrenderer/-/commit/b05bb61f454eeb8a85164c8a31510aeb9d79129c
-	// https://gitlab.com/qemu-project/qemu/-/commit/4367a20cc4
-
 	parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
 	directory, possibleCommitHash := path.Split(parsedURL.Path)
-	if strings.HasSuffix(directory, "commit/") && gitSHA1Regex.MatchString(possibleCommitHash) {
-		return strings.TrimSuffix(possibleCommitHash, ".patch"), "", models.VersionSourceRefsCommit, nil
+	if strings.HasSuffix(directory, "commit/") {
+		if sha, ok := normalizeCommitSHA(strings.TrimSuffix(possibleCommitHash, ".patch")); ok {
+			return sha, "", models.VersionSourceRefsCommit, nil
+		}
 	}
 
 	// and Bitbucket.org commit URLs are similar yet slightly different:
-	// https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1
+	// https://bitbucket.org/openpyxl/openpyxl/commits/3b4905f428e1...
 	//
 	// Some bitbucket.org commit URLs have been observed in the wild with a trailing /, which will
 	// change the behaviour of path.Split(), so normalize the path to be tolerant of this.
 	if parsedURL.Host == "bitbucket.org" {
-		parsedURL.Path = strings.TrimSuffix(parsedURL.Path, "/")
-		directory, possibleCommitHash := path.Split(parsedURL.Path)
-		if strings.HasSuffix(directory, "commits/") && gitSHA1Regex.MatchString(possibleCommitHash) {
-			return possibleCommitHash, "", models.VersionSourceRefsCommit, nil
+		if strings.HasSuffix(directory, "commits/") {
+			if sha, ok := normalizeCommitSHA(possibleCommitHash); ok {
+				return sha, "", models.VersionSourceRefsCommit, nil
+			}
 		}
 	}
 
@@ -499,7 +501,7 @@ func Commit(u string, httpClient *http.Client) (string, string, models.VersionSo
 	// Support for resolving a Github tag to a commit hash
 	// example: https://github.com/redis/redis/releases/tag/6.2.17
 	if parsedURL.Host == "github.com" {
-		possibleCommitHash, originalTag, err := resolveGitTag(parsedURL, u, gitSHA1Regex, httpClient)
+		possibleCommitHash, originalTag, err := resolveGitTag(parsedURL, u, httpClient)
 		if possibleCommitHash != "" && err == nil {
 			return possibleCommitHash, originalTag, models.VersionSourceRefsTag, nil
 		}
@@ -508,7 +510,7 @@ func Commit(u string, httpClient *http.Client) (string, string, models.VersionSo
 	return "", "", models.VersionSourceNone, fmt.Errorf("Commit(): unsupported URL: %s", u)
 }
 
-func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp, httpClient *http.Client) (string, string, error) {
+func resolveGitTag(parsedURL *url.URL, u string, httpClient *http.Client) (string, string, error) {
 	directory, tag := path.Split(parsedURL.Path)
 	if !strings.HasSuffix(directory, "tag/") {
 		return "", "", errors.New("no tag found")
@@ -530,8 +532,10 @@ func resolveGitTag(parsedURL *url.URL, u string, gitSHA1Regex *regexp.Regexp, ht
 	}
 
 	for t, nTag := range normalizedTags {
-		if tag == t && gitSHA1Regex.MatchString(nTag.Commit) {
-			return nTag.Commit, originalTag, nil
+		if tag == t {
+			if sha, ok := normalizeCommitSHA(nTag.Commit); ok {
+				return sha, originalTag, nil
+			}
 		}
 	}
 

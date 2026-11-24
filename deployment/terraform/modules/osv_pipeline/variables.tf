@@ -59,6 +59,12 @@ variable "vulnerabilities_export_bucket" {
   description = "The name of the GCS bucket where vulnerability JSON and proto exports are stored."
 }
 
+variable "public_export_bucket" {
+  type        = bool
+  description = "Whether to grant allUsers public read access on the vulnerability export bucket."
+  default     = false
+}
+
 variable "affected_commits_backups_bucket" {
   type        = string
   description = "The name of the GCS bucket where AffectedCommits database backups are stored."

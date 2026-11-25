@@ -13,26 +13,27 @@
 # limitations under the License.
 
 steps:
-# Fetch PostgreSQL migrations at the release commit and apply to prod and private-osv
-- name: gcr.io/cloud-builders/git
-  entrypoint: bash
-  env: ['COMMIT_SHA=$COMMIT_SHA']
-  args:
-  - '-c'
-  - |
-    set -euo pipefail
-    git clone --filter=blob:none --no-checkout https://github.com/google/osv.dev.git repo
-    cd repo
-    git sparse-checkout set go/internal/database/postgres/migrations
-    git checkout "$COMMIT_SHA"
-- name: gcr.io/oss-vdb/goose
-  env: ['CLOUDSQL_INSTANCE=oss-vdb:us-central1:osv-db']
-  args: ['up']
-  dir:  repo/go/internal/database/postgres/migrations
-- name: gcr.io/oss-vdb/goose
-  env: ['CLOUDSQL_INSTANCE=private-osv:us-west2:osv-db']
-  args: ['up']
-  dir:  repo/go/internal/database/postgres/migrations
+# Apply PostgreSQL schema migrations at the release commit to prod and private-osv via private Cloud Run Jobs
+- name: gcr.io/cloud-builders/gcloud
+  args: [
+    'run', 'jobs', 'update', 'osv-db-migrate',
+    '--quiet',
+    '--project=oss-vdb',
+    '--region=us-central1',
+    '--image=gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA',
+    '--execute-now',
+    '--wait',
+  ]
+- name: gcr.io/cloud-builders/gcloud
+  args: [
+    'run', 'jobs', 'update', 'osv-db-migrate',
+    '--quiet',
+    '--project=private-osv',
+    '--region=us-west2',
+    '--image=gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA',
+    '--execute-now',
+    '--wait',
+  ]
 
 # Promote Cloud Deploy
 - name: gcr.io/cloud-builders/gcloud
@@ -73,6 +74,7 @@ steps:
     # images, standalone Cloud Run Jobs). Add new ones here as needed.
     images=(
       "gcr.io/oss-vdb/worker-base:${COMMIT_SHA}"
+      "gcr.io/oss-vdb/goose-migrations:${COMMIT_SHA}"
     )
 
     # Cloud Deploy pipelines promoted/created above. Each release stores its full

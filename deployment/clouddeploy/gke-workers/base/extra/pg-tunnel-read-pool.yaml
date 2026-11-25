@@ -1,0 +1,86 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Loopback-only TCP forwarder for reaching the private-IP Cloud SQL read pool
+# (`osv-db-read-pool`) via `kubectl port-forward deploy/pg-tunnel-read-pool`.
+# Carries no DB credentials; callers authenticate over TLS with IAM tokens or passwords.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pg-tunnel-read-pool
+  labels:
+    app: pg-tunnel-read-pool
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pg-tunnel-read-pool
+  template:
+    metadata:
+      labels:
+        app: pg-tunnel-read-pool
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+      - name: direct
+        image: alpine/socat:1.8.0.3@sha256:beb4a68d9e4fe6b0f21ea774a0fde6c31f580dde6368939ed70100c5385b015e
+        env:
+        - name: POSTGRES_HOST
+          value: "postgres-host-not-set.invalid" # Overridden per environment overlay
+        args:
+        - "TCP-LISTEN:5432,bind=127.0.0.1,fork,reuseaddr,max-children=64,nodelay"
+        - "TCP:$(POSTGRES_HOST):5432,nodelay,keepalive,keepidle=60,keepintvl=10,keepcnt=3"
+        ports:
+        - name: pg-direct
+          containerPort: 5432
+        resources:
+          requests:
+            cpu: 5m
+            memory: 8Mi
+          limits:
+            cpu: 250m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]
+      - name: pooler
+        image: alpine/socat:1.8.0.3@sha256:beb4a68d9e4fe6b0f21ea774a0fde6c31f580dde6368939ed70100c5385b015e
+        env:
+        - name: POSTGRES_HOST
+          value: "postgres-host-not-set.invalid" # Overridden per environment overlay
+        args:
+        - "TCP-LISTEN:6432,bind=127.0.0.1,fork,reuseaddr,max-children=64,nodelay"
+        - "TCP:$(POSTGRES_HOST):6432,nodelay,keepalive,keepidle=60,keepintvl=10,keepcnt=3"
+        ports:
+        - name: pg-pooler
+          containerPort: 6432
+        resources:
+          requests:
+            cpu: 5m
+            memory: 8Mi
+          limits:
+            cpu: 250m
+            memory: 128Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop: ["ALL"]

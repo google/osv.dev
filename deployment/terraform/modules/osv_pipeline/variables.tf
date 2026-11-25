@@ -36,8 +36,14 @@ variable "postgres_availability_type" {
 
 variable "postgres_ipv4_enabled" {
   type        = bool
-  description = "Whether to assign a public IPv4 address to the primary Cloud SQL instance (for Cloud SQL Auth Proxy access from outside the VPC)."
+  description = "Whether to assign a public IPv4 address to the primary Cloud SQL instance (keep true during rollout until osv-db-migrate and pg-tunnel are verified, then flip to false)."
   default     = true
+}
+
+variable "postgres_migration_subnetwork" {
+  type        = string
+  description = "Subnetwork in the default VPC (within var.postgres_region) used by the osv-db-migrate Cloud Run Job for Direct VPC Egress."
+  default     = "default"
 }
 
 # Identity & Security
@@ -47,10 +53,22 @@ variable "worker_service_account_id" {
   default     = "osv-worker"
 }
 
+variable "migrator_service_account_id" {
+  type        = string
+  description = "The ID to use for the Cloud Run Job database migrations service account (max 30 characters)."
+  default     = "osv-migrator"
+}
+
 variable "deployment_service_account_email" {
   type        = string
   description = "Optional email of the CI/CD deployment service account granted Cloud Deploy and Cloud SQL migration permissions."
   default     = ""
+}
+
+variable "migrator_deployer_service_account_emails" {
+  type        = list(string)
+  description = "Service account emails allowed to actAs the database migrations service account (roles/iam.serviceAccountUser) when updating/executing the osv-db-migrate Cloud Run Job."
+  default     = []
 }
 
 # Storage

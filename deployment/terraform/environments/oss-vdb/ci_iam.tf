@@ -157,6 +157,8 @@ resource "google_project_iam_custom_role" "terraform_plan_reader" {
     "resourcemanager.projects.getIamPolicy",
     "run.configurations.get",
     "run.domainmappings.get",
+    "run.jobs.get",
+    "run.jobs.getIamPolicy",
     "run.locations.list",
     "run.revisions.get",
     "run.routes.get",

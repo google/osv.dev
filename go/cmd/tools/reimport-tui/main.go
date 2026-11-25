@@ -161,9 +161,6 @@ func loadSourcesCmd(projectID string) tea.Cmd {
 			if err != nil {
 				return errMsg{fmt.Errorf("failed to fetch sources: %w", err)}
 			}
-			if repo.Archived {
-				continue
-			}
 			repos = append(repos, repo)
 		}
 

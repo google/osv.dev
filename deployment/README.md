@@ -77,8 +77,8 @@ printf "%s" "$PG_WORKER_PASS" | gcloud secrets versions add osv-db-worker-passwo
 gcloud container clusters get-credentials workers \
   --zone="$CLUSTER_ZONE" \
   --project="$PROJECT_ID"
-kubectl create secret generic osv-db-worker-password \
-  --from-literal="password=$PG_WORKER_PASS" \
+printf "%s" "$PG_WORKER_PASS" | kubectl create secret generic osv-db-worker-password \
+  --from-file=password=/dev/stdin \
   --dry-run=client -o yaml | kubectl apply -f -
 # If rotating the password on an already-running cluster, restart the worker Deployments
 # so pods pick up the new POSTGRES_PASSWORD environment variable (CronJobs pick it up on next run):

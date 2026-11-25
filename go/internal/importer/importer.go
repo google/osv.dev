@@ -12,31 +12,24 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"cloud.google.com/go/pubsub/v2"
 	"github.com/google/osv.dev/go/internal/gitter"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/osvutil/schema"
+	"github.com/google/osv.dev/go/internal/worker/taskmsg"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/hashicorp/go-retryablehttp"
-	"github.com/klauspost/compress/zstd"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/encoding/protojson"
 	"k8s.io/apimachinery/pkg/util/yaml"
-)
-
-const (
-	maxPubSubMessageSize = 10_000_000
 )
 
 type Config struct {
@@ -838,57 +831,21 @@ func publishUpdate(ctx context.Context, config Config, args publishArgs, rawJSON
 		return nil
 	}
 
-	// Send the raw vulnerability JSON in the message data
-	var data []byte
-	contentEncoding := ""
-	if len(rawJSON) > 0 {
-		// make sure we have enough capacity for the compressed data
-		// to avoid reallocations
-		buf := make([]byte, 0, len(rawJSON))
-		data = zstd.EncodeTo(buf, rawJSON)
-		contentEncoding = "zstd"
-		if len(data) > maxPubSubMessageSize {
-			logger.WarnContext(ctx, "Vulnerability JSON is too large",
-				slog.String("source", args.source),
-				slog.String("path", args.path),
-				slog.Int("size", len(data)))
-
-			// Set data to nil and let worker decided what to do about it
-			data = nil
-			contentEncoding = ""
-		}
-	}
 	pool := args.workPool
 	if pool == "" {
 		pool = config.DefaultTaskPool
 	}
-	msg := &pubsub.Message{
-		Data: data,
-		Attributes: map[string]string{
-			"type":             "update",
-			"source":           args.source,
-			"path":             args.path,
-			"original_sha256":  args.hash,
-			"deleted":          strconv.FormatBool(args.deleted),
-			"req_timestamp":    strconv.FormatInt(time.Now().Unix(), 10),
-			"content_encoding": contentEncoding,
-			"format":           "json",
-			"work_pool":        pool,
-		},
-	}
-	if args.gitCommit != "" {
-		msg.Attributes["git_commit"] = args.gitCommit
-	}
-	if args.gcsGeneration != nil {
-		msg.Attributes["gcs_generation"] = strconv.FormatInt(*args.gcsGeneration, 10)
-	}
-	if args.srcTimestamp != nil {
-		msg.Attributes["src_timestamp"] = strconv.FormatInt(args.srcTimestamp.Unix(), 10)
-	} else {
-		msg.Attributes["src_timestamp"] = ""
-	}
-	// Inject the current trace into the message
-	otel.GetTextMapPropagator().Inject(ctx, propagation.MapCarrier(msg.Attributes))
+	msg := taskmsg.NewUpdateMessage(ctx, taskmsg.UpdateParams{
+		Source:         args.source,
+		Path:           args.path,
+		OriginalSHA256: args.hash,
+		Deleted:        args.deleted,
+		WorkPool:       pool,
+		SrcTimestamp:   args.srcTimestamp,
+		GitCommit:      args.gitCommit,
+		GCSGeneration:  args.gcsGeneration,
+		RawJSON:        rawJSON,
+	})
 
 	result := config.Publisher.Publish(ctx, msg)
 	_, err := result.Get(ctx)

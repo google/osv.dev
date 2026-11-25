@@ -19,9 +19,24 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const defaultMaxDecodedPayloadBytes = 128 << 20 // 128 MiB
+
+var defaultZstdDecoder = func() *zstd.Decoder {
+	dec, err := zstd.NewReader(nil, zstd.WithDecoderMaxMemory(defaultMaxDecodedPayloadBytes))
+	if err != nil {
+		panic(fmt.Sprintf("failed to initialize zstd decoder: %v", err))
+	}
+
+	return dec
+}()
+
 type Subscriber struct {
 	Engine    Engine
 	PubSubSub *pubsub.Subscriber
+
+	// MaxDecodedPayloadBytes caps the maximum uncompressed size of zstd-encoded
+	// Pub/Sub vulnerability payloads. Zero defaults to defaultMaxDecodedPayloadBytes (128 MiB).
+	MaxDecodedPayloadBytes uint64
 }
 
 func (s *Subscriber) Run(ctx context.Context) error {
@@ -131,10 +146,8 @@ func (s *Subscriber) parseVuln(m *pubsub.Message) (*osvschema.Vulnerability, []b
 	case "":
 		data = m.Data
 	case "zstd":
-		// TODO: try to extract the actual uncompressed size from the zstd frame.
-		data = make([]byte, 0, len(m.Data)*3)
 		var err error
-		data, err = zstd.DecodeTo(data, m.Data)
+		data, err = s.decodeZstd(m.Data)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to decompress vulnerability: %w", err)
 		}
@@ -158,6 +171,22 @@ func (s *Subscriber) parseVuln(m *pubsub.Message) (*osvschema.Vulnerability, []b
 	}
 
 	return v, nil, nil
+}
+
+func (s *Subscriber) decodeZstd(compressed []byte) ([]byte, error) {
+	if s.MaxDecodedPayloadBytes == 0 {
+		return defaultZstdDecoder.DecodeAll(compressed, nil)
+	}
+	dec, err := zstd.NewReader(nil,
+		zstd.WithDecoderMaxMemory(s.MaxDecodedPayloadBytes),
+		zstd.WithDecoderConcurrency(1),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer dec.Close()
+
+	return dec.DecodeAll(compressed, nil)
 }
 
 func (s *Subscriber) timeFromUnixSeconds(tsString string) (*time.Time, error) {

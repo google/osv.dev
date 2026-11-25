@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/osv.dev/go/logger"
@@ -120,6 +121,7 @@ func (g *PythonGenerator) GenerateBatch(ctx context.Context, vulns []*osvschema.
 		"--output", outputPath,
 		"--git-working-dir", gitDir,
 	)
+	cmd.Env = filteredEnv(os.Environ())
 	cmd.WaitDelay = 10 * time.Second
 	var stderr bytes.Buffer
 	cmd.Stdout = &stderr
@@ -173,4 +175,17 @@ func (g *PythonGenerator) GenerateBatch(ctx context.Context, vulns []*osvschema.
 	}
 
 	return result, nil
+}
+
+// filteredEnv strips PostgreSQL connection variables (including POSTGRES_PASSWORD)
+// so database credentials are not exposed to the Python Vanir subprocess.
+func filteredEnv(env []string) []string {
+	out := make([]string, 0, len(env))
+	for _, entry := range env {
+		if !strings.HasPrefix(entry, "POSTGRES_") {
+			out = append(out, entry)
+		}
+	}
+
+	return out
 }

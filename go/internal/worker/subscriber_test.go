@@ -1,6 +1,8 @@
 package worker
 
 import (
+	"bytes"
+	"errors"
 	"testing"
 
 	"cloud.google.com/go/pubsub/v2"
@@ -80,6 +82,27 @@ func TestParseVuln_JSON(t *testing.T) {
 		}
 		if gotJSON != nil {
 			t.Errorf("parseVuln() rawJSON = %q, want nil for protobuf message", gotJSON)
+		}
+	})
+
+	t.Run("zstd payload exceeding max decoded memory", func(t *testing.T) {
+		limitedSub := &Subscriber{
+			MaxDecodedPayloadBytes: 1024,
+		}
+		largeJSON := append([]byte(`{"id":"OSV-2026-BIG","summary":"`), bytes.Repeat([]byte("a"), 4096)...)
+		largeJSON = append(largeJSON, []byte(`"}`)...)
+		compressed := zstd.EncodeTo(nil, largeJSON)
+
+		msg := &pubsub.Message{
+			Data: compressed,
+			Attributes: map[string]string{
+				"content_encoding": "zstd",
+				"format":           "json",
+			},
+		}
+		_, _, err := limitedSub.parseVuln(msg)
+		if !errors.Is(err, zstd.ErrDecoderSizeExceeded) {
+			t.Fatalf("parseVuln() error = %v, want wrapping %v", err, zstd.ErrDecoderSizeExceeded)
 		}
 	})
 }

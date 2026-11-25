@@ -28,7 +28,6 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
@@ -40,9 +39,9 @@ import (
 	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/osvutil/schema"
+	"github.com/google/osv.dev/go/internal/worker/taskmsg"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
-	"github.com/klauspost/compress/zstd"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/otel"
@@ -54,8 +53,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 	"k8s.io/apimachinery/pkg/util/yaml"
 )
-
-const maxPubSubMessageSize = 10 * 1000 * 1000 // 10MB
 
 type Stores struct {
 	DatastoreClient *datastore.Client
@@ -230,43 +227,15 @@ func (r *Recoverer) HandleGCSMissing(ctx context.Context, m *pubsub.Message) err
 		return err
 	}
 
-	var data []byte
-	contentEncoding := ""
-	if len(downloaded.JSON) > 0 {
-		buf := make([]byte, 0, len(downloaded.JSON))
-		data = zstd.EncodeTo(buf, downloaded.JSON)
-		contentEncoding = "zstd"
-		if len(data) > maxPubSubMessageSize {
-			logger.WarnContext(ctx, "gcs_missing: Vulnerability JSON is too large",
-				slog.String("source", source),
-				slog.String("path", path),
-				slog.Int("size", len(data)))
-			data = nil
-			contentEncoding = ""
-		}
-	}
-
-	msg := &pubsub.Message{
-		Data: data,
-		Attributes: map[string]string{
-			"type":             "update",
-			"source":           source,
-			"path":             path,
-			"original_sha256":  downloaded.OriginalSHA256,
-			"deleted":          "false",
-			"req_timestamp":    strconv.FormatInt(time.Now().Unix(), 10),
-			"content_encoding": contentEncoding,
-			"format":           "json",
-			"work_pool":        r.reimportTaskPool,
-		},
-	}
-	if downloaded.GitCommit != "" {
-		msg.Attributes["git_commit"] = downloaded.GitCommit
-	}
-	if downloaded.GCSGeneration != nil {
-		msg.Attributes["gcs_generation"] = strconv.FormatInt(*downloaded.GCSGeneration, 10)
-	}
-	otel.GetTextMapPropagator().Inject(ctx, propagation.MapCarrier(msg.Attributes))
+	msg := taskmsg.NewUpdateMessage(ctx, taskmsg.UpdateParams{
+		Source:         source,
+		Path:           path,
+		OriginalSHA256: downloaded.OriginalSHA256,
+		WorkPool:       r.reimportTaskPool,
+		GitCommit:      downloaded.GitCommit,
+		GCSGeneration:  downloaded.GCSGeneration,
+		RawJSON:        downloaded.JSON,
+	})
 
 	res := r.stores.Publisher.Publish(ctx, msg)
 	if _, err := res.Get(ctx); err != nil {

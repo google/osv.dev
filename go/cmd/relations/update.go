@@ -180,6 +180,8 @@ ConsumerLoop:
 		if !hasUpdates {
 			continue
 		}
+		now := time.Now().UTC().Truncate(time.Microsecond)
+		modified = nextModified(v.GetModified(), modified, now)
 		v.Modified = timestamppb.New(modified)
 
 		// Update Datastore
@@ -261,7 +263,7 @@ ConsumerLoop:
 				if !pgChanged {
 					return false, nil
 				}
-				pgVuln.Modified = timestamppb.New(modified)
+				pgVuln.Modified = timestamppb.New(nextModified(pgVuln.GetModified(), modified, now))
 
 				return true, nil
 			})
@@ -304,4 +306,17 @@ ConsumerLoop:
 func (u *Updater) Finish() {
 	close(u.Ch)
 	u.wg.Wait()
+}
+
+// nextModified returns a monotonic modified timestamp: candidate if it is newer
+// than current, otherwise now (or current if ahead of now).
+func nextModified(current *timestamppb.Timestamp, candidate, now time.Time) time.Time {
+	if current == nil || candidate.After(current.AsTime()) {
+		return candidate
+	}
+	if now.After(current.AsTime()) {
+		return now
+	}
+
+	return current.AsTime()
 }

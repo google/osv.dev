@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -123,10 +122,6 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 		if decoded, err := hex.DecodeString(task.SHA256); err == nil {
 			rawSHA256 = decoded
 		}
-	}
-	if len(rawSHA256) == 0 && len(task.RawJSON) > 0 {
-		sum := sha256.Sum256(task.RawJSON)
-		rawSHA256 = sum[:]
 	}
 
 	if err := e.Stores.Vulnerability.Write(ctx, models.WriteRequest{

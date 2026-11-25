@@ -55,6 +55,29 @@ Use `terraform plan` and `terraform apply` to deploy any configuration changes.
 
 Terraform is automatically run on `oss-vdb-test` in `build-and-stage.yaml`
 
+### PR Terraform Plan Service Account (`terraformPlanReader`)
+
+Pull requests that touch `deployment/terraform/**` trigger `deployment/terraform/cloudbuild-tf-plan.yaml` as `terraform-plan@oss-vdb.iam.gserviceaccount.com`. To minimize blast radius on PR branches, this service account does **not** hold `roles/viewer` or `roles/iam.securityReviewer`; instead it holds:
+
+- Custom role `projects/<project>/roles/terraformPlanReader` on `oss-vdb` and `oss-vdb-test` — strictly the control-plane `.get` and `.getIamPolicy` permissions needed to refresh managed Terraform resources (no write permissions, no `datastore.entities.*`, no `storage.objects.get` across project buckets, no `cloudsql.backupRuns.export`, no `secretmanager.versions.access`).
+- `roles/logging.logWriter` on `oss-vdb` (for Cloud Build `CLOUD_LOGGING_ONLY`).
+- `roles/storage.legacyBucketReader` + prefix-conditioned `roles/storage.objectViewer` (`PublicTerraformStateOnly`) on `gs://oss-vdb-tf`, restricted to `oss-vdb/` and `oss-vdb-test/` state prefixes only (blocks reading `private-osv/` and `superosv/` state).
+
+**When adding a new GCP resource type or data source to Terraform**, if the PR `terraform-plan` check fails with `403 PermissionDenied`:
+
+1. Identify the missing read-only `.get` or `.getIamPolicy` permission from the Cloud Build log (avoid data-plane read, export, or write permissions).
+2. Add the permission to `google_project_iam_custom_role.terraform_plan_reader` in `deployment/terraform/environments/oss-vdb/ci_iam.tf`.
+3. Update the live custom role in **both** `oss-vdb` and `oss-vdb-test` so PR `terraform-plan` can pass immediately (in `oss-vdb-test`, `deployment@oss-vdb` intentionally does not hold `roles/iam.roleAdmin`, so the role definition is referenced via `data "google_project_iam_custom_role"` and updated out-of-band):
+   ```bash
+   for PROJECT in oss-vdb oss-vdb-test; do
+     gcloud iam roles update terraformPlanReader \
+       --project="$PROJECT" \
+       --add-permissions="<missing.permission.get>" \
+       --quiet
+   done
+   ```
+4. Re-run the `terraform-plan (oss-vdb)` PR check to verify both `oss-vdb-test` and `oss-vdb` plans pass.
+
 ### Cloud SQL PostgreSQL Passwords
 
 Because database user passwords are kept out of Terraform state (`ignore_changes = [password]`), Terraform initializes SQL users with a random bootstrap password (`uuid()`) and creates empty Secret Manager secrets. After the initial `terraform apply` creates `osv-db`, generate and store the real passwords once per project:

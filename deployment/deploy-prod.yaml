@@ -54,43 +54,83 @@ steps:
 - name: gcr.io/cloud-builders/gcloud
   args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=gke-workers', '--to-target=private-workers', '--annotations=tag=$TAG_NAME']
 
-# Tag the deployed images with the git tag
+# Tag every deployed image from this release with $TAG_NAME so Artifact Registry
+# cleanup policies preserve released versions.
+#
+# Instead of hardcoding every image (which drifts whenever a new service is added),
+# we query Cloud Deploy's release records for osv-$SHORT_SHA across all pipelines
+# and tag every referenced image, plus any extra non-Cloud-Deploy images listed below.
 - name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/worker-base:$COMMIT_SHA', 'gcr.io/oss-vdb/worker-base:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/osv-worker:$COMMIT_SHA', 'gcr.io/oss-vdb/osv-worker:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/oss-fuzz-worker:$COMMIT_SHA', 'gcr.io/oss-vdb/oss-fuzz-worker:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/importer:$COMMIT_SHA', 'gcr.io/oss-vdb/importer:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/oss-fuzz-importer:$COMMIT_SHA', 'gcr.io/oss-vdb/oss-fuzz-importer:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/exporter:$COMMIT_SHA', 'gcr.io/oss-vdb/exporter:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/exporter-deleter:$COMMIT_SHA', 'gcr.io/oss-vdb/exporter-deleter:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/alpine-cve-convert:$COMMIT_SHA', 'gcr.io/oss-vdb/alpine-cve-convert:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/debian-cve-convert:$COMMIT_SHA', 'gcr.io/oss-vdb/debian-cve-convert:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/combine-to-osv:$COMMIT_SHA', 'gcr.io/oss-vdb/combine-to-osv:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/indexer:$COMMIT_SHA', 'gcr.io/oss-vdb/indexer:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/debian-convert:$COMMIT_SHA', 'gcr.io/oss-vdb/debian-convert:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/debian-copyright-mirror:$COMMIT_SHA', 'gcr.io/oss-vdb/debian-copyright-mirror:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud  
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/cpe-repo-gen:$COMMIT_SHA', 'gcr.io/oss-vdb/cpe-repo-gen:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/osv-server:$COMMIT_SHA', 'gcr.io/oss-vdb/osv-server:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/osv-website:$COMMIT_SHA', 'gcr.io/oss-vdb/osv-website:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/recoverer:$COMMIT_SHA', 'gcr.io/oss-vdb/recoverer:$TAG_NAME']
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA', 'gcr.io/oss-vdb/goose-migrations:$TAG_NAME']
+  id: 'tag-release-images'
+  env:
+  - 'COMMIT_SHA=$COMMIT_SHA'
+  - 'SHORT_SHA=$SHORT_SHA'
+  - 'TAG_NAME=$TAG_NAME'
+  script: |
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Extra images deployed or used outside Cloud Deploy pipelines (e.g. shared base
+    # images, standalone Cloud Run Jobs). Add new ones here as needed.
+    images=(
+      "gcr.io/oss-vdb/worker-base:${COMMIT_SHA}"
+      "gcr.io/oss-vdb/goose-migrations:${COMMIT_SHA}"
+    )
+
+    # Cloud Deploy pipelines promoted/created above. Each release stores its full
+    # image list under buildArtifacts[].tag (e.g. gcr.io/oss-vdb/osv-worker:<sha>).
+    pipelines=(
+      gke-workers
+      osv-api
+      gke-indexer
+      osv-website
+      oss-fuzz-workers
+    )
+
+    for pipeline in "${pipelines[@]}"; do
+      artifacts="$(
+        gcloud deploy releases describe "osv-${SHORT_SHA}" \
+          --project=oss-vdb \
+          --region=us-central1 \
+          --delivery-pipeline="${pipeline}" \
+          --format='value[delimiter="\n"](buildArtifacts[].tag)'
+      )"
+      if [[ -z "${artifacts}" ]]; then
+        echo "ERROR: No buildArtifacts found for ${pipeline} release osv-${SHORT_SHA}" >&2
+        exit 1
+      fi
+      while IFS= read -r img; do
+        if [[ -n "${img}" ]]; then
+          images+=("${img}")
+        fi
+      done <<< "${artifacts}"
+    done
+
+    # Deduplicate (e.g. cron is in both gke-workers and oss-fuzz-workers) and attach
+    # the release tag ($TAG_NAME) alongside each image's commit SHA tag.
+    mapfile -t unique_images < <(printf '%s\n' "${images[@]}" | sort -u)
+    echo "Tagging ${#unique_images[@]} images with ${TAG_NAME}:"
+
+    failed=0
+    for src in "${unique_images[@]}"; do
+      # Only tag images hosted in our own projects' registries; skip third-party images.
+      case "${src}" in
+        gcr.io/oss-vdb/*|gcr.io/oss-vdb-test/*) ;;
+        *)
+          echo "  Skipping external image: ${src}"
+          continue
+          ;;
+      esac
+
+      # Strip any trailing @digest or :tag to derive the base image path.
+      repo="${src%%@*}"
+      repo="${repo%:*}"
+      dst="${repo}:${TAG_NAME}"
+      echo "  ${src} -> ${dst}"
+      gcloud container images add-tag --quiet "${src}" "${dst}" || failed=1
+    done
+
+    exit "${failed}"
 
 serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
 options:

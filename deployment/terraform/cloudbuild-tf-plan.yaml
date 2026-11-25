@@ -35,7 +35,9 @@ steps:
   id:   oss-vdb plan
 
 
-# Also set in Cloud Build:
+# Also set in Cloud Build.
+# Runs with the least-privilege custom role `terraformPlanReader` (control-plane reads only).
+# If a PR adding a new GCP resource type hits 403, update `terraformPlanReader` per deployment/README.md.
 serviceAccount: 'projects/oss-vdb/serviceAccounts/terraform-plan@oss-vdb.iam.gserviceaccount.com'
 options:
   logging: CLOUD_LOGGING_ONLY

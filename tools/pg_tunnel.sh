@@ -69,19 +69,30 @@ for cmd in gcloud kubectl; do
   fi
 done
 
-KCFG=$(mktemp)
-trap 'rm -f "${KCFG}"' EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
-
-echo "Fetching GKE credentials for ${PROJECT}/${ZONE}/${CLUSTER_NAME}..."
-KUBECONFIG="${KCFG}" gcloud container clusters get-credentials \
-  "${CLUSTER_NAME}" --zone="${ZONE}" --project="${PROJECT}" >/dev/null
-
-ACCOUNT=$(gcloud config get-value account 2>/dev/null || true)
-echo "Forwarding 127.0.0.1:${LOCAL_PORT} -> ${PROJECT} deploy/${TARGET}:${REMOTE_PORT}"
-echo "Connect via IAM auth (token valid ~1h):"
-echo "  PGSSLMODE=require PGPASSWORD=\$(gcloud sql generate-login-token) psql -h 127.0.0.1 -p ${LOCAL_PORT} -U ${ACCOUNT:-<you>@google.com} -d osv"
-echo ""
-
-KUBECONFIG="${KCFG}" kubectl port-forward -n default "deploy/${TARGET}" "${LOCAL_PORT}:${REMOTE_PORT}"
+> KCFG=$(mktemp)
+> PF_PID=""
+> cleanup() {
+>   if [[ -n "${PF_PID}" ]]; then
+>     kill "${PF_PID}" 2>/dev/null || true
+>     wait "${PF_PID}" 2>/dev/null || true
+>   fi
+>   rm -f "${KCFG}"
+> }
+> trap cleanup EXIT
+> trap 'exit 130' INT
+> trap 'exit 143' TERM
+> 
+> echo "Fetching GKE credentials for ${PROJECT}/${ZONE}/${CLUSTER_NAME}..."
+> KUBECONFIG="${KCFG}" gcloud container clusters get-credentials \
+>   "${CLUSTER_NAME}" --zone="${ZONE}" --project="${PROJECT}" >/dev/null
+> 
+> ACCOUNT=$(gcloud config get-value account 2>/dev/null || true)
+> echo "Forwarding 127.0.0.1:${LOCAL_PORT} -> ${PROJECT} deploy/${TARGET}:${REMOTE_PORT}"
+> echo "Connect via IAM auth (token valid ~1h):"
+> echo "  PGSSLMODE=require PGPASSWORD=\$(gcloud sql generate-login-token) psql -h 127.0.0.1 -p ${LOCAL_PORT} -U ${ACCOUNT:-<you>@google.com} -d osv"
+> echo ""
+> 
+> KUBECONFIG="${KCFG}" kubectl port-forward -n default --address=127.0.0.1 -- "deploy/${TARGET}" "${LOCAL_PORT}:${REMOTE_PORT}" &
+> PF_PID=$!
+> wait "${PF_PID}"
+> 

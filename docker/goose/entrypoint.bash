@@ -10,18 +10,16 @@ if [[ "${1:-}" == "version" || "${1:-}" == "-version" || "${1:-}" == "--version"
 fi
 
 if [[ -n "${CLOUDSQL_INSTANCE:-}" ]]; then
-  if [[ -n "${PGUSER:-}" ]]; then
-    # Cloud SQL IAM service account usernames omit the .gserviceaccount.com suffix.
-    db_user="${PGUSER%.gserviceaccount.com}"
-  else
-    active_account=$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2> /dev/null)
-    if [[ -z "${active_account}" ]]; then
+  db_user="${PGUSER:-}"
+  if [[ -z "${db_user}" ]]; then
+    db_user=$(gcloud auth list --filter=status:ACTIVE --format="value(account)" 2> /dev/null)
+    if [[ -z "${db_user}" ]]; then
       echo "No active gcloud account found for Cloud SQL IAM authentication."
       exit 1
     fi
-    # Cloud SQL IAM service account usernames omit the .gserviceaccount.com suffix.
-    db_user="${active_account%.gserviceaccount.com}"
   fi
+  # Cloud SQL IAM service account usernames omit the .gserviceaccount.com suffix.
+  db_user="${db_user%.gserviceaccount.com}"
 
   proxy_args=(
     "${CLOUDSQL_INSTANCE}"

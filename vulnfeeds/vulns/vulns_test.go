@@ -171,6 +171,20 @@ func TestClassifyReferences(t *testing.T) {
 				{Url: "https://gitlab.com/gitlab-org/gitlab.git", Type: osvschema.Reference_PACKAGE},
 			},
 		},
+		{
+			refData: []models.Reference{
+				{
+					URL: "git://git@gitlab.com:gitlab-org/gitlab.git",
+				},
+				{
+					URL:  "https://gitlab.com/gitlab-org/gitlab.git",
+					Tags: []string{"patch"},
+				},
+			},
+			references: []*osvschema.Reference{
+				{Url: "https://gitlab.com/gitlab-org/gitlab.git", Type: osvschema.Reference_FIX},
+			},
+		},
 	}
 	for _, tc := range testcases {
 		references := ClassifyReferences(tc.refData)
@@ -277,6 +291,18 @@ func TestNormalizeReferenceURL(t *testing.T) {
 		{
 			name:   "contains backslash",
 			rawURL: `https://example.com/foo\bar`,
+			want:   "",
+			wantOK: false,
+		},
+		{
+			name:   "bare scp git url with leading slash",
+			rawURL: "git@github.com:/org/repo.git",
+			want:   "https://github.com/org/repo.git",
+			wantOK: true,
+		},
+		{
+			name:   "scp git url with invalid backslash after rewrite",
+			rawURL: `git@github.com:org/foo\bar`,
 			want:   "",
 			wantOK: false,
 		},

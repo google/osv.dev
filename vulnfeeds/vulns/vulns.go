@@ -705,17 +705,14 @@ func Unique[T comparable](s []T) []T {
 	return result
 }
 
-var (
-	// scpGitURLWithSchemeRegex matches malformed Git URLs combining a scheme
-	// (git://, ssh://, git+ssh://) with SCP-style host:path syntax where the
-	// segment after ':' is not a numeric port, e.g.
-	// "git://git@gitlab.com:gitlab-org/gitlab.git".
-	scpGitURLWithSchemeRegex = regexp.MustCompile(`^(?i:(?:git|ssh|git\+ssh)://git@)([a-zA-Z0-9.-]+):([^/]*[^0-9/][^/]*(?:/.*)?)$`)
+// scpGitURLRegex matches bare or scheme-prefixed SCP-style Git URLs, e.g.
+// "git@github.com:org/repo.git" or "git://git@gitlab.com:gitlab-org/gitlab.git".
+var scpGitURLRegex = regexp.MustCompile(`^(?i:(?:(?:git|ssh|git\+ssh)://)?git@)([a-zA-Z0-9.-]+):(.+)$`)
 
-	// scpGitURLBareRegex matches bare SCP-style Git URLs without a scheme, e.g.
-	// "git@github.com:org/repo.git".
-	scpGitURLBareRegex = regexp.MustCompile(`^(?i:git@)([a-zA-Z0-9.-]+):(.+)$`)
-)
+func isValidReferenceURI(u string) bool {
+	parsed, err := url.Parse(u)
+	return err == nil && parsed.Scheme != "" && !strings.Contains(u, `\`)
+}
 
 // NormalizeReferenceURL trims whitespace, rewrites malformed or SCP-style Git
 // URLs (such as "git://git@gitlab.com:gitlab-org/gitlab.git") into valid HTTPS
@@ -727,14 +724,16 @@ func NormalizeReferenceURL(rawURL string) (string, bool) {
 		return "", false
 	}
 
-	if m := scpGitURLWithSchemeRegex.FindStringSubmatch(u); m != nil {
-		u = "https://" + m[1] + "/" + strings.TrimPrefix(m[2], "/")
-	} else if m := scpGitURLBareRegex.FindStringSubmatch(u); m != nil {
-		u = "https://" + m[1] + "/" + strings.TrimPrefix(m[2], "/")
+	if isValidReferenceURI(u) {
+		return u, true
 	}
 
-	parsed, err := url.Parse(u)
-	if err != nil || parsed.Scheme == "" || strings.Contains(u, `\`) {
+	m := scpGitURLRegex.FindStringSubmatch(u)
+	if m == nil {
+		return "", false
+	}
+	u = "https://" + m[1] + "/" + strings.TrimPrefix(m[2], "/")
+	if !isValidReferenceURI(u) {
 		return "", false
 	}
 

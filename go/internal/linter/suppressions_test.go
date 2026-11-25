@@ -7,7 +7,52 @@ import (
 	"testing"
 
 	"github.com/google/osv.dev/go/internal/linter"
+	"go.yaml.in/yaml/v4"
 )
+
+func TestDefaultRegistry_SourcesExistInSourceYAML(t *testing.T) {
+	t.Parallel()
+
+	reg, err := linter.LoadFile("suppressions.yaml")
+	if err != nil {
+		t.Fatalf("failed loading suppressions.yaml: %v", err)
+	}
+	suppressionSources := reg.Sources()
+	if len(suppressionSources) == 0 {
+		t.Fatal("expected at least one suppression source in suppressions.yaml")
+	}
+
+	knownSources := make(map[string]bool)
+	for _, relPath := range []string{
+		filepath.Join("..", "..", "..", "source.yaml"),
+		filepath.Join("..", "..", "..", "source_test.yaml"),
+	} {
+		data, err := os.ReadFile(relPath)
+		if err != nil {
+			t.Fatalf("failed reading %s: %v", relPath, err)
+		}
+		var entries []struct {
+			Name string `yaml:"name"`
+		}
+		if err := yaml.Load(data, &entries); err != nil {
+			t.Fatalf("failed parsing %s: %v", relPath, err)
+		}
+		if len(entries) == 0 {
+			t.Fatalf("expected non-empty source list in %s", relPath)
+		}
+		for _, e := range entries {
+			if e.Name != "" {
+				knownSources[e.Name] = true
+			}
+		}
+	}
+
+	for _, src := range suppressionSources {
+		if !knownSources[src] {
+			t.Errorf("suppression rule references unknown source %q not found in source.yaml or source_test.yaml", src)
+		}
+	}
+}
 
 func TestDefaultRegistry_BuiltInRules(t *testing.T) {
 	t.Parallel()
@@ -80,6 +125,9 @@ func TestParseConfigAndLoadFile(t *testing.T) {
 	var nilReg *linter.Registry
 	if _, ok := nilReg.Match("chainguard", "CGA-1", "RNG:002", `overlapping event: "0"`); ok {
 		t.Fatal("nil Registry should never match")
+	}
+	if sources := nilReg.Sources(); sources != nil {
+		t.Fatalf("nil Registry Sources() = %v, want nil", sources)
 	}
 
 	emptyReg, err := linter.ParseConfig([]byte("   \n"))

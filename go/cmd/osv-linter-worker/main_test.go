@@ -118,6 +118,14 @@ func TestProcessLinterResult_HybridSuppressions(t *testing.T) {
 			Findings:  []internalmodels.ImportFindings{internalmodels.ImportFindingsInvalidJSON, internalmodels.ImportFindingsInvalidRange},
 			FirstSeen: oldFirstSeen,
 		},
+		// Previously attributed to shorter prefix "generic-asb" with identical findings;
+		// should update Source to longest-prefix match "android" while preserving FirstSeen.
+		"ASB-A-2026-01": {
+			BugID:     "ASB-A-2026-01",
+			Source:    "generic-asb",
+			Findings:  []internalmodels.ImportFindings{internalmodels.ImportFindingsInvalidRecord},
+			FirstSeen: oldFirstSeen,
+		},
 	})
 
 	prefixToSource := map[string]string{
@@ -190,8 +198,8 @@ func TestProcessLinterResult_HybridSuppressions(t *testing.T) {
 	if ghsaOverlap, ok := store.existing["GHSA-ZERO-OVERLAP"]; !ok || !slices.Equal(ghsaOverlap.Findings, []internalmodels.ImportFindings{internalmodels.ImportFindingsInvalidRange}) {
 		t.Errorf("expected GHSA-ZERO-OVERLAP active InvalidRange in Datastore, got %+v", ghsaOverlap)
 	}
-	if androidRec, ok := store.existing["ASB-A-2026-01"]; !ok || androidRec.Source != "android" {
-		t.Errorf("expected longest-prefix match ASB-A-2026-01 -> android, got %+v", androidRec)
+	if androidRec, ok := store.existing["ASB-A-2026-01"]; !ok || androidRec.Source != "android" || !androidRec.FirstSeen.Equal(oldFirstSeen) {
+		t.Errorf("expected longest-prefix match ASB-A-2026-01 to update Source -> android while preserving FirstSeen %v, got %+v", oldFirstSeen, androidRec)
 	}
 
 	// 4. GCS chainguard/result.json still retains suppressed findings tagged with Suppressed=true and SuppressedReason.

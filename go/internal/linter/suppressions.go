@@ -6,8 +6,10 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 
@@ -32,12 +34,11 @@ type configFile struct {
 }
 
 type compiledRule struct {
-	code            string
-	hasExactMessage bool
-	message         string
-	messageRegex    *regexp.Regexp
-	bugIDRegex      *regexp.Regexp
-	reason          string
+	code         string
+	message      *string
+	messageRegex *regexp.Regexp
+	bugIDRegex   *regexp.Regexp
+	reason       string
 }
 
 // Registry holds compiled provider-specific suppression rules indexed by source name.
@@ -95,13 +96,8 @@ func ParseConfig(data []byte) (*Registry, error) {
 		if code == "*" {
 			return nil, fmt.Errorf("suppression rule %d (%s): wildcard code \"*\" is not allowed; specify an explicit rule code or matcher", i, source)
 		}
-		hasExactMessage := r.Message != nil
-		var exactMessage string
-		if hasExactMessage {
-			exactMessage = *r.Message
-		}
 
-		if code == "" && !hasExactMessage && r.MessageRegex == "" && r.BugIDRegex == "" {
+		if code == "" && r.Message == nil && r.MessageRegex == "" && r.BugIDRegex == "" {
 			return nil, fmt.Errorf("suppression rule %d (%s): at least one of code, message, message_regex, or bug_id_regex must be set", i, source)
 		}
 
@@ -124,12 +120,11 @@ func ParseConfig(data []byte) (*Registry, error) {
 		}
 
 		bySource[source] = append(bySource[source], compiledRule{
-			code:            code,
-			hasExactMessage: hasExactMessage,
-			message:         exactMessage,
-			messageRegex:    msgRe,
-			bugIDRegex:      bugRe,
-			reason:          reason,
+			code:         code,
+			message:      r.Message,
+			messageRegex: msgRe,
+			bugIDRegex:   bugRe,
+			reason:       reason,
 		})
 	}
 
@@ -138,6 +133,15 @@ func ParseConfig(data []byte) (*Registry, error) {
 	}
 
 	return &Registry{bySource: bySource}, nil
+}
+
+// Sources returns the sorted list of unique source names configured in this Registry.
+func (r *Registry) Sources() []string {
+	if r == nil {
+		return nil
+	}
+
+	return slices.Sorted(maps.Keys(r.bySource))
 }
 
 // Match checks whether a linter finding on (source, bugID, code, message) is suppressed.
@@ -156,7 +160,7 @@ func (r *Registry) Match(source, bugID, code, message string) (string, bool) {
 		if rule.code != "" && rule.code != normCode {
 			continue
 		}
-		if rule.hasExactMessage && rule.message != message {
+		if rule.message != nil && *rule.message != message {
 			continue
 		}
 		if rule.messageRegex != nil && !rule.messageRegex.MatchString(message) {

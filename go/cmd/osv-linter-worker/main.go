@@ -390,18 +390,11 @@ func processLinterResult(
 
 			if reason, suppressed := suppressions.Match(source, bugID, code, msg); suppressed {
 				f["Suppressed"] = true
-				if reason != "" {
-					f["SuppressedReason"] = reason
-				} else {
-					delete(f, "SuppressedReason")
-				}
+				f["SuppressedReason"] = reason
 				suppressedFindingsCount++
 
 				continue
 			}
-
-			delete(f, "Suppressed")
-			delete(f, "SuppressedReason")
 
 			importFinding := errorCodeMapping[code]
 			if importFinding == 0 {
@@ -557,7 +550,7 @@ func processBatch(ctx context.Context, store internalmodels.ImportFindingsStore,
 			logger.Info("New finding", slog.String("bugID", batch[j].BugID))
 		} else {
 			batch[j].FirstSeen = existing[j].FirstSeen
-			if equalFindings(batch[j].Findings, existing[j].Findings) {
+			if batch[j].Source == existing[j].Source && equalFindings(batch[j].Findings, existing[j].Findings) {
 				batch[j] = nil // Skip
 			}
 		}

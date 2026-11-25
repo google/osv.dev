@@ -723,11 +723,13 @@ func buildLinterSnapshot(
 		}
 	}
 
+	// Pre-build the default view (excluding suppressed findings) so default queries
+	// keep the O(pageSize) fast path and precomputed facets. Build a second allView
+	// (including suppressed findings for the "Show suppressed" toggle) only when at
+	// least one suppressed finding exists; otherwise both views are identical.
 	activeView := buildLinterView(sources, sortedSources, sourceCache, timestamps, firstSeen, false)
-	var allView linterView
-	if suppressedFindings == 0 {
-		allView = activeView
-	} else {
+	allView := activeView
+	if suppressedFindings > 0 {
 		allView = buildLinterView(sources, sortedSources, sourceCache, timestamps, firstSeen, true)
 	}
 

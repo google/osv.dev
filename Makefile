@@ -140,13 +140,13 @@ run-grafana-local: ## Run local Grafana for testing
 	./tools/run_grafana_local.sh $(ARGS)
 
 run-pg-tunnel: ## Port-forward to prod Cloud SQL read pool via deploy/pg-tunnel-read-pool (TARGET=pg-tunnel for primary)
-	./tools/pg_tunnel.sh oss-vdb '$(or $(TARGET),pg-tunnel-read-pool)' '$(or $(LOCAL_PORT),5432)' '$(or $(REMOTE_PORT),5432)'
+	./tools/pg_tunnel.sh oss-vdb '$(TARGET)' '$(LOCAL_PORT)' '$(REMOTE_PORT)'
 
 run-pg-tunnel-staging: ## Port-forward to staging (oss-vdb-test) Cloud SQL read pool via deploy/pg-tunnel-read-pool (TARGET=pg-tunnel for primary)
-	./tools/pg_tunnel.sh oss-vdb-test '$(or $(TARGET),pg-tunnel-read-pool)' '$(or $(LOCAL_PORT),5432)' '$(or $(REMOTE_PORT),5432)'
+	./tools/pg_tunnel.sh oss-vdb-test '$(TARGET)' '$(LOCAL_PORT)' '$(REMOTE_PORT)'
 
 run-pg-tunnel-private: ## Port-forward to private-osv Cloud SQL primary via deploy/pg-tunnel
-	./tools/pg_tunnel.sh private-osv '$(or $(TARGET),pg-tunnel)' '$(or $(LOCAL_PORT),5432)' '$(or $(REMOTE_PORT),5432)'
+	./tools/pg_tunnel.sh private-osv '$(TARGET)' '$(LOCAL_PORT)' '$(REMOTE_PORT)'
 
 # TODO: API integration tests.
 all-tests: lib-tests vulnfeed-tests bindings-tests go-tests ## Run all tests

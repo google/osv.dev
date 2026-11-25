@@ -42,10 +42,10 @@ spec:
         image: alpine/socat:1.8.0.3@sha256:beb4a68d9e4fe6b0f21ea774a0fde6c31f580dde6368939ed70100c5385b015e
         env:
         - name: POSTGRES_HOST
-          value: "127.0.0.1" # Overridden per environment overlay
+          value: "postgres-host-not-set.invalid" # Overridden per environment overlay
         args:
-        - "TCP-LISTEN:5432,bind=127.0.0.1,fork,reuseaddr"
-        - "TCP:$(POSTGRES_HOST):5432"
+        - "TCP-LISTEN:5432,bind=127.0.0.1,fork,reuseaddr,max-children=64,nodelay"
+        - "TCP:$(POSTGRES_HOST):5432,nodelay,keepalive,keepidle=60,keepintvl=10,keepcnt=3"
         ports:
         - name: pg-direct
           containerPort: 5432
@@ -54,8 +54,8 @@ spec:
             cpu: 5m
             memory: 8Mi
           limits:
-            cpu: 50m
-            memory: 32Mi
+            cpu: 250m
+            memory: 128Mi
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
@@ -65,10 +65,10 @@ spec:
         image: alpine/socat:1.8.0.3@sha256:beb4a68d9e4fe6b0f21ea774a0fde6c31f580dde6368939ed70100c5385b015e
         env:
         - name: POSTGRES_HOST
-          value: "127.0.0.1" # Overridden per environment overlay
+          value: "postgres-host-not-set.invalid" # Overridden per environment overlay
         args:
-        - "TCP-LISTEN:6432,bind=127.0.0.1,fork,reuseaddr"
-        - "TCP:$(POSTGRES_HOST):6432"
+        - "TCP-LISTEN:6432,bind=127.0.0.1,fork,reuseaddr,max-children=64,nodelay"
+        - "TCP:$(POSTGRES_HOST):6432,nodelay,keepalive,keepidle=60,keepintvl=10,keepcnt=3"
         ports:
         - name: pg-pooler
           containerPort: 6432
@@ -77,8 +77,8 @@ spec:
             cpu: 5m
             memory: 8Mi
           limits:
-            cpu: 50m
-            memory: 32Mi
+            cpu: 250m
+            memory: 128Mi
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true

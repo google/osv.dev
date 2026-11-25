@@ -34,65 +34,52 @@ set -euo pipefail
 PROJECT="${1:-oss-vdb-test}"
 LOCAL_PORT="${3:-5432}"
 REMOTE_PORT="${4:-5432}"
-CLUSTER_NAME="${CLUSTER_NAME:-workers}"
+CLUSTER_NAME="workers"
 
 case "${PROJECT}" in
   oss-vdb)
-    DEFAULT_ZONE="us-west2-c"
+    ZONE="us-west2-c"
     DEFAULT_TARGET="pg-tunnel-read-pool"
     ;;
   oss-vdb-test)
-    DEFAULT_ZONE="us-west2-b"
+    ZONE="us-west2-b"
     DEFAULT_TARGET="pg-tunnel-read-pool"
     ;;
   private-osv)
-    DEFAULT_ZONE="us-west2-c"
+    ZONE="us-west2-c"
     DEFAULT_TARGET="pg-tunnel"
     ;;
   *)
-    if [[ -z "${CLUSTER_ZONE:-}" ]]; then
-      echo "Unknown project '${PROJECT}'. Set CLUSTER_ZONE=<zone> to override." >&2
-      exit 1
-    fi
-    DEFAULT_ZONE="${CLUSTER_ZONE}"
-    DEFAULT_TARGET="pg-tunnel-read-pool"
+    echo "Unknown project '${PROJECT}' (expected: oss-vdb, oss-vdb-test, or private-osv)." >&2
+    exit 1
     ;;
 esac
 
-ZONE="${CLUSTER_ZONE:-${DEFAULT_ZONE}}"
 TARGET="${2:-${DEFAULT_TARGET}}"
 
-for cmd in gcloud kubectl; do
-  if ! command -v "${cmd}" >/dev/null 2>&1; then
-    echo "Missing required command: ${cmd}" >&2
-    exit 1
+KCFG=$(mktemp)
+PF_PID=""
+cleanup() {
+  if [[ -n "${PF_PID}" ]]; then
+    kill "${PF_PID}" 2>/dev/null || true
+    wait "${PF_PID}" 2>/dev/null || true
   fi
-done
+  rm -f "${KCFG}"
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
-> KCFG=$(mktemp)
-> PF_PID=""
-> cleanup() {
->   if [[ -n "${PF_PID}" ]]; then
->     kill "${PF_PID}" 2>/dev/null || true
->     wait "${PF_PID}" 2>/dev/null || true
->   fi
->   rm -f "${KCFG}"
-> }
-> trap cleanup EXIT
-> trap 'exit 130' INT
-> trap 'exit 143' TERM
-> 
-> echo "Fetching GKE credentials for ${PROJECT}/${ZONE}/${CLUSTER_NAME}..."
-> KUBECONFIG="${KCFG}" gcloud container clusters get-credentials \
->   "${CLUSTER_NAME}" --zone="${ZONE}" --project="${PROJECT}" >/dev/null
-> 
-> ACCOUNT=$(gcloud config get-value account 2>/dev/null || true)
-> echo "Forwarding 127.0.0.1:${LOCAL_PORT} -> ${PROJECT} deploy/${TARGET}:${REMOTE_PORT}"
-> echo "Connect via IAM auth (token valid ~1h):"
-> echo "  PGSSLMODE=require PGPASSWORD=\$(gcloud sql generate-login-token) psql -h 127.0.0.1 -p ${LOCAL_PORT} -U ${ACCOUNT:-<you>@google.com} -d osv"
-> echo ""
-> 
-> KUBECONFIG="${KCFG}" kubectl port-forward -n default --address=127.0.0.1 -- "deploy/${TARGET}" "${LOCAL_PORT}:${REMOTE_PORT}" &
-> PF_PID=$!
-> wait "${PF_PID}"
-> 
+echo "Fetching GKE credentials for ${PROJECT}/${ZONE}/${CLUSTER_NAME}..."
+KUBECONFIG="${KCFG}" gcloud container clusters get-credentials \
+  "${CLUSTER_NAME}" --zone="${ZONE}" --project="${PROJECT}" >/dev/null
+
+ACCOUNT=$(gcloud config get-value account 2>/dev/null || true)
+echo "Forwarding 127.0.0.1:${LOCAL_PORT} -> ${PROJECT} deploy/${TARGET}:${REMOTE_PORT}"
+echo "Connect via IAM auth (token valid ~1h):"
+echo "  PGSSLMODE=require PGPASSWORD=\$(gcloud sql generate-login-token) psql -h 127.0.0.1 -p ${LOCAL_PORT} -U ${ACCOUNT:-<you>@google.com} -d osv"
+echo ""
+
+KUBECONFIG="${KCFG}" kubectl port-forward -n default --address=127.0.0.1 -- "deploy/${TARGET}" "${LOCAL_PORT}:${REMOTE_PORT}" &
+PF_PID=$!
+wait "${PF_PID}"

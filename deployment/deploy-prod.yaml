@@ -21,14 +21,7 @@ steps:
     '--project=oss-vdb',
     '--region=us-central1',
     '--image=gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA',
-  ]
-- name: gcr.io/cloud-builders/gcloud
-  args: [
-    'run', 'jobs', 'execute', 'osv-db-migrate',
-    '--quiet',
-    '--project=oss-vdb',
-    '--region=us-central1',
-    '--args=up',
+    '--execute-now',
     '--wait',
   ]
 - name: gcr.io/cloud-builders/gcloud
@@ -38,14 +31,7 @@ steps:
     '--project=private-osv',
     '--region=us-west2',
     '--image=gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA',
-  ]
-- name: gcr.io/cloud-builders/gcloud
-  args: [
-    'run', 'jobs', 'execute', 'osv-db-migrate',
-    '--quiet',
-    '--project=private-osv',
-    '--region=us-west2',
-    '--args=up',
+    '--execute-now',
     '--wait',
   ]
 

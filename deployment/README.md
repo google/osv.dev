@@ -91,7 +91,7 @@ Cloud SQL instances use `ssl_mode = "ENCRYPTED_ONLY"`; `osv-db-read-pool` is **p
 
 Database schema migrations live in `go/internal/database/postgres/migrations/` and are managed with [goose](https://github.com/pressly/goose). Each commit to `master` builds `gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA` (via `docker/goose/migrations.Dockerfile` layered on `gcr.io/oss-vdb/goose:latest`).
 
-* **Staging (`oss-vdb-test`)**: Applied automatically by `build-and-stage.yaml` right after `terraform apply` by updating and executing the private `osv-db-migrate` Cloud Run Job (`gcloud run jobs execute osv-db-migrate --wait`).
+* **Staging (`oss-vdb-test`)**: Applied automatically by `build-and-stage.yaml` right after `terraform apply` by updating and executing the private `osv-db-migrate` Cloud Run Job (`gcloud run jobs update osv-db-migrate ... --execute-now --wait`).
 * **Production (`oss-vdb` & `private-osv`)**: Applied automatically by `deploy-prod.yaml` at the release `$COMMIT_SHA` via the `osv-db-migrate` Cloud Run Jobs right before promoting the Cloud Deploy pipelines.
 
 After the initial `terraform apply` creates the `osv-migrator@<project>.iam` Cloud SQL user on an instance, set its default login role to `cloudsqlsuperuser` once per instance (so tables created by CI/CD migrations are owned by the shared `cloudsqlsuperuser` role):
@@ -131,7 +131,7 @@ To connect or run `goose` manually from your workstation via IAM authentication 
    ```bash
    kubectl port-forward -n default deploy/pg-tunnel-read-pool 5432:5432
    ```
-   *(For local sessions longer than ~1 hour, IAM tokens from `gcloud sql generate-login-token` expire — connect as `osv-readonly` with `gcloud secrets versions access latest --secret=osv-db-readonly-password` instead. To also verify the database server certificate against the instance CA instead of `sslmode=require`, fetch it with `gcloud sql instances describe <instance> --project="$PROJECT_ID" --format='value(serverCaCert.cert)' > /tmp/osv-db-ca.pem` — where `<instance>` is `osv-db-read-pool` or `osv-db` — and pass `PGSSLMODE=verify-ca PGSSLROOTCERT=/tmp/osv-db-ca.pem`.)*
+   *(For local sessions longer than ~1 hour, IAM tokens from `gcloud sql generate-login-token` expire — connect as `osv-readonly` with `gcloud secrets versions access latest --secret=osv-db-readonly-password` instead. To also verify the database server certificate against the instance CA instead of `sslmode=require`, fetch it into `$HOME` with `mkdir -p "$HOME/.config/osv" && gcloud sql instances describe <instance> --project="$PROJECT_ID" --format='value(serverCaCert.cert)' > "$HOME/.config/osv/${PROJECT_ID}-<instance>-ca.pem"` — where `<instance>` is `osv-db-read-pool` or `osv-db` — and pass `PGSSLMODE=verify-ca PGSSLROOTCERT="$HOME/.config/osv/${PROJECT_ID}-<instance>-ca.pem"`.)*
 4. Set your IAM user's default login role to `cloudsqlsuperuser` (once per instance; requires tunneling to the primary with `TARGET=pg-tunnel` on `oss-vdb` / `oss-vdb-test`):
    ```bash
    PGSSLMODE=require PGPASSWORD=$(gcloud sql generate-login-token) \
@@ -149,8 +149,9 @@ To connect or run `goose` manually from your workstation via IAM authentication 
    ```
    Or run `goose` locally through the primary tunnel (`TARGET=pg-tunnel` on `oss-vdb` / `oss-vdb-test`):
    ```bash
-   goose -dir go/internal/database/postgres/migrations postgres \
-     "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) password=$(gcloud sql generate-login-token) dbname=osv sslmode=require default_query_exec_mode=cache_describe" \
+   PGSSLMODE=require PGPASSWORD=$(gcloud sql generate-login-token) \
+     goose -dir go/internal/database/postgres/migrations postgres \
+     "host=127.0.0.1 port=5432 user=$(gcloud config get-value account) dbname=osv default_query_exec_mode=cache_describe" \
      status
    ```
 

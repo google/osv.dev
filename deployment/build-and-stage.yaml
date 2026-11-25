@@ -500,9 +500,17 @@ steps:
 
 # Build/push goose migrations image
 - name: gcr.io/cloud-builders/docker
-  args: ['build', '--pull', '-t', 'gcr.io/oss-vdb/goose-migrations:latest', '-t', 'gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA', '-f', 'docker/goose/migrations.Dockerfile', 'go/internal/database/postgres/migrations']
+  args: ['buildx', 'build', '--load', '--pull',
+         '--build-context', 'goose=docker/goose',
+         '-t', 'gcr.io/oss-vdb/goose-migrations:latest',
+         '-t', 'gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA',
+         '-f', 'docker/goose/migrations.Dockerfile',
+         'go/internal/database/postgres/migrations']
   id: 'build-goose-migrations'
-  waitFor: ['setup']
+  waitFor: ['setup', 'setup-buildx']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
 - name: gcr.io/cloud-builders/docker
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/goose-migrations']
   id: 'push-goose-migrations'
@@ -529,20 +537,11 @@ steps:
     '--project=oss-vdb-test',
     '--region=us-central1',
     '--image=gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA',
-  ]
-  id: 'goose-update'
-  waitFor: ['terraform-apply', 'push-goose-migrations']
-- name: 'gcr.io/cloud-builders/gcloud'
-  args: [
-    'run', 'jobs', 'execute', 'osv-db-migrate',
-    '--quiet',
-    '--project=oss-vdb-test',
-    '--region=us-central1',
-    '--args=up',
+    '--execute-now',
     '--wait',
   ]
   id: 'goose-up'
-  waitFor: ['goose-update']
+  waitFor: ['terraform-apply', 'push-goose-migrations']
 
 # Cloud Deploy
 # GKE Workers

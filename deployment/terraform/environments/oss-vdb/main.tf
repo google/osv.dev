@@ -123,36 +123,6 @@ resource "google_project_iam_member" "deployment_service" {
   member  = "serviceAccount:${google_service_account.deployment_service.email}"
 }
 
-# Legacy Default Compute SA bindings (to be removed once prod Cloud Run and OSS-Fuzz migrate off Default Compute SA)
-data "google_compute_default_service_account" "default" {
-  project = "oss-vdb"
-}
-
-resource "google_project_iam_member" "compute_service" {
-  project = "oss-vdb"
-  role    = "roles/editor"
-  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
-}
-
-resource "google_project_iam_member" "compute_service_datastore" {
-  project = "oss-vdb"
-  role    = "roles/datastore.importExportAdmin"
-  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
-}
-
-resource "google_project_iam_member" "website_secret_accessor" {
-  project = "oss-vdb"
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
-}
-
-resource "google_secret_manager_secret_iam_member" "legacy_compute_readonly_secret_access" {
-  project   = "oss-vdb"
-  secret_id = "osv-db-readonly-password"
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${data.google_compute_default_service_account.default.email}"
-}
-
 # Cloud Router and NAT in us-central1 for private OSS-Fuzz workers cluster
 resource "google_compute_router" "oss_fuzz_router" {
   project = "oss-vdb"

@@ -16,6 +16,7 @@ package recoverer_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -769,5 +770,65 @@ func TestHandleGeneric(t *testing.T) {
 
 	if err := rec.HandleGeneric(ctx, msg); err != nil {
 		t.Fatalf("HandleGeneric returned error: %v", err)
+	}
+}
+
+func TestHandleGCSMissing_ArchivedSource(t *testing.T) {
+	ctx := context.Background()
+	dsClient := testutils.MustNewDatastoreClientForTesting(t)
+	gcsMock := testutils.NewMockStorage()
+	publisherMock := &testutils.MockPublisher{}
+
+	sourceRepoStore := osvdatastore.NewSourceRepositoryStore(dsClient)
+	if err := sourceRepoStore.Update(ctx, "archived-src", &models.SourceRepository{
+		Name:     "archived-src",
+		Type:     models.SourceRepositoryTypeGit,
+		Archived: true,
+		Git: &models.SourceRepoGit{
+			URL:              "https://github.com/example/archived.git",
+			LastSyncedCommit: "deadbeef",
+		},
+		Extension: ".json",
+	}); err != nil {
+		t.Fatalf("Failed to create archived SourceRepository: %v", err)
+	}
+
+	vulnKey := datastore.NameKey("Vulnerability", "GSD-2021-1", nil)
+	if _, err := dsClient.Put(ctx, vulnKey, &osvdatastore.Vulnerability{
+		SourceID: "archived-src:GSD-2021-1.json",
+		Modified: time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+	}); err != nil {
+		t.Fatalf("Failed to put Vulnerability: %v", err)
+	}
+
+	gitterCalled := false
+	gitterMock := &mockGitterClient{
+		fileContentFunc: func(_ context.Context, _ *gitterpb.FileContentRequest) (*gitterpb.FileContentResponse, error) {
+			gitterCalled = true
+			return nil, errors.New("should not call Gitter for archived source")
+		},
+	}
+
+	rec := recoverer.New(recoverer.Config{
+		Stores: recoverer.Stores{
+			DatastoreClient: dsClient,
+			SourceRepo:      sourceRepoStore,
+			GCS:             gcsMock,
+			Publisher:       publisherMock,
+		},
+		GitterClient: gitterMock,
+	})
+
+	msg := &pubsub.Message{
+		Attributes: map[string]string{"id": "GSD-2021-1"},
+	}
+	if err := rec.HandleGCSMissing(ctx, msg); err != nil {
+		t.Fatalf("Expected nil error (ack) for archived source, got %v", err)
+	}
+	if gitterCalled {
+		t.Error("Expected Gitter not to be called for archived source")
+	}
+	if len(publisherMock.Messages) != 0 {
+		t.Errorf("Expected 0 published messages, got %d", len(publisherMock.Messages))
 	}
 }

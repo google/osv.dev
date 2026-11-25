@@ -186,6 +186,9 @@ func (r *Recoverer) HandleGCSRetry(ctx context.Context, m *pubsub.Message) error
 	return nil
 }
 
+// errArchivedSource is returned when re-importing from an archived SourceRepository is refused.
+var errArchivedSource = errors.New("source repository is archived")
+
 // HandleGCSMissing handles a failed GCS read by triggering a reimport.
 func (r *Recoverer) HandleGCSMissing(ctx context.Context, m *pubsub.Message) error {
 	vulnID := m.Attributes["id"]
@@ -220,6 +223,11 @@ func (r *Recoverer) HandleGCSMissing(ctx context.Context, m *pubsub.Message) err
 
 	data, err := r.DownloadVulnData(ctx, source, path)
 	if err != nil {
+		if errors.Is(err, errArchivedSource) {
+			logger.WarnContext(ctx, "gcs_missing: skipping re-import for archived source", slog.String("id", vulnID), slog.String("source", source))
+
+			return nil
+		}
 		logger.ErrorContext(ctx, "gcs_missing: failed to download vuln data", slog.String("id", vulnID), slog.String("source_id", vuln.SourceID), slog.Any("error", err))
 
 		return err
@@ -256,6 +264,9 @@ func (r *Recoverer) DownloadVulnData(ctx context.Context, source, vulnPath strin
 	sourceRepo, err := r.stores.SourceRepo.Get(ctx, source)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get source repository %s: %w", source, err)
+	}
+	if sourceRepo.Archived {
+		return nil, fmt.Errorf("%w: %s", errArchivedSource, source)
 	}
 
 	var rawData []byte

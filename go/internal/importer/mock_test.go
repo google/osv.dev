@@ -11,12 +11,18 @@ import (
 )
 
 type mockSourceRepositoryStore struct {
+	repos   []*models.SourceRepository
 	updates map[string]any
 }
 
 func (m *mockSourceRepositoryStore) All(_ context.Context) iter.Seq2[*models.SourceRepository, error] {
-	// not used for now
-	return nil
+	return func(yield func(*models.SourceRepository, error) bool) {
+		for _, r := range m.repos {
+			if !yield(r, nil) {
+				return
+			}
+		}
+	}
 }
 
 func (m *mockSourceRepositoryStore) Get(_ context.Context, _ string) (*models.SourceRepository, error) {
@@ -25,7 +31,10 @@ func (m *mockSourceRepositoryStore) Get(_ context.Context, _ string) (*models.So
 }
 
 func (m *mockSourceRepositoryStore) Update(_ context.Context, name string, repo *models.SourceRepository) error {
-	m.updates[name] = repo
+	if m.updates != nil {
+		m.updates[name] = repo
+	}
+
 	return nil
 }
 

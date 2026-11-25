@@ -142,6 +142,7 @@ def main() -> int:
       human_link='https://github.com/google/oss-fuzz/tree/master/',
       db_prefix=['OSS-FUZZ', 'OTHER'],
       strict_validation=True,
+      archived=True,
       work_pool='pool',
   ).put()
 
@@ -196,6 +197,10 @@ def main() -> int:
     return 1
   print('(Python) Getting RelatedGroup')
   if RelatedGroup.get_by_id('CVE-987-654') is None:
+    return 1
+  print('(Python) Getting SourceRepository')
+  go_source_repo = SourceRepository.get_by_id('go-source')
+  if go_source_repo is None or not go_source_repo.archived:
     return 1
   print('(Python) Getting AffectedCommits')
   if AffectedCommits.get_by_id('CVE-987-654') is None:

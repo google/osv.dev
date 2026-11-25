@@ -139,6 +139,10 @@ func Run(ctx context.Context, config Config) error {
 		if err != nil {
 			return err
 		}
+		if sourceRepo.Archived {
+			logger.InfoContext(ctx, "Skipping import for archived source repository", slog.String("source", sourceRepo.Name))
+			continue
+		}
 
 		sourceWg.Go(func() {
 			ctx, span := otel.Tracer("importer").Start(ctx, sourceRepo.Name)
@@ -187,6 +191,10 @@ func RunDeletions(ctx context.Context, config Config) error {
 		if err != nil {
 			return err
 		}
+		if sourceRepo.Archived {
+			logger.InfoContext(ctx, "Skipping deletion reconciliation for archived source repository", slog.String("source", sourceRepo.Name))
+			continue
+		}
 		wg.Go(func() {
 			ctx, span := otel.Tracer("importer").Start(ctx, sourceRepo.Name)
 			defer span.End()
@@ -230,6 +238,7 @@ func RunDeletions(ctx context.Context, config Config) error {
 // reconcileSkipSources is a list of source names to skip during reconciliation.
 var reconcileSkipSources = []string{
 	// Upstream records are completely deprecated and archived now.
+	// Remove once uvi is marked archived: True in source.yaml.
 	"uvi",
 	// Currently an upstream issue that we can't fix. (https://github.com/AlmaLinux/osv-database/issues/363)
 	"almalinux-alsa",
@@ -287,6 +296,10 @@ func RunReconcile(ctx context.Context, config Config) error {
 	for sourceRepo, err := range config.SourceRepoStore.All(ctx) {
 		if err != nil {
 			return err
+		}
+		if sourceRepo.Archived {
+			logger.InfoContext(ctx, "Skipping reconciliation for archived source repository", slog.String("source", sourceRepo.Name))
+			continue
 		}
 
 		// Sanity check for multiple sources with same git url but different branches.

@@ -31,6 +31,7 @@ import (
 type sourcePrefixes struct {
 	name       string
 	idPrefixes []string
+	archived   bool
 }
 
 func matchSource(id string, sources []sourcePrefixes) string {
@@ -87,7 +88,11 @@ func (c *Collector) sourcePrefixesAndLastUpdated(ctx context.Context) ([]sourceP
 		sources = append(sources, sourcePrefixes{
 			name:       source.Name,
 			idPrefixes: source.IDPrefixes,
+			archived:   source.Archived,
 		})
+		if source.Archived {
+			continue
+		}
 
 		var lastUpdated time.Time
 		if source.Bucket != nil && source.Bucket.LastUpdated != nil {
@@ -227,10 +232,17 @@ func mapImportFindingToRuleAndSeverity(code models.ImportFindings) (string, stri
 }
 
 func (c *Collector) collectDatasetAndExportMetrics(ctx context.Context, sources []sourcePrefixes, fallbackLastUpdated map[string]time.Time) {
+	archivedSources := make(map[string]bool, len(sources))
+	for _, s := range sources {
+		if s.archived {
+			archivedSources[s.name] = true
+		}
+	}
+
 	latestBySource := make(map[string]time.Time)
 	defer func() {
 		for src, ts := range fallbackLastUpdated {
-			if _, ok := latestBySource[src]; !ok {
+			if _, ok := latestBySource[src]; !ok && !archivedSources[src] {
 				latestBySource[src] = ts
 			}
 		}
@@ -277,7 +289,7 @@ func (c *Collector) collectDatasetAndExportMetrics(ctx context.Context, sources 
 			}
 			uniqueIDs[vulnID] = struct{}{}
 			if ts, err := time.Parse(time.RFC3339Nano, modStr); err == nil {
-				if src := matchSource(vulnID, sources); src != "unknown" && ts.After(latestBySource[src]) {
+				if src := matchSource(vulnID, sources); src != "unknown" && !archivedSources[src] && ts.After(latestBySource[src]) {
 					latestBySource[src] = ts
 				}
 			}

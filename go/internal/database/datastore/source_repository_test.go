@@ -35,6 +35,7 @@ func TestSourceRepositoryStore_Update(t *testing.T) {
 				Name:           "test-git-repo",
 				Type:           models.SourceRepositoryTypeGit,
 				Strictness:     true,
+				Archived:       true,
 				IgnorePatterns: []string{"abc"},
 				Extension:      ".json",
 				KeyPath:        "key",
@@ -58,6 +59,7 @@ func TestSourceRepositoryStore_Update(t *testing.T) {
 				Name:                "test-git-repo",
 				Type:                models.SourceRepositoryTypeGit,
 				StrictValidation:    true,
+				Archived:            true,
 				IgnorePatterns:      []string{"abc"},
 				Extension:           ".json",
 				KeyPath:             "key",
@@ -168,6 +170,7 @@ func TestSourceRepositoryStore_Get(t *testing.T) {
 		Name:           "test-repo",
 		Type:           models.SourceRepositoryTypeGit,
 		Strictness:     true,
+		Archived:       true,
 		IgnorePatterns: []string{"abc"},
 		Extension:      ".json",
 		KeyPath:        "key",
@@ -322,5 +325,30 @@ func TestSourceRepositoryStore_All(t *testing.T) {
 
 	if diff := cmp.Diff(repos, got, cmpopts.EquateEmpty(), sortOpt); diff != "" {
 		t.Errorf("All() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestSourceRepositoryStore_ArchivedOmitEmpty(t *testing.T) {
+	ctx := context.Background()
+	dsClient := testutils.MustNewDatastoreClientForTesting(t)
+	store := NewSourceRepositoryStore(dsClient)
+
+	active := &models.SourceRepository{
+		Name: "active-repo",
+		Type: models.SourceRepositoryTypeGit,
+		Git:  &models.SourceRepoGit{URL: "http://git.url/active"},
+	}
+	if err := store.Update(ctx, active.Name, active); err != nil {
+		t.Fatalf("Update(active) error = %v", err)
+	}
+
+	var props datastore.PropertyList
+	if err := dsClient.Get(ctx, datastore.NameKey("SourceRepository", active.Name, nil), &props); err != nil {
+		t.Fatalf("Get(active PropertyList) error = %v", err)
+	}
+	for _, p := range props {
+		if p.Name == "archived" {
+			t.Errorf("expected non-archived SourceRepository to omit 'archived' property, got %v", p.Value)
+		}
 	}
 }

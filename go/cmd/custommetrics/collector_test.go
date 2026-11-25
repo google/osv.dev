@@ -120,6 +120,12 @@ func TestCollectMetrics(t *testing.T) {
 				Type:       models.SourceRepositoryTypeBucket,
 				IDPrefixes: []string{"A-", "ASB-A", "PUB-A"},
 			},
+			{
+				Name:       "uvi",
+				Type:       models.SourceRepositoryTypeGit,
+				Archived:   true,
+				IDPrefixes: []string{"GSD-"},
+			},
 		},
 	}
 
@@ -152,7 +158,7 @@ func TestCollectMetrics(t *testing.T) {
 	}
 
 	_ = gcsMock.WriteObject(ctx, "all.zip", []byte("zip-bytes-12345"), nil)
-	_ = gcsMock.WriteObject(ctx, "modified_id.csv", []byte("2026-10-15T06:00:00Z,PyPI/PYSEC-2026-1\n2026-10-15T00:00:00Z,PyPI/GHSA-1111\n2026-10-15T00:00:00Z,npm/GHSA-1111\n2026-10-14T12:00:00Z,PyPI/GHSA-2222\n"), nil)
+	_ = gcsMock.WriteObject(ctx, "modified_id.csv", []byte("2026-10-15T06:00:00Z,PyPI/PYSEC-2026-1\n2026-10-15T00:00:00Z,PyPI/GHSA-1111\n2026-10-15T00:00:00Z,npm/GHSA-1111\n2026-10-14T12:00:00Z,PyPI/GHSA-2222\n2022-01-01T00:00:00Z,Linux/GSD-2022-1\n"), nil)
 	_ = gcsMock.WriteObject(ctx, "ecosystems.txt", []byte("PyPI\n"), nil)
 	_ = gcsMock.WriteObject(ctx, "PyPI/all.zip", []byte("pypi-zip"), nil)
 	_ = gcsMock.WriteObject(ctx, "PyPI/modified_id.csv", []byte("2026-10-15T00:00:00Z,GHSA-1111\n2026-10-15T00:00:00Z,GHSA-2222\n"), nil)
@@ -186,7 +192,7 @@ func TestCollectMetrics(t *testing.T) {
 		`osv_deleter_refused_deletions{source="ghsa"} 42`,
 		`osv_data_quality_findings{rule_code="RNG:001",severity="error",source="ghsa"} 1`,
 		`osv_data_quality_findings{rule_code="PKG:001",severity="error",source="android"} 1`,
-		`osv_dataset_total_vulnerabilities{ecosystem="all"} 3`,
+		`osv_dataset_total_vulnerabilities{ecosystem="all"} 4`,
 		`osv_dataset_total_vulnerabilities{ecosystem="PyPI"} 2`,
 		`osv_export_zip_size_bytes{ecosystem="all"} 15`,
 	}
@@ -194,5 +200,8 @@ func TestCollectMetrics(t *testing.T) {
 		if !strings.Contains(metricsText, want) {
 			t.Errorf("Expected /metrics output to contain %q, got:\n%s", want, metricsText)
 		}
+	}
+	if strings.Contains(metricsText, `osv_importer_last_new_record_timestamp_seconds{source="uvi"}`) {
+		t.Errorf("Expected archived source uvi to be excluded from importer staleness metric, got:\n%s", metricsText)
 	}
 }

@@ -298,6 +298,19 @@ steps:
   args: ['push', '--all-tags', 'gcr.io/oss-vdb/vanir-signatures']
   waitFor: ['build-vanir-signatures', 'cloud-build-queue']
 
+# Build/push vanir-sandbox images to gcr.io/oss-vdb.
+- name: gcr.io/cloud-builders/docker
+  args: ['buildx', 'build', '--load', '-t', 'gcr.io/oss-vdb/vanir-sandbox:latest', '-t', 'gcr.io/oss-vdb/vanir-sandbox:$COMMIT_SHA', '--target', 'vanir-sandbox', '--build-context', 'bindings=../bindings', '--build-context', 'poetry=../docker/poetry', '-f', 'Dockerfile', '--pull', '.']
+  dir: 'go'
+  id: 'build-vanir-sandbox'
+  waitFor: ['build-vanir-signatures']
+  volumes:
+  - name: 'docker-config'
+    path: '/root/.docker'
+- name: gcr.io/cloud-builders/docker
+  args: ['push', '--all-tags', 'gcr.io/oss-vdb/vanir-sandbox']
+  waitFor: ['build-vanir-sandbox', 'cloud-build-queue']
+
 # Build/push cron job images.
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-t', 'gcr.io/oss-vdb/cron:latest', '-t', 'gcr.io/oss-vdb/cron:$COMMIT_SHA', '.']
@@ -581,6 +594,16 @@ steps:
   ]
   dir: deployment/clouddeploy/osv-website
   id: 'deploy-osv-website'
+  waitFor: ['goose-up']
+
+# Vanir Sandbox
+- name: 'gcr.io/cloud-builders/gcloud'
+  args: ['deploy', 'releases', 'create', 'osv-$SHORT_SHA', '--project=oss-vdb', '--region=us-central1',
+    '--delivery-pipeline=vanir-sandbox', '--images',
+    "vanir-sandbox=gcr.io/oss-vdb/vanir-sandbox:$COMMIT_SHA"
+  ]
+  dir: deployment/clouddeploy/vanir-sandbox
+  id: 'deploy-vanir-sandbox'
   waitFor: ['goose-up']
 
 timeout: 7200s

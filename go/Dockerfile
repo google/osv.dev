@@ -25,7 +25,7 @@
 # 
 # Select which service to build using the --target flag (e.g. importer, worker, exporter, exporter-deleter,
 # relations, recordchecker, generatesitemap, custommetrics, gitter, first_package_finder,
-# api, recoverer, vanir-signatures, ubuntubinarymapper, staging-api-test, website, osv-linter).
+# api, recoverer, vanir-signatures, vanir-sandbox, ubuntubinarymapper, staging-api-test, website, osv-linter).
 # ====================================================================================
 
 # ========================================================
@@ -253,6 +253,25 @@ COPY --from=vanir-signatures-build /app/vanir_signatures /usr/local/bin/vanir_si
 COPY cmd/vanir_signatures/generate_signatures.py /usr/local/bin/generate_signatures.py
 RUN chmod 755 /usr/local/bin/generate_signatures.py
 ENTRYPOINT ["/usr/local/bin/vanir_signatures"]
+
+# ========================================================
+# Target: Vanir Sandbox
+# ========================================================
+FROM builder AS vanir-sandbox-build
+RUN --mount=type=cache,target=/go/pkg/mod \
+    --mount=type=cache,target=/root/.cache/go-build \
+    CGO_ENABLED=0 go build -o /app/vanir_sandbox ./cmd/vanir_sandbox/
+
+FROM python:3.13-slim@sha256:8d9d0b8bcf6506481eae4907c18f5e3e7902e629f5f6d684f9e7c32e85e3ddf0 AS vanir-sandbox
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && \
+    rm -rf /var/lib/apt/lists/* && \
+    find / -xdev -perm /6000 -exec chmod a-s {} +
+COPY --from=vanir-python-deps /app/.venv /app/.venv
+ENV PATH="/app/.venv/bin:$PATH"
+COPY --from=vanir-sandbox-build /app/vanir_sandbox /usr/local/bin/vanir_sandbox
+COPY cmd/vanir_signatures/generate_signatures.py /usr/local/bin/generate_signatures.py
+RUN chmod 755 /usr/local/bin/vanir_sandbox /usr/local/bin/generate_signatures.py
+ENTRYPOINT ["/usr/local/bin/vanir_sandbox"]
 
 # ========================================================
 # Target: Ubuntu Binary Mapper

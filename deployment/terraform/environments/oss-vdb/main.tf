@@ -230,6 +230,11 @@ output "postgres_read_pool_private_ip" {
   value       = module.osv_api.read_pool_private_ip_address
 }
 
+output "vanir_sandbox_uri" {
+  description = "HTTPS URI of the untrusted Vanir sandbox Cloud Run service"
+  value       = module.osv.vanir_sandbox_uri
+}
+
 terraform {
   backend "gcs" {
     bucket = "oss-vdb-tf"

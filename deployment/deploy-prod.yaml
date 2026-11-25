@@ -43,6 +43,8 @@ steps:
   args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=gke-indexer', '--to-target=production-indexer', '--annotations=tag=$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
   args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=osv-website', '--to-target=production-website', '--annotations=tag=$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['deploy', 'releases', 'promote', '--quiet', '--release=osv-$SHORT_SHA', '--region=us-central1', '--delivery-pipeline=vanir-sandbox', '--to-target=production-vanir-sandbox', '--annotations=tag=$TAG_NAME']
 
 # Deploy OSS-Fuzz workers
 - name: gcr.io/cloud-builders/gcloud
@@ -88,6 +90,8 @@ steps:
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/osv-website:$COMMIT_SHA', 'gcr.io/oss-vdb/osv-website:$TAG_NAME']
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/recoverer:$COMMIT_SHA', 'gcr.io/oss-vdb/recoverer:$TAG_NAME']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'images', 'add-tag', '--quiet', 'gcr.io/oss-vdb/vanir-sandbox:$COMMIT_SHA', 'gcr.io/oss-vdb/vanir-sandbox:$TAG_NAME']
 
 serviceAccount: 'projects/oss-vdb/serviceAccounts/deployment@oss-vdb.iam.gserviceaccount.com'
 options:

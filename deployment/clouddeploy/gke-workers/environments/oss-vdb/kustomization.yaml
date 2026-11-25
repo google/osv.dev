@@ -28,4 +28,6 @@ patches:
 - path: gitter.yaml
 - path: vanir-signatures.yaml
 - path: ubuntu-binary-mapper.yaml
+- path: pg-tunnel.yaml
+- path: pg-tunnel-read-pool.yaml
 

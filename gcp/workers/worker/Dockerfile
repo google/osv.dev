@@ -14,8 +14,6 @@
 
 FROM gcr.io/oss-vdb/worker-base
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y zstd
-
 RUN mkdir /work && mkdir -p /env/gcp/workers/worker
 VOLUME /var/lib/docker
 
@@ -28,3 +26,7 @@ COPY osv /env/osv
 # Set virtualenv creation to false to install globally
 RUN cd /env/gcp/workers/worker && POETRY_VIRTUALENVS_CREATE=false poetry install
 
+# Run apt-get upgrade after poetry install so the Poetry layer can hit --cache-from
+# while still applying fresh OS security updates on every CI build (via CACHEBUST).
+ARG CACHEBUST
+RUN : "${CACHEBUST}" && apt-get update && apt-get upgrade -y && apt-get install -y zstd && rm -rf /var/lib/apt/lists/*

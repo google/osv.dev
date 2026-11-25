@@ -1,15 +1,10 @@
 package website
 
 import (
-	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 	"text/template"
 
-	"github.com/google/osv.dev/go/logger"
-	"github.com/nikolalohinski/gonja/v2"
-	"github.com/nikolalohinski/gonja/v2/exec"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
 
@@ -49,7 +44,7 @@ func parseHumanLink(tmplStr string) (*template.Template, error) {
 // RenderHumanLink renders a source's human_link template for the vulnerability.
 // The template is a Go text/template with the data in humanLinkData and the functions in humanLinkFuncs.
 // An error (e.g. a field index out of range) means no link should be shown.
-func RenderHumanLink(ctx context.Context, tmplStr string, vuln *osvschema.Vulnerability) (string, error) {
+func RenderHumanLink(tmplStr string, vuln *osvschema.Vulnerability) (string, error) {
 	if tmplStr == "" {
 		return "", nil
 	}
@@ -64,12 +59,7 @@ func RenderHumanLink(ctx context.Context, tmplStr string, vuln *osvschema.Vulner
 
 	tpl, err := parseHumanLink(tmplStr)
 	if err != nil {
-		// TODO(michaelkedar): Remove this fallback (and the gonja dependency) once all
-		// SourceRepository human_links have been migrated from jinja to Go templates.
-		logger.WarnContext(ctx, "human_link is not a valid Go template, falling back to jinja",
-			slog.String("id", vuln.GetId()), slog.String("human_link", tmplStr), slog.Any("error", err))
-
-		return renderJinjaHumanLink(tmplStr, data)
+		return "", err
 	}
 
 	var sb strings.Builder
@@ -78,17 +68,4 @@ func RenderHumanLink(ctx context.Context, tmplStr string, vuln *osvschema.Vulner
 	}
 
 	return sb.String(), nil
-}
-
-// renderJinjaHumanLink renders a legacy jinja human_link template.
-func renderJinjaHumanLink(tmplStr string, data humanLinkData) (string, error) {
-	tpl, err := gonja.FromString(tmplStr)
-	if err != nil {
-		return "", err
-	}
-
-	return tpl.ExecuteToString(exec.NewContext(map[string]any{
-		"BUG_ID":     data.ID,
-		"ECOSYSTEMS": data.Ecosystems,
-	}))
 }

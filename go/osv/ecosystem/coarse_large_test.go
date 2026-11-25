@@ -45,6 +45,7 @@ func TestCoarseMonotonicityLarge(t *testing.T) {
 		"Hackage",
 		"Debian",  // Represets dpkgEcosystem
 		"Go",      // Represents semverEcosystem
+		"Linux",   // Represents linuxEcosystem
 		"Red Hat", // Represents rpmEcosystem
 		// "Alpine",  // Represents apkEcosystem
 	}

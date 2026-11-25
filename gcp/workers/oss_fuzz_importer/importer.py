@@ -1080,7 +1080,7 @@ class Importer:
   def export_oss_fuzz_to_bucket(self):
     """Export OSS-Fuzz vulns to bucket."""
     storage_client = storage.Client()
-    bucket = storage_client.get_bucket(self._oss_fuzz_export_bucket)
+    bucket = storage_client.bucket(self._oss_fuzz_export_bucket)
 
     def export_oss_fuzz(vulnerability, testcase_id, issue_id):
       """Export a single vulnerability."""

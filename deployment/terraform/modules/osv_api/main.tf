@@ -107,8 +107,7 @@ resource "null_resource" "grpc_proxy_image" {
         -s ${var.api_url} \
         -c ${google_endpoints_service.grpc_service.config_id} \
         -p ${var.project_id} \
-        -v ${var.esp_version} \
-        ${var.gcs_log_dir != "" ? format("-l %s", var.gcs_log_dir) : ""}
+        -v ${var.esp_version}
     EOS
   }
 }
@@ -163,6 +162,15 @@ resource "google_cloud_run_service" "api" {
   lifecycle {
     prevent_destroy = true
   }
+}
+
+# Allow unauthenticated public API requests through the ESPv2 proxy
+resource "google_cloud_run_service_iam_member" "api_public_invoker" {
+  project  = var.project_id
+  location = google_cloud_run_service.api.location
+  service  = google_cloud_run_service.api.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
 }
 
 resource "google_cloud_run_domain_mapping" "api" {

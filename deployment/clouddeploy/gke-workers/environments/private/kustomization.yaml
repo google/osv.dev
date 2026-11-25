@@ -17,3 +17,4 @@ patches:
 - path: recoverer.yaml
 - path: workers.yaml
 - path: scaler.yaml
+- path: pg-tunnel.yaml

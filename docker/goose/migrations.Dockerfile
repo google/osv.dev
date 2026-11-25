@@ -1,4 +1,4 @@
-# Copyright 2024 Google LLC
+# Copyright 2026 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,22 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.27.1-alpine@sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414 AS GO_BUILD
-
-RUN mkdir /src
-WORKDIR /src
-
-COPY ./go.mod /src/go.mod
-COPY ./go.sum /src/go.sum
-RUN go mod download
-
-COPY ./ /src/
-RUN go build -o debian ./cmd/converters/debian/
-
-
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:269c3ae5175a900ea6be98322dcc65d4cb1499ec9f8f262d19bbd128c6a898c8
-
-WORKDIR /root/
-COPY --from=GO_BUILD /src/debian ./
-ENTRYPOINT ["/root/debian"]
-
+# Build context must be go/internal/database/postgres/migrations with --build-context goose=docker/goose:
+#   docker buildx build --build-context goose=docker/goose -f docker/goose/migrations.Dockerfile go/internal/database/postgres/migrations
+FROM gcr.io/oss-vdb/goose:latest
+COPY --from=goose --chmod=755 entrypoint.bash /builder/entrypoint.bash
+COPY *.sql /migrations/
+WORKDIR /migrations

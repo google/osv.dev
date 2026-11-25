@@ -206,6 +206,9 @@ func logTaskLatency(ctx context.Context, task Task, workPool string) {
 	now := time.Now()
 	latency := now.Sub(*task.ReceivedTime)
 	latencySeconds := int64(latency.Seconds())
+	if workPool != "reimport" {
+		metrics.RecordImporterToAvailableLag(task.SourceID, latency)
+	}
 	logAttrs := []any{
 		slog.Int64("latency", latencySeconds),
 		slog.String("source", task.SourceID),
@@ -214,9 +217,6 @@ func logTaskLatency(ctx context.Context, task Task, workPool string) {
 	if task.SourceTime != nil {
 		srcLatency := now.Sub(*task.SourceTime)
 		logAttrs = append(logAttrs, slog.Int64("src_latency", int64(srcLatency.Seconds())))
-		if workPool != "reimport" {
-			metrics.RecordPublishedToAvailableLag(task.SourceID, srcLatency)
-		}
 	}
 	logger.InfoContext(ctx, fmt.Sprintf("Task update (source_id=%s) latency %d", task.SourceID, latencySeconds), logAttrs...)
 }

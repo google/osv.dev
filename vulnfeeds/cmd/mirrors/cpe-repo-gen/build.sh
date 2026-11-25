@@ -17,9 +17,9 @@ set -ex
 # limitations under the License.
 #
 
-cd ../..
+cd ../../..
 
 docker build \
   -t gcr.io/oss-vdb/cpe-repo-gen:latest \
-  -f cmd/cpe-repo-gen/Dockerfile --pull . && \
+  --target cpe-repo-gen -f Dockerfile --pull . && \
 gcloud docker -- push gcr.io/oss-vdb/cpe-repo-gen:latest

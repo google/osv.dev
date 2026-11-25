@@ -406,6 +406,7 @@ func checkReconcile(
 		SourceRecord:           sourceRecord,
 		SourceRepository:       sourceRepo.Name,
 		SourcePath:             path,
+		IDPrefixes:             sourceRepo.IDPrefixes,
 		Format:                 format,
 		KeyPath:                sourceRepo.KeyPath,
 		Strict:                 sourceRepo.Strictness,
@@ -541,6 +542,9 @@ type WorkItem struct {
 
 	SourceRepository       string
 	SourcePath             string
+	IDPrefixes             []string
+	KnownID                string
+	KnownModified          time.Time
 	Format                 RecordFormat
 	KeyPath                string
 	Strict                 bool
@@ -596,6 +600,25 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 	sourceRepoName := item.SourceRepository
 	sourcePath := item.SourcePath
 	strict := config.StrictValidation && item.Strict
+
+	if !item.IsReimport && item.CompareAgainstDatabase && item.Action == ActionImport &&
+		item.KnownID != "" && !item.KnownModified.IsZero() {
+		dbModified, err := config.VulnerabilityStore.GetSourceModified(ctx, item.KnownID)
+		if err != nil && !errors.Is(err, models.ErrNotFound) {
+			logger.ErrorContext(ctx, "Failed to get source modified",
+				slog.Any("error", err),
+				slog.String("source", sourceRepoName),
+				slog.String("path", sourcePath),
+				slog.String("id", item.KnownID))
+
+			return
+		}
+		// Compare at whole-second granularity so sub-second timestamps in a REST index
+		// do not trigger redundant fetches when the individual record truncates to seconds.
+		if err == nil && !item.KnownModified.Truncate(time.Second).After(dbModified.Truncate(time.Second)) {
+			return
+		}
+	}
 
 	unmarshalOptions := protojson.UnmarshalOptions{
 		DiscardUnknown: !strict,
@@ -687,6 +710,16 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 
 		return
 	}
+
+	if !isValidID(vulnProto.GetId()) || !hasValidPrefix(vulnProto.GetId(), item.IDPrefixes) {
+		logger.ErrorContext(ctx, "Invalid vulnerability id",
+			slog.String("source", sourceRepoName),
+			slog.String("path", sourcePath),
+			slog.String("id", vulnProto.GetId()))
+
+		return
+	}
+
 	// Skip if the record is older than the last update time
 	modified := vulnProto.GetModified().AsTime()
 	if !item.IsReimport && item.CompareAgainstDatabase {

@@ -29,7 +29,12 @@ locals {
 module "osv_pipeline" {
   source = "../../modules/osv_pipeline"
 
-  project_id                                     = "oss-vdb-test"
+  project_id                       = "oss-vdb-test"
+  deployment_service_account_email = var.deployment_service_account_email
+  migrator_deployer_service_account_emails = compact([
+    var.deployment_service_account_email,
+    var.terraform_service_account_email,
+  ])
   vulnerabilities_export_bucket                  = "osv-test-vulnerabilities"
   affected_commits_backups_bucket                = "osv-test-affected-commits"
   affected_commits_backups_bucket_retention_days = 2
@@ -49,8 +54,13 @@ module "osv_pipeline" {
 module "osv_test" {
   source = "../../modules/osv"
 
-  project_id                    = "oss-vdb-test"
-  worker_service_account_email  = module.osv_pipeline.worker_service_account_email
+  project_id                       = "oss-vdb-test"
+  worker_service_account_email     = module.osv_pipeline.worker_service_account_email
+  deployment_service_account_email = var.deployment_service_account_email
+  frontend_deployer_service_account_emails = compact([
+    var.deployment_service_account_email,
+    var.terraform_service_account_email,
+  ])
   vulnerabilities_export_bucket = module.osv_pipeline.vulnerabilities_export_bucket_name
   failed_tasks_topic_name       = module.osv_pipeline.failed_tasks_topic_name
   datastore_database_id         = module.osv_pipeline.datastore_database_id
@@ -75,8 +85,7 @@ module "osv_api" {
 
   project_id                     = "oss-vdb-test"
   api_url                        = "api.test.osv.dev"
-  esp_version                    = "2.57.1"
-  gcs_log_dir                    = "gs://oss-vdb-tf/apply-logs"
+  esp_version                    = "2.57.2"
   frontend_service_account_email = module.osv_test.frontend_service_account_email
   service_account_email          = module.osv_test.frontend_service_account_email
 
@@ -91,6 +100,19 @@ resource "google_storage_bucket_iam_member" "worker_android_import" {
   bucket = "android-osv-test"
   role   = "roles/storage.objectViewer"
   member = "serviceAccount:${module.osv_pipeline.worker_service_account_email}"
+}
+
+# Staging website OAuth & session secrets mounted in deployment/clouddeploy/osv-website/run-staging.yaml
+resource "google_secret_manager_secret_iam_member" "frontend_website_secrets" {
+  for_each = toset([
+    "flask-secret-key",
+    "google-oauth-client-secret",
+  ])
+
+  project   = "oss-vdb-test"
+  secret_id = each.value
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${module.osv_test.frontend_service_account_email}"
 }
 
 module "k8s_cron_alert" {
@@ -117,11 +139,6 @@ import {
   id = "projects/oss-vdb-test/global/networks/default:servicenetworking.googleapis.com"
 }
 
-import {
-  to = module.osv_test.google_service_account.frontend_sa
-  id = "projects/oss-vdb-test/serviceAccounts/osv-frontend@oss-vdb-test.iam.gserviceaccount.com"
-}
-
 output "website_dns_records" {
   description = "DNS records that need to be created for the osv.dev website"
   value       = module.osv_test.website_dns_records
@@ -137,6 +154,18 @@ output "postgres_read_pool_private_ip" {
   value       = module.osv_api.read_pool_private_ip_address
 }
 
+variable "deployment_service_account_email" {
+  type        = string
+  description = "CI/CD deployment service account email."
+  default     = "deployment@oss-vdb.iam.gserviceaccount.com"
+}
+
+variable "terraform_service_account_email" {
+  type        = string
+  description = "Terraform runner service account email granted actAs on the frontend and migrator service accounts."
+  default     = "terraform-apply@oss-vdb.iam.gserviceaccount.com"
+}
+
 
 terraform {
   backend "gcs" {
@@ -147,11 +176,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 8.9.0"
+      version = "~> 8.11.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 8.9.0"
+      version = "~> 8.11.0"
     }
     external = {
       source  = "hashicorp/external"

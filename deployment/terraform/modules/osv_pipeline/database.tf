@@ -116,13 +116,104 @@ resource "google_sql_user" "worker" {
 }
 
 resource "google_sql_user" "deployment" {
+  count          = var.deployment_service_account_email != "" ? 1 : 0
   project        = var.project_id
   instance       = google_sql_database_instance.postgres.name
-  name           = "deployment@oss-vdb.iam"
+  name           = trimsuffix(var.deployment_service_account_email, ".gserviceaccount.com")
   type           = "CLOUD_IAM_SERVICE_ACCOUNT"
   database_roles = ["cloudsqlsuperuser"]
 
   depends_on = [google_sql_user.worker]
+}
+
+resource "google_sql_user" "migrator" {
+  project        = var.project_id
+  instance       = google_sql_database_instance.postgres.name
+  name           = trimsuffix(google_service_account.migrator_sa.email, ".gserviceaccount.com")
+  type           = "CLOUD_IAM_SERVICE_ACCOUNT"
+  database_roles = ["cloudsqlsuperuser"]
+
+  depends_on = [
+    google_sql_user.worker,
+    google_sql_user.deployment,
+  ]
+}
+
+resource "google_project_service" "cloud_run" {
+  project            = var.project_id
+  service            = "run.googleapis.com"
+  disable_on_destroy = false
+}
+
+# Cloud Run Job used by CI/CD to apply goose schema migrations over Cloud SQL Private IP.
+resource "google_cloud_run_v2_job" "goose_migrate" {
+  project             = var.project_id
+  name                = "osv-db-migrate"
+  location            = var.postgres_region
+  deletion_protection = false
+
+  template {
+    template {
+      service_account = google_service_account.migrator_sa.email
+      max_retries     = 0
+      # Bump before introducing heavy index builds or backfill migrations.
+      timeout = "600s"
+
+      vpc_access {
+        network_interfaces {
+          network    = "default"
+          subnetwork = var.postgres_migration_subnetwork
+        }
+        egress = "PRIVATE_RANGES_ONLY"
+      }
+
+      containers {
+        # Updated per commit by CI/CD to gcr.io/oss-vdb/goose-migrations:$COMMIT_SHA.
+        image = "gcr.io/oss-vdb/goose:latest"
+        args  = ["up"]
+
+        env {
+          name  = "CLOUDSQL_INSTANCE"
+          value = google_sql_database_instance.postgres.connection_name
+        }
+        env {
+          name  = "CLOUDSQL_PRIVATE_IP"
+          value = "true"
+        }
+        env {
+          name  = "PGUSER"
+          value = google_sql_user.migrator.name
+        }
+        env {
+          name  = "GOOSE_MIGRATION_DIR"
+          value = "/migrations"
+        }
+
+        resources {
+          limits = {
+            cpu    = "1"
+            memory = "512Mi"
+          }
+        }
+      }
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      template[0].template[0].containers[0].image,
+      client,
+      client_version,
+    ]
+  }
+
+  depends_on = [
+    google_project_service.cloud_run,
+    google_compute_subnetwork.my_subnet_0,
+    google_project_iam_member.migrator_cloudsql_roles,
+    google_service_account_iam_member.migrator_deployer_act_as,
+    google_sql_user.migrator,
+  ]
 }
 
 resource "google_secret_manager_secret" "postgres_worker_password" {

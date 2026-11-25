@@ -6,6 +6,7 @@ profiles:
 - name: prod
   manifests:
     rawYaml:
+    - service-accounts.yaml
     - importer.yaml
     - workers.yaml
     - make-bugs-public.yaml

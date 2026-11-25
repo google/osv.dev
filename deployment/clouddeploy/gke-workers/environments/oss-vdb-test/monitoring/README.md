@@ -28,7 +28,8 @@ flowchart LR
   `PodMonitoring` that scrapes the `metrics` port every 15s on pods whose `name` label is one of
   `worker-private`, `workers-reimport`, `workers-cves`, `recoverer`, `gitter`, or `custommetrics`.
 - **kube-state-metrics**: [`base/ksm/`](../../../base/ksm/) deploys KSM to every environment.
-  Its `ClusterPodMonitoring` keeps only `kube_(cronjob|pod|job|deployment)*` series to keep
+  Its `osv-kube-state-metrics` `ClusterPodMonitoring` keeps only `kube_(cronjob|job)*` series to
+  avoid duplicating `pod` and `deployment` metrics already collected by GKE's managed KSM and to keep
   costs down.
 - **Grafana**: [`grafana_deployment.yaml`](grafana_deployment.yaml) runs
   [Plutono](https://github.com/credativ/plutono), an Apache 2.0 fork of Grafana 7.5.
@@ -36,8 +37,9 @@ flowchart LR
   `/etc/plutono/...` paths. A `gmp-frontend` sidecar proxies PromQL queries to Cloud Monitoring
   for project `oss-vdb-test`.
 - **Access**: [`grafana_ingress.yaml`](grafana_ingress.yaml) puts the service behind IAP with a
-  managed certificate. Plutono trusts the `X-Goog-Authenticated-User-Email` header, so users are
-  auto-created with the `Viewer` role. The login form and anonymous access are disabled.
+  managed certificate. Plutono trusts the `X-Goog-Authenticated-User-Email` header only from Google
+  Cloud Load Balancer / IAP proxy ranges (`PL_AUTH_PROXY_WHITELIST: "35.191.0.0/16, 130.211.0.0/22"`),
+  and users are auto-created with the `Viewer` role. The login form and anonymous access are disabled.
 - **Provisioning**:
   - [`configmaps/grafana_datasources.yaml`](configmaps/grafana_datasources.yaml) defines
     `GMP (Prometheus)` (uid `gmp`, default) and `Cloud Monitoring` (uid `cloud-monitoring`).

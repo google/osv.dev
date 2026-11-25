@@ -1,6 +1,7 @@
 resources:
 - custommetrics.yaml
 - generate-sitemap.yaml
+- pg-tunnel-read-pool.yaml
 - relations.yaml
 - ubuntu-binary-mapper.yaml
 - vanir-signatures.yaml

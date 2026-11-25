@@ -6,6 +6,7 @@ resources:
 - importer.yaml
 - importer-deleter.yaml
 - importer-reconciler.yaml
+- pg-tunnel.yaml
 - record-checker.yaml
 - recoverer.yaml
 - scaler.yaml

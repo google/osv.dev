@@ -1,19 +1,14 @@
-# Goose Cloud Builder Image
+# Goose Migrations Runner Image
 
-Used for running PostgreSQL schema migrations (`goose`) via Cloud SQL Auth Proxy (`cloud-sql-proxy`) in Cloud Build (`build-and-stage.yaml` and `deploy-prod.yaml`). Contains `goose`, `cloud-sql-proxy`, and `gcloud`.
+Base image for running PostgreSQL schema migrations (`goose`) via Cloud SQL Auth Proxy (`cloud-sql-proxy`). Used by the `osv-db-migrate` Cloud Run Job across `oss-vdb-test`, `oss-vdb`, and `private-osv` via `docker/goose/migrations.Dockerfile` (`gcr.io/oss-vdb/goose-migrations`). Contains `goose`, `cloud-sql-proxy`, and `gcloud`.
 
-To build and push the builder image, run from this directory:
+To build and push the base image, run from this directory:
 ```bash
 gcloud builds submit --project=oss-vdb --config=cloudbuild.yaml
 ```
 
-Afterwards, it can be used in Cloud Build as:
-```yaml
-steps:
-- name: gcr.io/oss-vdb/goose
-  env: ['CLOUDSQL_INSTANCE=oss-vdb-test:us-central1:osv-db']
-  args: ['up']
-  dir:  go/internal/database/postgres/migrations
-```
-
-When `CLOUDSQL_INSTANCE` is set, the entrypoint starts `cloud-sql-proxy --auto-iam-authn` in the background, waits for its readiness probe, connects as the active Cloud Build IAM user (`deployment@oss-vdb.iam`) with `role=cloudsqlsuperuser`, and runs `goose`.
+Environment variables handled by `entrypoint.bash`:
+- `CLOUDSQL_INSTANCE`: Cloud SQL connection name (`project:region:instance`). When set, starts `cloud-sql-proxy --auto-iam-authn` in the background, waits for its readiness probe, sets `GOOSE_DRIVER`/`GOOSE_DBSTRING`, and executes `goose "$@"`.
+- `CLOUDSQL_PRIVATE_IP`: Set to `"true"` to pass `--private-ip` to `cloud-sql-proxy` (required inside a VPC against private-IP-only Cloud SQL instances).
+- `PGUSER`: Override the PostgreSQL IAM user (e.g., `osv-migrator@<project>.iam`); defaults to the active `gcloud` account with `.gserviceaccount.com` stripped.
+- `PGDATABASE`: Target database name (defaults to `osv`).

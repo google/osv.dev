@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 	"github.com/xeipuuv/gojsonschema"
@@ -117,7 +118,9 @@ func ReplaceJSONNullEscapes(data []byte) []byte {
 // unescaped JSON \u0000 escape sequences with U+FFFD so the JSON is valid for
 // both protojson and PostgreSQL TEXT/JSONB columns.
 func SanitizeJSON(data []byte) []byte {
-	data = bytes.ToValidUTF8(data, []byte("\uFFFD"))
+	if !utf8.Valid(data) {
+		data = bytes.ToValidUTF8(data, []byte("\uFFFD"))
+	}
 	if bytes.IndexByte(data, 0) >= 0 {
 		data = bytes.ReplaceAll(data, []byte{0}, []byte("\uFFFD"))
 	}

@@ -106,8 +106,10 @@ func TestParseVuln_JSON(t *testing.T) {
 	})
 
 	t.Run("zstd payload exceeding max decoded memory", func(t *testing.T) {
+		dec := newZstdDecoder(1024)
+		defer dec.Close()
 		limitedSub := &Subscriber{
-			MaxDecodedPayloadBytes: 1024,
+			zstdDecoder: dec,
 		}
 		largeJSON := append([]byte(`{"id":"OSV-2026-BIG","summary":"`), bytes.Repeat([]byte("a"), 4096)...)
 		largeJSON = append(largeJSON, []byte(`"}`)...)

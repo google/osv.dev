@@ -22,8 +22,10 @@ gcloud container clusters get-credentials workers \
   --zone="$CLUSTER_ZONE" \
   --project="$PROJECT_ID"
 
-kubectl create secret generic osv-db-worker-password \
-  --from-literal="password=$(gcloud secrets versions access latest --secret=osv-db-worker-password --project="$PROJECT_ID")" \
+gcloud secrets versions access latest \
+  --secret=osv-db-worker-password \
+  --project="$PROJECT_ID" | kubectl create secret generic osv-db-worker-password \
+  --from-file=password=/dev/stdin \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # When rotating the password, restart the long-running worker Deployments so pods pick up

@@ -3,6 +3,7 @@ package importer
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -815,70 +816,40 @@ func sendToWorker(ctx context.Context, config Config, item WorkItem, hash string
 		}
 	}
 
-	args := publishArgs{
-		source:        item.SourceRepository,
-		path:          item.SourcePath,
-		hash:          hash,
-		deleted:       false,
-		srcTimestamp:  srcTimestamp,
-		workPool:      item.WorkPool,
-		gitCommit:     gitCommit,
-		gcsGeneration: gcsGeneration,
-	}
-
-	return publishUpdate(ctx, config, args, rawJSON)
+	return publishUpdate(ctx, config, taskmsg.UpdateParams{
+		Source:         item.SourceRepository,
+		Path:           item.SourcePath,
+		OriginalSHA256: hash,
+		SrcTimestamp:   srcTimestamp,
+		WorkPool:       item.WorkPool,
+		GitCommit:      gitCommit,
+		GCSGeneration:  gcsGeneration,
+		RawJSON:        rawJSON,
+	})
 }
 
 func sendDeletionToWorker(ctx context.Context, config Config, item WorkItem) error {
-	args := publishArgs{
-		source:       item.SourceRepository,
-		path:         item.SourcePath,
-		hash:         "",
-		deleted:      true,
-		srcTimestamp: nil,
-		workPool:     item.WorkPool,
-	}
-
-	return publishUpdate(ctx, config, args, nil)
+	return publishUpdate(ctx, config, taskmsg.UpdateParams{
+		Source:   item.SourceRepository,
+		Path:     item.SourcePath,
+		Deleted:  true,
+		WorkPool: item.WorkPool,
+	})
 }
 
-type publishArgs struct {
-	source        string
-	path          string
-	hash          string
-	deleted       bool
-	srcTimestamp  *time.Time
-	workPool      string
-	gitCommit     string
-	gcsGeneration *int64
-}
-
-func publishUpdate(ctx context.Context, config Config, args publishArgs, rawJSON []byte) error {
+func publishUpdate(ctx context.Context, config Config, params taskmsg.UpdateParams) error {
 	if config.DryRun {
 		logger.DebugContext(ctx, "Running in dry-run mode, skipping publish",
-			slog.String("source", args.source),
-			slog.String("path", args.path),
-			slog.String("hash", args.hash),
-			slog.Bool("deleted", args.deleted))
+			slog.String("source", params.Source),
+			slog.String("path", params.Path),
+			slog.String("hash", params.OriginalSHA256),
+			slog.Bool("deleted", params.Deleted))
 
 		return nil
 	}
 
-	pool := args.workPool
-	if pool == "" {
-		pool = config.DefaultTaskPool
-	}
-	msg := taskmsg.NewUpdateMessage(ctx, taskmsg.UpdateParams{
-		Source:         args.source,
-		Path:           args.path,
-		OriginalSHA256: args.hash,
-		Deleted:        args.deleted,
-		WorkPool:       pool,
-		SrcTimestamp:   args.srcTimestamp,
-		GitCommit:      args.gitCommit,
-		GCSGeneration:  args.gcsGeneration,
-		RawJSON:        rawJSON,
-	})
+	params.WorkPool = cmp.Or(params.WorkPool, config.DefaultTaskPool)
+	msg := taskmsg.NewUpdateMessage(ctx, params)
 
 	result := config.Publisher.Publish(ctx, msg)
 	_, err := result.Get(ctx)

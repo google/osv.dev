@@ -137,47 +137,8 @@ ConsumerLoop:
 			continue
 		}
 
-		hasUpdates := false
-		var modified time.Time
-		updatedFields := []string{}
-		for _, u := range updates {
-			switch u.Field {
-			case updateFieldAlias:
-				if slices.Compare(v.GetAliases(), u.Value) == 0 {
-					// No actual changes, do not update
-					continue
-				}
-				hasUpdates = true
-				v.Aliases = u.Value
-				updatedFields = append(updatedFields, "aliases")
-				if u.Timestamp.After(modified) {
-					modified = u.Timestamp
-				}
-			case updateFieldUpstream:
-				if slices.Compare(v.GetUpstream(), u.Value) == 0 {
-					continue
-				}
-				hasUpdates = true
-				v.Upstream = u.Value
-				updatedFields = append(updatedFields, "upstream")
-				if u.Timestamp.After(modified) {
-					modified = u.Timestamp
-				}
-			case updateFieldRelated:
-				if slices.Compare(v.GetRelated(), u.Value) == 0 {
-					continue
-				}
-				hasUpdates = true
-				v.Related = u.Value
-				updatedFields = append(updatedFields, "related")
-				if u.Timestamp.After(modified) {
-					modified = u.Timestamp
-				}
-			default:
-				logger.Error("unsupported update field", slog.Any("updateField", u.Field), slog.String("id", id))
-			}
-		}
-		if !hasUpdates {
+		updatedFields, modified := applyUpdates(v, id, updates)
+		if len(updatedFields) == 0 {
 			continue
 		}
 		now := time.Now().UTC().Truncate(time.Microsecond)
@@ -240,27 +201,7 @@ ConsumerLoop:
 		// runs its own optimistic-concurrency retry loop.
 		if u.pgVulnStore != nil {
 			_, err := u.pgVulnStore.Mutate(ctx, id, func(pgVuln *osvschema.Vulnerability) (bool, error) {
-				pgChanged := false
-				for _, upd := range updates {
-					switch upd.Field {
-					case updateFieldAlias:
-						if slices.Compare(pgVuln.GetAliases(), upd.Value) != 0 {
-							pgVuln.Aliases = upd.Value
-							pgChanged = true
-						}
-					case updateFieldUpstream:
-						if slices.Compare(pgVuln.GetUpstream(), upd.Value) != 0 {
-							pgVuln.Upstream = upd.Value
-							pgChanged = true
-						}
-					case updateFieldRelated:
-						if slices.Compare(pgVuln.GetRelated(), upd.Value) != 0 {
-							pgVuln.Related = upd.Value
-							pgChanged = true
-						}
-					}
-				}
-				if !pgChanged {
+				if fields, _ := applyUpdates(pgVuln, id, updates); len(fields) == 0 {
 					return false, nil
 				}
 				pgVuln.Modified = timestamppb.New(nextModified(pgVuln.GetModified(), modified, now))
@@ -319,4 +260,34 @@ func nextModified(current *timestamppb.Timestamp, candidate, now time.Time) time
 	}
 
 	return current.AsTime()
+}
+
+func applyUpdates(v *osvschema.Vulnerability, id string, updates []Update) ([]string, time.Time) {
+	var updatedFields []string
+	var modified time.Time
+	for _, upd := range updates {
+		var dst *[]string
+		var name string
+		switch upd.Field {
+		case updateFieldAlias:
+			dst, name = &v.Aliases, "aliases"
+		case updateFieldUpstream:
+			dst, name = &v.Upstream, "upstream"
+		case updateFieldRelated:
+			dst, name = &v.Related, "related"
+		default:
+			logger.Error("unsupported update field", slog.Any("updateField", upd.Field), slog.String("id", id))
+			continue
+		}
+		if slices.Equal(*dst, upd.Value) {
+			continue
+		}
+		*dst = upd.Value
+		updatedFields = append(updatedFields, name)
+		if upd.Timestamp.After(modified) {
+			modified = upd.Timestamp
+		}
+	}
+
+	return updatedFields, modified
 }

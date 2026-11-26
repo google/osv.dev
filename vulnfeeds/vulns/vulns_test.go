@@ -151,6 +151,40 @@ func TestClassifyReferences(t *testing.T) {
 				{Url: "https://example.com/some/valid/link", Type: osvschema.Reference_ARTICLE},
 			},
 		},
+		{
+			refData: []models.Reference{
+				{
+					URL: "git://git@gitlab.com:gitlab-org/gitlab.git",
+				},
+				{
+					URL: "git@github.com:org/repo.git",
+				},
+				{
+					URL: "not-a-valid-uri",
+				},
+				{
+					URL: "https://example.com/foo\\bar",
+				},
+			},
+			references: []*osvschema.Reference{
+				{Url: "https://github.com/org/repo.git", Type: osvschema.Reference_PACKAGE},
+				{Url: "https://gitlab.com/gitlab-org/gitlab.git", Type: osvschema.Reference_PACKAGE},
+			},
+		},
+		{
+			refData: []models.Reference{
+				{
+					URL: "git://git@gitlab.com:gitlab-org/gitlab.git",
+				},
+				{
+					URL:  "https://gitlab.com/gitlab-org/gitlab.git",
+					Tags: []string{"patch"},
+				},
+			},
+			references: []*osvschema.Reference{
+				{Url: "https://gitlab.com/gitlab-org/gitlab.git", Type: osvschema.Reference_FIX},
+			},
+		},
 	}
 	for _, tc := range testcases {
 		references := ClassifyReferences(tc.refData)
@@ -160,6 +194,127 @@ func TestClassifyReferences(t *testing.T) {
 		if !reflect.DeepEqual(references, tc.references) {
 			t.Errorf("ClassifyReferences for %+v was incorrect, got: %+v, expected: %+v", tc.refData, references, tc.references)
 		}
+	}
+}
+
+func TestNormalizeReferenceURL(t *testing.T) {
+	tests := []struct {
+		name   string
+		rawURL string
+		want   string
+		wantOK bool
+	}{
+		{
+			name:   "valid https url",
+			rawURL: "https://gitlab.com/gitlab-org/gitlab/-/issues/517693",
+			want:   "https://gitlab.com/gitlab-org/gitlab/-/issues/517693",
+			wantOK: true,
+		},
+		{
+			name:   "valid git scheme url",
+			rawURL: "git://git.gnupg.org/libksba.git",
+			want:   "git://git.gnupg.org/libksba.git",
+			wantOK: true,
+		},
+		{
+			name:   "valid ssh url with numeric port",
+			rawURL: "ssh://git@github.com:22/org/repo.git",
+			want:   "ssh://git@github.com:22/org/repo.git",
+			wantOK: true,
+		},
+		{
+			name:   "malformed git scheme with scp syntax",
+			rawURL: "git://git@gitlab.com:gitlab-org/gitlab.git",
+			want:   "https://gitlab.com/gitlab-org/gitlab.git",
+			wantOK: true,
+		},
+		{
+			name:   "malformed ssh scheme with scp syntax",
+			rawURL: "ssh://git@github.com:org/repo.git",
+			want:   "https://github.com/org/repo.git",
+			wantOK: true,
+		},
+		{
+			name:   "malformed git+ssh scheme with scp syntax",
+			rawURL: "git+ssh://git@gitlab.com:gitlab-org/gitlab.git",
+			want:   "https://gitlab.com/gitlab-org/gitlab.git",
+			wantOK: true,
+		},
+		{
+			name:   "malformed git scheme with digit-prefixed org",
+			rawURL: "git://git@github.com:1password/repo.git",
+			want:   "https://github.com/1password/repo.git",
+			wantOK: true,
+		},
+		{
+			name:   "bare scp git url",
+			rawURL: "git@github.com:org/repo.git",
+			want:   "https://github.com/org/repo.git",
+			wantOK: true,
+		},
+		{
+			name:   "bare scp git url with numeric org",
+			rawURL: "git@github.com:123/repo.git",
+			want:   "https://github.com/123/repo.git",
+			wantOK: true,
+		},
+		{
+			name:   "trims surrounding whitespace",
+			rawURL: "  https://example.com/advisory  ",
+			want:   "https://example.com/advisory",
+			wantOK: true,
+		},
+		{
+			name:   "empty string",
+			rawURL: "",
+			want:   "",
+			wantOK: false,
+		},
+		{
+			name:   "whitespace only",
+			rawURL: "   ",
+			want:   "",
+			wantOK: false,
+		},
+		{
+			name:   "missing scheme",
+			rawURL: "example.com/advisory",
+			want:   "",
+			wantOK: false,
+		},
+		{
+			name:   "invalid port",
+			rawURL: "https://example.com:notaport/advisory",
+			want:   "",
+			wantOK: false,
+		},
+		{
+			name:   "contains backslash",
+			rawURL: `https://example.com/foo\bar`,
+			want:   "",
+			wantOK: false,
+		},
+		{
+			name:   "bare scp git url with leading slash",
+			rawURL: "git@github.com:/org/repo.git",
+			want:   "https://github.com/org/repo.git",
+			wantOK: true,
+		},
+		{
+			name:   "scp git url with invalid backslash after rewrite",
+			rawURL: `git@github.com:org/foo\bar`,
+			want:   "",
+			wantOK: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got, ok := NormalizeReferenceURL(tc.rawURL)
+			if got != tc.want || ok != tc.wantOK {
+				t.Errorf("NormalizeReferenceURL(%q) = (%q, %v), want (%q, %v)", tc.rawURL, got, ok, tc.want, tc.wantOK)
+			}
+		})
 	}
 }
 

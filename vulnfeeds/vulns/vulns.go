@@ -28,6 +28,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -704,30 +705,67 @@ func Unique[T comparable](s []T) []T {
 	return result
 }
 
+// scpGitURLRegex matches bare or scheme-prefixed SCP-style Git URLs, e.g.
+// "git@github.com:org/repo.git" or "git://git@gitlab.com:gitlab-org/gitlab.git".
+var scpGitURLRegex = regexp.MustCompile(`^(?i:(?:(?:git|ssh|git\+ssh)://)?git@)([a-zA-Z0-9.-]+):(.+)$`)
+
+func isValidReferenceURI(u string) bool {
+	parsed, err := url.Parse(u)
+	return err == nil && parsed.Scheme != "" && !strings.Contains(u, `\`)
+}
+
+// NormalizeReferenceURL trims whitespace, rewrites malformed or SCP-style Git
+// URLs (such as "git://git@gitlab.com:gitlab-org/gitlab.git") into valid HTTPS
+// URIs, and validates that the result conforms to the OSV schema URI format.
+// It returns ("", false) if the URL cannot be normalized into a valid URI.
+func NormalizeReferenceURL(rawURL string) (string, bool) {
+	u := strings.TrimSpace(rawURL)
+	if u == "" {
+		return "", false
+	}
+
+	if isValidReferenceURI(u) {
+		return u, true
+	}
+
+	m := scpGitURLRegex.FindStringSubmatch(u)
+	if m == nil {
+		return "", false
+	}
+	u = "https://" + m[1] + "/" + strings.TrimPrefix(m[2], "/")
+	if !isValidReferenceURI(u) {
+		return "", false
+	}
+
+	return u, true
+}
+
 // ClassifyReferences annotates reference links based on their tags or their shape.
 // References with the same URL are deduplicated, and only keep the RefType of the highest priority (see refTypePriority).
+// Malformed or SCP-style Git URLs are normalized to valid HTTPS URIs, and invalid URIs are skipped.
 func ClassifyReferences(refs []models.Reference) []*osvschema.Reference {
 	references := make([]*osvschema.Reference, 0, len(refs))
 	bestTypes := make(map[string]osvschema.Reference_Type)
 
 	for _, ref := range refs {
-		if ref.URL == "" {
+		normalizedURL, ok := NormalizeReferenceURL(ref.URL)
+		if !ok {
 			continue
 		}
 
 		if len(ref.Tags) > 0 {
 			for _, tag := range ref.Tags {
-				refType := ClassifyReferenceLink(ref.URL, tag)
-				bestType, ok := bestTypes[ref.URL]
+				refType := ClassifyReferenceLink(normalizedURL, tag)
+				bestType, ok := bestTypes[normalizedURL]
 				if !ok || refTypePriority[refType] > refTypePriority[bestType] {
-					bestTypes[ref.URL] = refType
+					bestTypes[normalizedURL] = refType
 				}
 			}
 		} else {
-			refType := ClassifyReferenceLink(ref.URL, "")
-			bestType, ok := bestTypes[ref.URL]
+			refType := ClassifyReferenceLink(normalizedURL, "")
+			bestType, ok := bestTypes[normalizedURL]
 			if !ok || refTypePriority[refType] > refTypePriority[bestType] {
-				bestTypes[ref.URL] = refType
+				bestTypes[normalizedURL] = refType
 			}
 		}
 	}

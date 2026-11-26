@@ -52,15 +52,25 @@ func main() {
 	flag.Parse()
 
 	batchSizeSet := false
+	maxWorkersSet := false
 	flag.Visit(func(f *flag.Flag) {
-		if f.Name == "batch-size" {
+		switch f.Name {
+		case "batch-size":
 			batchSizeSet = true
+		case "max-workers":
+			maxWorkersSet = true
 		}
 	})
 	// Cloud Run vanir-sandbox processes one vulnerability per request (concurrency=1);
-	// default to batch-size=1 so Runner fans out across instances and isolates retries.
-	if sandboxURL != "" && !batchSizeSet {
-		batchSize = 1
+	// default to batch-size=1 and max-workers=15 so Runner fans out across instances
+	// and isolates retries.
+	if sandboxURL != "" {
+		if !batchSizeSet {
+			batchSize = 1
+		}
+		if !maxWorkersSet {
+			maxWorkers = 15
+		}
 	}
 
 	logger.InitGlobalLogger()

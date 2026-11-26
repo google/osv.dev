@@ -461,21 +461,33 @@ func main() {
 	}
 
 	useSetuid := isRoot
+	var baseWorkDir string
 	if useSetuid {
 		syscall.Umask(0022)
 		if err := probeSetuid(selfExe); err != nil {
 			logger.FatalContext(ctx, "CAP_SETUID/CAP_SETGID probe failed (Cloud Run Gen2 is required for UID isolation)", slog.Any("error", err))
 		}
-	}
-
-	baseWorkDir, err := os.MkdirTemp("", "vanir-sandbox-root-*")
-	if err != nil {
-		logger.FatalContext(ctx, "Failed to create private sandbox base directory", slog.Any("error", err))
-	}
-	if useSetuid {
+		// Prevent untrusted children from writing to shared world-writable temp dirs.
+		// /dev/shm stays writable for Python forkserver POSIX semaphores and is swept per-UID.
+		for _, dir := range []string{"/tmp", "/var/tmp", "/run/lock"} {
+			if err := os.Chmod(dir, 0755); err != nil && !errors.Is(err, os.ErrNotExist) {
+				logger.WarnContext(ctx, "Failed to restrict shared temp directory permissions",
+					slog.String("dir", dir), slog.Any("error", err))
+			}
+		}
+		baseWorkDir = "/run/vanir-sandbox"
+		if err := os.MkdirAll(baseWorkDir, 0711); err != nil {
+			logger.FatalContext(ctx, "Failed to create private sandbox base directory", slog.Any("error", err))
+		}
 		if err := os.Chmod(baseWorkDir, 0711); err != nil {
 			_ = os.RemoveAll(baseWorkDir)
 			logger.FatalContext(ctx, "Failed to chmod private sandbox base directory", slog.Any("error", err))
+		}
+	} else {
+		var err error
+		baseWorkDir, err = os.MkdirTemp("", "vanir-sandbox-root-*")
+		if err != nil {
+			logger.FatalContext(ctx, "Failed to create private sandbox base directory", slog.Any("error", err))
 		}
 	}
 	defer os.RemoveAll(baseWorkDir)

@@ -1,3 +1,5 @@
+//go:build linux
+
 // Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -50,13 +52,45 @@ import (
 const (
 	maxRequestBytes  = 4 << 20  // 4 MiB max HTTP request payload
 	maxOutputBytes   = 4 << 20  // 4 MiB max output.json read from child
-	maxChildLogBytes = 64 << 10 // 64 KiB max child output logged on failure
+	maxChildLogBytes = 64 << 10 // 64 KiB max child output buffered in memory
 	defaultTimeout   = 25 * time.Minute
 	shutdownTimeout  = 8 * time.Second // Fits within Cloud Run's 10s SIGTERM grace period
 	uidBase          = 10000
 	uidSpan          = 50000
 	probeUID         = 65534 // nobody
 )
+
+// cappedBuffer buffers up to limit bytes and silently discards excess writes so a
+// noisy child cannot OOM the supervisor or stall on a full stdout/stderr pipe.
+// Safe without a mutex when shared by cmd.Stdout and cmd.Stderr (os/exec uses one pipe).
+type cappedBuffer struct {
+	buf       bytes.Buffer
+	limit     int
+	truncated bool
+}
+
+func (b *cappedBuffer) Write(p []byte) (int, error) {
+	if rem := b.limit - b.buf.Len(); rem > 0 {
+		if len(p) > rem {
+			_, _ = b.buf.Write(p[:rem])
+			b.truncated = true
+		} else {
+			_, _ = b.buf.Write(p)
+		}
+	} else {
+		b.truncated = true
+	}
+
+	return len(p), nil
+}
+
+func (b *cappedBuffer) String() string {
+	if b.truncated {
+		return strings.ToValidUTF8(b.buf.String(), "") + "... [truncated]"
+	}
+
+	return b.buf.String()
+}
 
 // GenerateRequest is the JSON request body for POST /v1/generate.
 type GenerateRequest struct {
@@ -78,14 +112,18 @@ type sandboxServer struct {
 	selfExe          string
 	onShutdown       func()
 
-	execMu       sync.Mutex
-	seq          atomic.Int64
-	shutdownOnce sync.Once
+	execMu  sync.Mutex
+	seq     atomic.Int64
+	tainted atomic.Bool
 }
 
 func (s *sandboxServer) routes() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
+		if s.tainted.Load() {
+			http.Error(w, "sandbox tainted", http.StatusServiceUnavailable)
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok\n"))
 	})
@@ -97,6 +135,11 @@ func (s *sandboxServer) routes() http.Handler {
 func (s *sandboxServer) handleGenerate(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
+	if s.tainted.Load() {
+		http.Error(w, "sandbox tainted", http.StatusServiceUnavailable)
+		return
+	}
+
 	// Reject concurrent requests immediately so an in-flight child cannot queue
 	// follow-up requests against loopback while running.
 	if !s.execMu.TryLock() {
@@ -104,6 +147,11 @@ func (s *sandboxServer) handleGenerate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer s.execMu.Unlock()
+
+	if s.tainted.Load() {
+		http.Error(w, "sandbox tainted", http.StatusServiceUnavailable)
+		return
+	}
 
 	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBytes)
 	defer r.Body.Close()
@@ -131,14 +179,13 @@ func (s *sandboxServer) handleGenerate(w http.ResponseWriter, r *http.Request) {
 	//nolint:gosec // G115: uidBase + (n % uidSpan) is always in [10000, 59999].
 	uid := uint32(uidBase + (n % uidSpan))
 
-	sigs, statusCode, err := s.executeRequest(ctx, n, uid, meta.ID, &req)
+	sigs, err := s.executeRequest(ctx, n, uid, meta.ID, &req)
 	if err != nil {
 		logger.ErrorContext(ctx, "Sandbox execution failed",
 			slog.String("vuln_id", meta.ID),
 			slog.Int64("seq", n),
-			slog.Int("status", statusCode),
 			slog.Any("error", err))
-		http.Error(w, err.Error(), statusCode)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 
 		return
 	}
@@ -154,76 +201,51 @@ func (s *sandboxServer) handleGenerate(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(respBytes)
 }
 
-func (s *sandboxServer) executeRequest(ctx context.Context, seq int64, uid uint32, vulnID string, req *GenerateRequest) (json.RawMessage, int, error) {
+func (s *sandboxServer) executeRequest(ctx context.Context, seq int64, uid uint32, vulnID string, req *GenerateRequest) (json.RawMessage, error) {
 	jobDir := filepath.Join(s.baseWorkDir, fmt.Sprintf("vanir-job-%d", seq))
-	ipcDir := filepath.Join(jobDir, "ipc")
 	workDir := filepath.Join(jobDir, "work")
 	gitWorkDir := filepath.Join(workDir, "git-work")
+	defer os.RemoveAll(jobDir)
 
-	var childPGID int
-	var reaped bool
-	var reapErr error
-	reapAll := func() error {
-		if reaped {
-			return reapErr
-		}
-		reaped = true
-		if childPGID > 0 {
-			_ = syscall.Kill(-childPGID, syscall.SIGKILL)
-		}
-		if s.useSetuid {
-			reapErr = s.reapUID(context.WithoutCancel(ctx), uid)
-		}
-
-		return reapErr
-	}
-
-	defer func() {
-		_ = reapAll()
-		_ = os.RemoveAll(jobDir)
-	}()
-
+	// Root-owned 0711 jobDir prevents child from unlinking or listing IPC files while
+	// allowing traversal into child-owned 0700 workDir and gitWorkDir.
 	for _, d := range []struct {
 		path string
 		mode os.FileMode
 	}{
 		{jobDir, 0711},
-		{ipcDir, 0755},
 		{workDir, 0700},
 		{gitWorkDir, 0700},
 	} {
 		if err := os.Mkdir(d.path, d.mode); err != nil {
-			return nil, http.StatusInternalServerError, fmt.Errorf("failed to create %s: %w", filepath.Base(d.path), err)
-		}
-		if err := os.Chmod(d.path, d.mode); err != nil {
-			return nil, http.StatusInternalServerError, fmt.Errorf("failed to chmod %s: %w", filepath.Base(d.path), err)
+			return nil, fmt.Errorf("failed to create %s: %w", filepath.Base(d.path), err)
 		}
 	}
 
-	inputPath := filepath.Join(ipcDir, "input.json")
-	outputPath := filepath.Join(ipcDir, "output.json")
+	inputPath := filepath.Join(jobDir, "input.json")
+	outputPath := filepath.Join(jobDir, "output.json")
 
 	batchPayload, err := json.Marshal([]json.RawMessage{req.Vulnerability})
 	if err != nil {
-		return nil, http.StatusInternalServerError, fmt.Errorf("failed to marshal input batch: %w", err)
+		return nil, fmt.Errorf("failed to marshal input batch: %w", err)
 	}
 	if err := os.WriteFile(inputPath, batchPayload, 0600); err != nil {
-		return nil, http.StatusInternalServerError, fmt.Errorf("failed to write input.json: %w", err)
+		return nil, fmt.Errorf("failed to write input.json: %w", err)
 	}
 	if err := os.WriteFile(outputPath, nil, 0600); err != nil {
-		return nil, http.StatusInternalServerError, fmt.Errorf("failed to pre-create output.json: %w", err)
+		return nil, fmt.Errorf("failed to pre-create output.json: %w", err)
 	}
 
 	if s.useSetuid {
 		if err := os.Chown(inputPath, 0, int(uid)); err != nil {
-			return nil, http.StatusInternalServerError, fmt.Errorf("failed to chown input.json: %w", err)
+			return nil, fmt.Errorf("failed to chown input.json: %w", err)
 		}
 		if err := os.Chmod(inputPath, 0640); err != nil {
-			return nil, http.StatusInternalServerError, fmt.Errorf("failed to chmod input.json: %w", err)
+			return nil, fmt.Errorf("failed to chmod input.json: %w", err)
 		}
 		for _, p := range []string{workDir, gitWorkDir, outputPath} {
 			if err := os.Chown(p, int(uid), int(uid)); err != nil {
-				return nil, http.StatusInternalServerError, fmt.Errorf("failed to chown %s: %w", p, err)
+				return nil, fmt.Errorf("failed to chown %s: %w", p, err)
 			}
 		}
 	}
@@ -264,65 +286,61 @@ func (s *sandboxServer) executeRequest(ctx context.Context, seq int64, uid uint3
 	}
 	cmd.SysProcAttr = sysProcAttr
 	cmd.Cancel = func() error {
-		if cmd.Process == nil {
-			return nil
-		}
-
 		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 	}
 	cmd.WaitDelay = 5 * time.Second
 
-	var outBuf bytes.Buffer
-	cmd.Stdout = &outBuf
-	cmd.Stderr = &outBuf
+	outBuf := &cappedBuffer{limit: maxChildLogBytes}
+	cmd.Stdout = outBuf
+	cmd.Stderr = outBuf
 
 	if err := cmd.Start(); err != nil {
-		return nil, http.StatusInternalServerError, fmt.Errorf("failed to start sandbox child: %w", err)
+		return nil, fmt.Errorf("failed to start sandbox child: %w", err)
 	}
-	childPGID = cmd.Process.Pid
 
 	waitErr := cmd.Wait()
-	if err := reapAll(); err != nil {
-		logger.ErrorContext(ctx, "UID process reaping failed; triggering shutdown",
-			slog.String("vuln_id", vulnID),
-			slog.Uint64("uid", uint64(uid)),
-			slog.Any("error", err))
-		if s.onShutdown != nil {
-			s.shutdownOnce.Do(func() { go s.onShutdown() })
-		}
+	_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+	if s.useSetuid {
+		if err := s.reapUID(context.WithoutCancel(ctx), uid); err != nil {
+			logger.ErrorContext(ctx, "UID process reaping failed; marking instance tainted and shutting down",
+				slog.String("vuln_id", vulnID),
+				slog.Uint64("uid", uint64(uid)),
+				slog.Any("error", err))
+			s.tainted.Store(true)
+			if s.onShutdown != nil {
+				s.onShutdown()
+			}
 
-		return nil, http.StatusInternalServerError, fmt.Errorf("sandbox process reaping failed: %w", err)
+			return nil, fmt.Errorf("sandbox process reaping failed: %w", err)
+		}
+		sweepUIDTempFiles(uid)
 	}
 
 	if waitErr != nil {
-		outStr := outBuf.String()
-		if len(outStr) > maxChildLogBytes {
-			outStr = strings.ToValidUTF8(outStr[:maxChildLogBytes], "") + "... [truncated]"
-		}
 		logger.WarnContext(ctx, "Vanir sandbox child failed",
 			slog.String("vuln_id", vulnID),
 			slog.Any("error", waitErr),
-			slog.String("output", outStr))
+			slog.String("output", outBuf.String()))
 
-		return nil, http.StatusInternalServerError, fmt.Errorf("vanir sandbox execution failed: %w", waitErr)
+		return nil, fmt.Errorf("vanir sandbox execution failed: %w", waitErr)
 	}
 
 	outFile, err := os.Open(outputPath)
 	if err != nil {
-		return nil, http.StatusInternalServerError, fmt.Errorf("failed to open output.json: %w", err)
+		return nil, fmt.Errorf("failed to open output.json: %w", err)
 	}
 	defer outFile.Close()
 	outputBytes, err := io.ReadAll(io.LimitReader(outFile, maxOutputBytes+1))
 	if err != nil {
-		return nil, http.StatusInternalServerError, fmt.Errorf("failed to read output.json: %w", err)
+		return nil, fmt.Errorf("failed to read output.json: %w", err)
 	}
 	if len(outputBytes) > maxOutputBytes {
-		return nil, http.StatusInternalServerError, fmt.Errorf("output.json exceeds max size (%d bytes)", maxOutputBytes)
+		return nil, fmt.Errorf("output.json exceeds max size (%d bytes)", maxOutputBytes)
 	}
 
 	var rawOutput map[string]json.RawMessage
 	if err := json.Unmarshal(outputBytes, &rawOutput); err != nil {
-		return nil, http.StatusInternalServerError, fmt.Errorf("failed to unmarshal output.json: %w", err)
+		return nil, fmt.Errorf("failed to unmarshal output.json: %w", err)
 	}
 
 	sigs := bytes.TrimSpace(rawOutput[vulnID])
@@ -330,7 +348,28 @@ func (s *sandboxServer) executeRequest(ctx context.Context, seq int64, uid uint3
 		sigs = json.RawMessage("{}")
 	}
 
-	return sigs, http.StatusOK, nil
+	return sigs, nil
+}
+
+// sweepUIDTempFiles removes any top-level entries owned by uid left behind in shared
+// world-writable tmpfs directories across warm container requests.
+func sweepUIDTempFiles(uid uint32) {
+	for _, dir := range []string{"/tmp", "/var/tmp", "/dev/shm", "/run/lock"} {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, entry := range entries {
+			fullPath := filepath.Join(dir, entry.Name())
+			fi, err := os.Lstat(fullPath)
+			if err != nil {
+				continue
+			}
+			if st, ok := fi.Sys().(*syscall.Stat_t); ok && st.Uid == uid {
+				_ = os.RemoveAll(fullPath)
+			}
+		}
+	}
 }
 
 // reapUID spawns a short-lived helper running as the given non-root UID that calls
@@ -392,7 +431,9 @@ func main() {
 		if os.Getuid() == 0 || os.Geteuid() == 0 {
 			os.Exit(2)
 		}
-		_ = syscall.Kill(-1, syscall.SIGKILL)
+		if err := syscall.Kill(-1, syscall.SIGKILL); err != nil && !errors.Is(err, syscall.ESRCH) {
+			os.Exit(3)
+		}
 
 		return
 	}
@@ -434,13 +475,11 @@ func main() {
 	if err != nil {
 		logger.FatalContext(ctx, "Failed to create private sandbox base directory", slog.Any("error", err))
 	}
-	baseMode := os.FileMode(0700)
 	if useSetuid {
-		baseMode = 0711
-	}
-	if err := os.Chmod(baseWorkDir, baseMode); err != nil {
-		_ = os.RemoveAll(baseWorkDir)
-		logger.FatalContext(ctx, "Failed to chmod private sandbox base directory", slog.Any("error", err))
+		if err := os.Chmod(baseWorkDir, 0711); err != nil {
+			_ = os.RemoveAll(baseWorkDir)
+			logger.FatalContext(ctx, "Failed to chmod private sandbox base directory", slog.Any("error", err))
+		}
 	}
 	defer os.RemoveAll(baseWorkDir)
 

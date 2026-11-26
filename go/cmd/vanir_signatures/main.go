@@ -51,6 +51,18 @@ func main() {
 	flag.StringVar(&sandboxURL, "sandbox-url", os.Getenv("VANIR_SANDBOX_URL"), "URL of the remote Cloud Run vanir-sandbox service (defaults to VANIR_SANDBOX_URL). If empty, runs generate_signatures.py locally.")
 	flag.Parse()
 
+	batchSizeSet := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "batch-size" {
+			batchSizeSet = true
+		}
+	})
+	// Cloud Run vanir-sandbox processes one vulnerability per request (concurrency=1);
+	// default to batch-size=1 so Runner fans out across instances and isolates retries.
+	if sandboxURL != "" && !batchSizeSet {
+		batchSize = 1
+	}
+
 	logger.InitGlobalLogger()
 	defer logger.Close()
 

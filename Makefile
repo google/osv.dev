@@ -19,7 +19,7 @@ lib-tests: ## Run core Python library tests
 	./run_tests.sh
 
 vanir-signatures-tests: ## Run Vanir signatures tests
-	cd go && go test ./internal/vanir/... ./cmd/vanir_signatures/...
+	cd go && go test ./internal/vanir/... ./cmd/vanir_signatures/... ./cmd/vanir_sandbox/...
 
 vulnfeed-tests: ## Run Go vulnfeeds tests
 	cd vulnfeeds && ./run_tests.sh

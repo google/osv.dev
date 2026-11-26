@@ -37,6 +37,8 @@ import (
 const (
 	maxSandboxResponseBytes = 4 << 20 // 4 MiB max HTTP response from vanir-sandbox
 	maxSandboxErrBodyBytes  = 1024    // Truncate error bodies before logging
+	maxSandboxAttempts      = 3
+	defaultRetryBackoff     = 500 * time.Millisecond
 )
 
 func refuseRedirects(*http.Request, []*http.Request) error {
@@ -59,31 +61,33 @@ type sandboxGenerateResponse struct {
 // TODO: Integrate with gitter's /commit-pack endpoint to relay cached shallow commit
 // packs instead of having vanir-sandbox fetch directly from upstream Git hosts.
 type HTTPSignatureGenerator struct {
-	SandboxURL string
-	HTTPClient *http.Client
-	Timeout    time.Duration
+	SandboxURL   string
+	HTTPClient   *http.Client
+	Timeout      time.Duration
+	retryBackoff time.Duration
 }
 
 var _ SignatureGenerator = (*HTTPSignatureGenerator)(nil)
 
 // NewHTTPSignatureGenerator creates an HTTPSignatureGenerator authenticated with Google OIDC
-// identity tokens targeting sandboxURL.
+// identity tokens targeting sandboxURL (origin only, e.g. https://vanir-sandbox-xyz.run.app).
 func NewHTTPSignatureGenerator(ctx context.Context, sandboxURL string) (*HTTPSignatureGenerator, error) {
 	sandboxURL = strings.TrimRight(strings.TrimSpace(sandboxURL), "/")
 	u, err := url.Parse(sandboxURL)
-	if sandboxURL == "" || err != nil || !strings.EqualFold(u.Scheme, "https") || u.Host == "" || u.User != nil {
-		return nil, fmt.Errorf("sandboxURL must be a valid https URL without userinfo: %q", sandboxURL)
+	if sandboxURL == "" || err != nil || !strings.EqualFold(u.Scheme, "https") || u.Host == "" || u.User != nil ||
+		u.Path != "" || u.RawQuery != "" || u.Fragment != "" {
+		return nil, fmt.Errorf("sandboxURL must be a valid https origin URL without path/query/userinfo: %q", sandboxURL)
 	}
+	origin := "https://" + u.Host
 
-	httpClient, err := idtoken.NewClient(ctx, sandboxURL)
+	httpClient, err := idtoken.NewClient(ctx, origin)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create OIDC HTTP client for %s: %w", sandboxURL, err)
+		return nil, fmt.Errorf("failed to create OIDC HTTP client for %s: %w", origin, err)
 	}
-	httpClient.Timeout = defaultBatchTimeout
 	httpClient.CheckRedirect = refuseRedirects
 
 	return &HTTPSignatureGenerator{
-		SandboxURL: sandboxURL,
+		SandboxURL: origin,
 		HTTPClient: httpClient,
 		Timeout:    defaultBatchTimeout,
 	}, nil
@@ -107,6 +111,27 @@ func (g *HTTPSignatureGenerator) GenerateBatch(ctx context.Context, vulns []*osv
 	return result, nil
 }
 
+func isRetryableSandboxStatus(code int) bool {
+	return code == http.StatusTooManyRequests ||
+		code == http.StatusBadGateway ||
+		code == http.StatusServiceUnavailable ||
+		code == http.StatusGatewayTimeout
+}
+
+func isValidSignatureValue(val *structpb.Value) bool {
+	fields := val.GetStructValue().GetFields()
+	if fields == nil {
+		return false
+	}
+	for _, key := range []string{"id", "signature_type", "signature_version"} {
+		if fields[key].GetStringValue() == "" {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (g *HTTPSignatureGenerator) generateSingle(ctx context.Context, vuln *osvschema.Vulnerability) (map[int][]*structpb.Value, error) {
 	vulnBytes, err := protojson.MarshalOptions{UseProtoNames: true}.Marshal(vuln)
 	if err != nil {
@@ -124,37 +149,58 @@ func (g *HTTPSignatureGenerator) generateSingle(ctx context.Context, vuln *osvsc
 	reqCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	httpReq, err := http.NewRequestWithContext(reqCtx, http.MethodPost, strings.TrimRight(g.SandboxURL, "/")+"/v1/generate", bytes.NewReader(reqPayload))
-	if err != nil {
-		return nil, fmt.Errorf("failed to create sandbox request for %s: %w", vuln.GetId(), err)
-	}
-	httpReq.GetBody = nil
-	httpReq.Header.Set("Content-Type", "application/json")
-
 	httpClient := g.HTTPClient
 	if httpClient == nil {
 		httpClient = noRedirectHTTPClient
 	}
-	resp, err := httpClient.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("sandbox HTTP request failed for %s: %w", vuln.GetId(), err)
+	backoff := g.retryBackoff
+	if backoff <= 0 {
+		backoff = defaultRetryBackoff
 	}
-	defer resp.Body.Close()
 
-	respBytes, err := io.ReadAll(io.LimitReader(resp.Body, maxSandboxResponseBytes+1))
-	if err != nil {
-		return nil, fmt.Errorf("failed to read sandbox response for %s: %w", vuln.GetId(), err)
+	endpoint := strings.TrimRight(g.SandboxURL, "/") + "/v1/generate"
+	var respBytes []byte
+	var statusCode int
+	for attempt := 1; attempt <= maxSandboxAttempts; attempt++ {
+		httpReq, err := http.NewRequestWithContext(reqCtx, http.MethodPost, endpoint, bytes.NewReader(reqPayload))
+		if err != nil {
+			return nil, fmt.Errorf("failed to create sandbox request for %s: %w", vuln.GetId(), err)
+		}
+		httpReq.Header.Set("Content-Type", "application/json")
+
+		resp, err := httpClient.Do(httpReq)
+		if err != nil {
+			return nil, fmt.Errorf("sandbox HTTP request failed for %s: %w", vuln.GetId(), err)
+		}
+		statusCode = resp.StatusCode
+		respBytes, err = io.ReadAll(io.LimitReader(resp.Body, maxSandboxResponseBytes+1))
+		resp.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("failed to read sandbox response for %s: %w", vuln.GetId(), err)
+		}
+		if statusCode == http.StatusOK || !isRetryableSandboxStatus(statusCode) || attempt == maxSandboxAttempts {
+			break
+		}
+
+		timer := time.NewTimer(backoff * time.Duration(attempt))
+		select {
+		case <-reqCtx.Done():
+			timer.Stop()
+			return nil, reqCtx.Err()
+		case <-timer.C:
+		}
 	}
+
 	if len(respBytes) > maxSandboxResponseBytes {
 		return nil, fmt.Errorf("sandbox response for %s exceeds maximum size (%d bytes)", vuln.GetId(), maxSandboxResponseBytes)
 	}
-	if resp.StatusCode != http.StatusOK {
+	if statusCode != http.StatusOK {
 		errBody := strings.TrimSpace(string(respBytes))
 		if len(errBody) > maxSandboxErrBodyBytes {
 			errBody = strings.ToValidUTF8(errBody[:maxSandboxErrBodyBytes], "") + "... [truncated]"
 		}
 
-		return nil, fmt.Errorf("sandbox returned status %d for %s: %s", resp.StatusCode, vuln.GetId(), errBody)
+		return nil, fmt.Errorf("sandbox returned status %d for %s: %s", statusCode, vuln.GetId(), errBody)
 	}
 
 	var genResp sandboxGenerateResponse
@@ -166,7 +212,7 @@ func (g *HTTPSignatureGenerator) generateSingle(ctx context.Context, vuln *osvsc
 	out := make(map[int][]*structpb.Value, len(genResp.Signatures))
 	for idxStr, sigList := range genResp.Signatures {
 		idx, err := strconv.Atoi(idxStr)
-		if err != nil || idx < 0 || idx >= affectedLen {
+		if err != nil || idx < 0 || idx >= affectedLen || strconv.Itoa(idx) != idxStr {
 			logger.ErrorContext(ctx, "Skipping vulnerability due to invalid affected index from sandbox",
 				slog.String("id", vuln.GetId()), slog.String("index", idxStr))
 
@@ -175,8 +221,11 @@ func (g *HTTPSignatureGenerator) generateSingle(ctx context.Context, vuln *osvsc
 		vals := make([]*structpb.Value, 0, len(sigList))
 		for _, rawSig := range sigList {
 			var val structpb.Value
-			if err := protojson.Unmarshal(rawSig, &val); err != nil {
-				return nil, fmt.Errorf("failed to parse signature for %s: %w", vuln.GetId(), err)
+			if err := protojson.Unmarshal(rawSig, &val); err != nil || !isValidSignatureValue(&val) {
+				logger.ErrorContext(ctx, "Skipping vulnerability due to malformed signature from sandbox",
+					slog.String("id", vuln.GetId()), slog.Int("index", idx))
+
+				return map[int][]*structpb.Value{}, nil
 			}
 			vals = append(vals, &val)
 		}

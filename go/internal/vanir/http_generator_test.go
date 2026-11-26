@@ -23,6 +23,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -42,18 +43,32 @@ func testVuln(id string) *osvschema.Vulnerability {
 
 func TestHTTPSignatureGenerator(t *testing.T) {
 	sandbox := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost || r.URL.Path != "/v1/generate" {
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
 		var req sandboxGenerateRequest
-		_ = json.NewDecoder(r.Body).Decode(&req)
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Errorf("decode request: %v", err)
+		}
 		var v struct {
 			ID string `json:"id"`
 		}
-		_ = json.Unmarshal(req.Vulnerability, &v)
-		w.Header().Set("Content-Type", "application/json")
-		if v.ID == "OSV-BAD-IDX" {
-			_, _ = w.Write([]byte(`{"signatures":{"99":[{"id":"OSV-BAD-IDX-1"}]}}`))
-			return
+		if err := json.Unmarshal(req.Vulnerability, &v); err != nil {
+			t.Errorf("unmarshal vulnerability: %v", err)
 		}
-		_, _ = fmt.Fprintf(w, `{"signatures":{"0":[{"id":"%s-11223344","signature_type":"Function","signature_version":"v1"}]}}`, v.ID)
+		w.Header().Set("Content-Type", "application/json")
+		switch v.ID {
+		case "OSV-BAD-IDX":
+			_, _ = w.Write([]byte(`{"signatures":{"99":[{"id":"OSV-BAD-IDX-1","signature_type":"Function","signature_version":"v1"}]}}`))
+		case "OSV-NONCANON-IDX":
+			_, _ = w.Write([]byte(`{"signatures":{"00":[{"id":"OSV-NONCANON-IDX-1","signature_type":"Function","signature_version":"v1"}]}}`))
+		case "OSV-BAD-SIG":
+			_, _ = w.Write([]byte(`{"signatures":{"0":[{"id":"OSV-BAD-SIG-1"}]}}`))
+		case "OSV-EMPTY":
+			_, _ = w.Write([]byte(`{"signatures":{}}`))
+		default:
+			_, _ = fmt.Fprintf(w, `{"signatures":{"0":[{"id":"%s-11223344","signature_type":"Function","signature_version":"v1"}]}}`, v.ID)
+		}
 	}))
 	t.Cleanup(sandbox.Close)
 
@@ -61,42 +76,95 @@ func TestHTTPSignatureGenerator(t *testing.T) {
 	got, err := gen.GenerateBatch(context.Background(), []*osvschema.Vulnerability{
 		testVuln("GHSA-aaaa-bbbb-cccc"),
 		testVuln("OSV-BAD-IDX"),
+		testVuln("OSV-NONCANON-IDX"),
+		testVuln("OSV-BAD-SIG"),
+		testVuln("OSV-EMPTY"),
 	}, "")
 	if err != nil {
 		t.Fatalf("GenerateBatch: %v", err)
 	}
-	if len(got["GHSA-aaaa-bbbb-cccc"][0]) != 1 || len(got["OSV-BAD-IDX"]) != 0 {
-		t.Errorf("unexpected signatures: %+v", got)
+	sigs := got["GHSA-aaaa-bbbb-cccc"][0]
+	if len(sigs) != 1 || sigs[0].GetStructValue().GetFields()["id"].GetStringValue() != "GHSA-aaaa-bbbb-cccc-11223344" {
+		t.Errorf("unexpected valid signature: %+v", sigs)
+	}
+	for _, skipped := range []string{"OSV-BAD-IDX", "OSV-NONCANON-IDX", "OSV-BAD-SIG", "OSV-EMPTY"} {
+		if _, ok := got[skipped]; ok {
+			t.Errorf("expected %s to be omitted from results", skipped)
+		}
 	}
 }
 
-func TestHTTPSignatureGenerator_Errors(t *testing.T) {
-	if _, err := NewHTTPSignatureGenerator(context.Background(), "http://insecure.example.com"); err == nil {
-		t.Error("expected error for non-https sandboxURL")
+func TestHTTPSignatureGenerator_RetriesAndErrors(t *testing.T) {
+	for _, badURL := range []string{
+		"",
+		"http://insecure.example.com",
+		"https://user:pass@example.com",
+		"https://example.com/v1/generate",
+		"https://example.com?foo=bar",
+		"https://example.com#frag",
+	} {
+		if _, err := NewHTTPSignatureGenerator(context.Background(), badURL); err == nil {
+			t.Errorf("expected error for invalid sandboxURL %q", badURL)
+		}
 	}
 
-	var redirectHit atomic.Bool
-	target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		redirectHit.Store(true)
-		w.WriteHeader(http.StatusOK)
-	}))
-	t.Cleanup(target.Close)
-	redir := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Redirect(w, r, target.URL, http.StatusTemporaryRedirect)
-	}))
-	t.Cleanup(redir.Close)
+	// Retries transient 503 and succeeds.
+	var attempts atomic.Int32
+	flaky := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if attempts.Add(1) < 3 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte("sandbox busy"))
 
-	v := testVuln("OSV-2026-1")
-	if _, err := (&HTTPSignatureGenerator{SandboxURL: redir.URL}).GenerateBatch(context.Background(), []*osvschema.Vulnerability{v}, ""); err == nil || redirectHit.Load() {
-		t.Fatalf("redirect should be refused (err=%v hit=%v)", err, redirectHit.Load())
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"signatures":{"0":[{"id":"OSV-RETRY-1","signature_type":"Function","signature_version":"v1"}]}}`))
+	}))
+	t.Cleanup(flaky.Close)
+	gen := &HTTPSignatureGenerator{SandboxURL: flaky.URL, HTTPClient: flaky.Client(), retryBackoff: time.Millisecond}
+	got, err := gen.GenerateBatch(context.Background(), []*osvschema.Vulnerability{testVuln("OSV-RETRY")}, "")
+	if err != nil || len(got["OSV-RETRY"][0]) != 1 || attempts.Load() != 3 {
+		t.Fatalf("retry failed: got=%+v err=%v attempts=%d", got, err, attempts.Load())
 	}
 
-	errSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte(strings.Repeat("X", 4096)))
-	}))
-	t.Cleanup(errSrv.Close)
-	if _, err := (&HTTPSignatureGenerator{SandboxURL: errSrv.URL}).GenerateBatch(context.Background(), []*osvschema.Vulnerability{v}, ""); err == nil || !strings.Contains(err.Error(), "... [truncated]") {
-		t.Errorf("expected truncated 500 error, got %v", err)
+	// Refuses both 302 (POST->GET) and 307 redirects via CheckRedirect: refuseRedirects.
+	for _, code := range []int{http.StatusFound, http.StatusTemporaryRedirect} {
+		var redirectHit atomic.Bool
+		target := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			redirectHit.Store(true)
+			w.WriteHeader(http.StatusOK)
+		}))
+		t.Cleanup(target.Close)
+		redir := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Redirect(w, r, target.URL, code)
+		}))
+		t.Cleanup(redir.Close)
+
+		_, err := (&HTTPSignatureGenerator{SandboxURL: redir.URL}).GenerateBatch(context.Background(), []*osvschema.Vulnerability{testVuln("OSV-REDIR")}, "")
+		if err == nil || redirectHit.Load() || !strings.Contains(err.Error(), fmt.Sprintf("status %d", code)) {
+			t.Errorf("redirect %d should be refused without hitting target (err=%v hit=%v)", code, err, redirectHit.Load())
+		}
+	}
+
+	// Truncates large 500 error responses, rejects malformed JSON and >4 MiB responses.
+	for _, tc := range []struct {
+		name    string
+		status  int
+		body    string
+		wantSub string
+	}{
+		{"truncated 500", http.StatusInternalServerError, strings.Repeat("X", 4096), "... [truncated]"},
+		{"malformed JSON", http.StatusOK, "{not-json", "unmarshal sandbox response"},
+		{"oversized 200", http.StatusOK, strings.Repeat("A", maxSandboxResponseBytes+10), "exceeds maximum size"},
+	} {
+		srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.WriteHeader(tc.status)
+			_, _ = w.Write([]byte(tc.body))
+		}))
+		t.Cleanup(srv.Close)
+		_, err := (&HTTPSignatureGenerator{SandboxURL: srv.URL}).GenerateBatch(context.Background(), []*osvschema.Vulnerability{testVuln("OSV-ERR")}, "")
+		if err == nil || !strings.Contains(err.Error(), tc.wantSub) {
+			t.Errorf("%s: got err=%v, want substring %q", tc.name, err, tc.wantSub)
+		}
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 	"time"
 
@@ -982,6 +983,174 @@ func TestCommitDiffsHandler(t *testing.T) {
 					t.Fatalf("failed to unmarshal response: %v", err)
 				}
 				tt.verifyResp(t, resp)
+			}
+		})
+	}
+}
+
+func TestAffectedCommitsHandler_ResolveTagSpur(t *testing.T) {
+	setupTest(t)
+
+	const repoURL = "https://example.com/example/spur-repo.git"
+	repo := NewRepository(repoURL)
+	// Main branch: main0 -> main1 -> main2 -> main3 (HEAD)
+	//                |        |        |        |
+	// Tag spurs:   tag0     tag1     tag2     tag3
+	main0, main1, main2, main3 := decodeSHA1("b0"), decodeSHA1("b1"), decodeSHA1("b2"), decodeSHA1("b3")
+	tag0, tag1, tag2, tag3 := decodeSHA1("10"), decodeSHA1("11"), decodeSHA1("12"), decodeSHA1("13")
+
+	repo.addEdgeForTest(main0, main1)
+	repo.addEdgeForTest(main1, main2)
+	repo.addEdgeForTest(main2, main3)
+	repo.addEdgeForTest(main0, tag0)
+	repo.addEdgeForTest(main1, tag1)
+	repo.addEdgeForTest(main2, tag2)
+	repo.addEdgeForTest(main3, tag3)
+	repo.addTagForTest(tag0, "v1.0.0")
+	repo.addTagForTest(tag1, "v1.0.1")
+	repo.addTagForTest(tag2, "v1.0.2")
+	repo.addTagForTest(tag3, "v1.0.3")
+	repo.markBranchHeadForTest(main3)
+
+	repoCache.SetWithTTL(repoURL, repo, 0, time.Hour)
+	repoCache.Wait()
+
+	tests := []struct {
+		name        string
+		req         *pb.AffectedCommitsRequest
+		wantCode    int
+		wantCommits []SHA1
+		wantTags    []string
+	}{
+		{
+			name: "BFS with tag spur resolution enabled (default max length = 1)",
+			req: &pb.AffectedCommitsRequest{
+				Url: repoURL,
+				Events: []*pb.Event{
+					{EventType: pb.EventType_INTRODUCED, Hash: encodeSHA1(tag0)},
+					{EventType: pb.EventType_FIXED, Hash: encodeSHA1(tag2)},
+				},
+				ConsiderAllBranches:      true,
+				ResolveTagSpurIntroduced: true,
+				ResolveTagSpurFixed:      true,
+			},
+			wantCode:    http.StatusOK,
+			wantCommits: []SHA1{main0, tag0, main1, tag1, main2},
+			wantTags:    []string{"v1.0.0", "v1.0.1"},
+		},
+		{
+			name: "Tag spur resolution forces consider_all_branches even when unset",
+			req: &pb.AffectedCommitsRequest{
+				Url: repoURL,
+				Events: []*pb.Event{
+					{EventType: pb.EventType_INTRODUCED, Hash: encodeSHA1(tag0)},
+					{EventType: pb.EventType_FIXED, Hash: encodeSHA1(tag2)},
+				},
+				ConsiderAllBranches:      false,
+				ResolveTagSpurIntroduced: true,
+				ResolveTagSpurFixed:      true,
+			},
+			wantCode:    http.StatusOK,
+			wantCommits: []SHA1{main0, tag0, main1, tag1, main2},
+			wantTags:    []string{"v1.0.0", "v1.0.1"},
+		},
+		{
+			name: "LastAffected tag spur resolution keeps last_affected tag and stops before next release",
+			req: &pb.AffectedCommitsRequest{
+				Url: repoURL,
+				Events: []*pb.Event{
+					{EventType: pb.EventType_INTRODUCED, Hash: encodeSHA1(main0)},
+					{EventType: pb.EventType_LAST_AFFECTED, Hash: encodeSHA1(tag2)},
+				},
+				ConsiderAllBranches:        false,
+				ResolveTagSpurLastAffected: true,
+			},
+			wantCode:    http.StatusOK,
+			wantCommits: []SHA1{main0, tag0, main1, tag1, main2, tag2},
+			wantTags:    []string{"v1.0.0", "v1.0.1", "v1.0.2"},
+		},
+		{
+			name: "Tag spur resolution disabled returns empty in single-branch mode", // Current default walking method
+			req: &pb.AffectedCommitsRequest{
+				Url: repoURL,
+				Events: []*pb.Event{
+					{EventType: pb.EventType_INTRODUCED, Hash: encodeSHA1(tag0)},
+					{EventType: pb.EventType_FIXED, Hash: encodeSHA1(tag2)},
+				},
+				ConsiderAllBranches: false,
+			},
+			wantCode:    http.StatusOK,
+			wantCommits: []SHA1{},
+			wantTags:    []string{},
+		},
+		{
+			name: "Negative resolve_tag_spur_max_length returns 400",
+			req: &pb.AffectedCommitsRequest{
+				Url: repoURL,
+				Events: []*pb.Event{
+					{EventType: pb.EventType_INTRODUCED, Hash: encodeSHA1(tag0)},
+				},
+				ResolveTagSpurIntroduced: true,
+				ResolveTagSpurMaxLength:  -1,
+			},
+			wantCode: http.StatusBadRequest,
+		},
+		{
+			name: "resolve_tag_spur_max_length too big returns 400",
+			req: &pb.AffectedCommitsRequest{
+				Url: repoURL,
+				Events: []*pb.Event{
+					{EventType: pb.EventType_INTRODUCED, Hash: encodeSHA1(tag0)},
+				},
+				ResolveTagSpurIntroduced: true,
+				ResolveTagSpurMaxLength:  maxResolveTagSpurLength + 1,
+			},
+			wantCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			body, err := proto.Marshal(tt.req)
+			if err != nil {
+				t.Fatalf("failed to marshal request: %v", err)
+			}
+			req, err := http.NewRequest(http.MethodPost, "/affected-commits", bytes.NewBuffer(body))
+			if err != nil {
+				t.Fatal(err)
+			}
+			rr := httptest.NewRecorder()
+			affectedCommitsHandler(rr, req)
+
+			if rr.Code != tt.wantCode {
+				t.Fatalf("status code = %d, want %d; body = %s", rr.Code, tt.wantCode, rr.Body.String())
+			}
+			if tt.wantCode != http.StatusOK {
+				return
+			}
+
+			resp := &pb.AffectedCommitsResponse{}
+			if err := proto.Unmarshal(rr.Body.Bytes(), resp); err != nil {
+				t.Fatalf("failed to unmarshal response: %v", err)
+			}
+
+			gotCommits := make([]SHA1, 0, len(resp.GetCommits()))
+			for _, c := range resp.GetCommits() {
+				gotCommits = append(gotCommits, SHA1(c.GetHash()))
+			}
+			if diff := cmp.Diff(tt.wantCommits, gotCommits, cmpSHA1Opts...); diff != "" {
+				t.Errorf("commits mismatch (-want +got):\n%s", diff)
+			}
+
+			gotTags := make([]string, 0, len(resp.GetTags()))
+			for _, tag := range resp.GetTags() {
+				gotTags = append(gotTags, tag.GetLabel())
+			}
+			slices.Sort(gotTags)
+			wantTags := slices.Clone(tt.wantTags)
+			slices.Sort(wantTags)
+			if diff := cmp.Diff(wantTags, gotTags); diff != "" {
+				t.Errorf("tags mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

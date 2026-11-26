@@ -494,8 +494,16 @@ type AffectedCommitsRequest struct {
 	ForceUpdate                 bool                   `protobuf:"varint,6,opt,name=force_update,json=forceUpdate,proto3" json:"force_update,omitempty"`
 	ConsiderAllBranches         bool                   `protobuf:"varint,7,opt,name=consider_all_branches,json=considerAllBranches,proto3" json:"consider_all_branches,omitempty"`
 	RefId                       string                 `protobuf:"bytes,8,opt,name=ref_id,json=refId,proto3" json:"ref_id,omitempty"` // Optional reference ID for tracing
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
+	// For an INTRODUCED release tag spur, additionally mark its parent-branch fork commit as INTRODUCED.
+	ResolveTagSpurIntroduced bool `protobuf:"varint,9,opt,name=resolve_tag_spur_introduced,json=resolveTagSpurIntroduced,proto3" json:"resolve_tag_spur_introduced,omitempty"`
+	// For a FIXED release tag spur, additionally mark the continuation after its parent-branch fork commit as FIXED.
+	ResolveTagSpurFixed bool `protobuf:"varint,10,opt,name=resolve_tag_spur_fixed,json=resolveTagSpurFixed,proto3" json:"resolve_tag_spur_fixed,omitempty"`
+	// For a LAST_AFFECTED release tag spur, additionally mark the continuation after its parent-branch fork commit as FIXED.
+	ResolveTagSpurLastAffected bool `protobuf:"varint,11,opt,name=resolve_tag_spur_last_affected,json=resolveTagSpurLastAffected,proto3" json:"resolve_tag_spur_last_affected,omitempty"`
+	// Max length (in commits) of a release tag spur in this repo. Defaults to 1; must be <= 100.
+	ResolveTagSpurMaxLength int32 `protobuf:"varint,12,opt,name=resolve_tag_spur_max_length,json=resolveTagSpurMaxLength,proto3" json:"resolve_tag_spur_max_length,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *AffectedCommitsRequest) Reset() {
@@ -582,6 +590,34 @@ func (x *AffectedCommitsRequest) GetRefId() string {
 		return x.RefId
 	}
 	return ""
+}
+
+func (x *AffectedCommitsRequest) GetResolveTagSpurIntroduced() bool {
+	if x != nil {
+		return x.ResolveTagSpurIntroduced
+	}
+	return false
+}
+
+func (x *AffectedCommitsRequest) GetResolveTagSpurFixed() bool {
+	if x != nil {
+		return x.ResolveTagSpurFixed
+	}
+	return false
+}
+
+func (x *AffectedCommitsRequest) GetResolveTagSpurLastAffected() bool {
+	if x != nil {
+		return x.ResolveTagSpurLastAffected
+	}
+	return false
+}
+
+func (x *AffectedCommitsRequest) GetResolveTagSpurMaxLength() int32 {
+	if x != nil {
+		return x.ResolveTagSpurMaxLength
+	}
+	return 0
 }
 
 type FileChange struct {
@@ -1132,7 +1168,7 @@ const file_repository_proto_rawDesc = "" +
 	"\fCacheRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12!\n" +
 	"\fforce_update\x18\x02 \x01(\bR\vforceUpdate\x12\x15\n" +
-	"\x06ref_id\x18\x03 \x01(\tR\x05refId\"\xf7\x02\n" +
+	"\x06ref_id\x18\x03 \x01(\tR\x05refId\"\xed\x04\n" +
 	"\x16AffectedCommitsRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12%\n" +
 	"\x06events\x18\x02 \x03(\v2\r.gitter.EventR\x06events\x12B\n" +
@@ -1141,7 +1177,12 @@ const file_repository_proto_rawDesc = "" +
 	"\x18detect_cherrypicks_limit\x18\x05 \x01(\bR\x16detectCherrypicksLimit\x12!\n" +
 	"\fforce_update\x18\x06 \x01(\bR\vforceUpdate\x122\n" +
 	"\x15consider_all_branches\x18\a \x01(\bR\x13considerAllBranches\x12\x15\n" +
-	"\x06ref_id\x18\b \x01(\tR\x05refId\"B\n" +
+	"\x06ref_id\x18\b \x01(\tR\x05refId\x12=\n" +
+	"\x1bresolve_tag_spur_introduced\x18\t \x01(\bR\x18resolveTagSpurIntroduced\x123\n" +
+	"\x16resolve_tag_spur_fixed\x18\n" +
+	" \x01(\bR\x13resolveTagSpurFixed\x12B\n" +
+	"\x1eresolve_tag_spur_last_affected\x18\v \x01(\bR\x1aresolveTagSpurLastAffected\x12<\n" +
+	"\x1bresolve_tag_spur_max_length\x18\f \x01(\x05R\x17resolveTagSpurMaxLength\"B\n" +
 	"\n" +
 	"FileChange\x12\x1b\n" +
 	"\tfrom_path\x18\x01 \x01(\tR\bfromPath\x12\x17\n" +

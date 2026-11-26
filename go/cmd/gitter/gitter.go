@@ -134,6 +134,56 @@ func separateEvents(events []*pb.Event) (*SeparatedEvents, error) {
 	return se, nil
 }
 
+const (
+	// Default = 1 - covers a single version-bump commit
+	defaultResolveTagSpurMaxLength = 1
+	maxResolveTagSpurLength        = 100
+)
+
+// AffectedWalkOptions configures optional pre-walk event expansion and resolution
+type AffectedWalkOptions struct {
+	CherrypickIntroduced       bool
+	CherrypickFixed            bool
+	ResolveTagSpurIntroduced   bool
+	ResolveTagSpurFixed        bool
+	ResolveTagSpurLastAffected bool
+	// ResolveTagSpurMaxLength bounds how long (in commits) a release tag spur can be
+	// when resolving off-branch release tags
+	// Valid range is [1, maxResolveTagSpurLength]
+	ResolveTagSpurMaxLength int
+}
+
+// LogValue formats AffectedWalkOptions as a structured slog group for Cloud Logging.
+func (o AffectedWalkOptions) LogValue() slog.Value {
+	return slog.GroupValue(
+		slog.Bool("cherrypickIntroduced", o.CherrypickIntroduced),
+		slog.Bool("cherrypickFixed", o.CherrypickFixed),
+		slog.Bool("resolveTagSpurIntroduced", o.ResolveTagSpurIntroduced),
+		slog.Bool("resolveTagSpurFixed", o.ResolveTagSpurFixed),
+		slog.Bool("resolveTagSpurLastAffected", o.ResolveTagSpurLastAffected),
+		slog.Int("resolveTagSpurMaxLength", o.ResolveTagSpurMaxLength),
+	)
+}
+
+func parseAffectedWalkOptions(body *pb.AffectedCommitsRequest) (AffectedWalkOptions, error) {
+	maxLength := int(body.GetResolveTagSpurMaxLength())
+	if maxLength < 0 || maxLength > maxResolveTagSpurLength {
+		return AffectedWalkOptions{}, fmt.Errorf("resolve_tag_spur_max_length must be between 0 and %d, got %d", maxResolveTagSpurLength, maxLength)
+	}
+	if maxLength == 0 {
+		maxLength = defaultResolveTagSpurMaxLength
+	}
+
+	return AffectedWalkOptions{
+		CherrypickIntroduced:       body.GetDetectCherrypicksIntroduced(),
+		CherrypickFixed:            body.GetDetectCherrypicksFixed(),
+		ResolveTagSpurIntroduced:   body.GetResolveTagSpurIntroduced(),
+		ResolveTagSpurFixed:        body.GetResolveTagSpurFixed(),
+		ResolveTagSpurLastAffected: body.GetResolveTagSpurLastAffected(),
+		ResolveTagSpurMaxLength:    maxLength,
+	}, nil
+}
+
 // repoLocks is a map of per-repository RWMutexes, with url as the key.
 // It coordinates access between write operations (FetchRepo) that modify the git directory on disk
 // and read operations (ArchiveRepo, LoadRepository, etc).
@@ -660,13 +710,18 @@ func affectedCommitsHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cherrypickIntro := body.GetDetectCherrypicksIntroduced()
-	cherrypickFixed := body.GetDetectCherrypicksFixed()
+	walkOpts, err := parseAffectedWalkOptions(body)
+	if err != nil {
+		statusCode = http.StatusBadRequest
+		http.Error(w, err.Error(), statusCode)
+
+		return
+	}
 	cherrypickLimit := body.GetDetectCherrypicksLimit()
 	considerAllBranches := body.GetConsiderAllBranches()
 
-	// If cherrypick is true, consider all branches must be true
-	if cherrypickIntro || cherrypickFixed {
+	// If any of the cherrypick or tag resolution options are enabled, consider all branches must be true
+	if walkOpts.CherrypickIntroduced || walkOpts.CherrypickFixed || walkOpts.ResolveTagSpurIntroduced || walkOpts.ResolveTagSpurFixed || walkOpts.ResolveTagSpurLastAffected {
 		considerAllBranches = true
 	}
 
@@ -678,8 +733,7 @@ func affectedCommitsHandler(w http.ResponseWriter, req *http.Request) {
 		slog.Any("fixed", se.Fixed),
 		slog.Any("last_affected", se.LastAffected),
 		slog.Any("limit", se.Limit),
-		slog.Bool("cherrypickIntro", cherrypickIntro),
-		slog.Bool("cherrypickFixed", cherrypickFixed),
+		slog.Any("walkOpts", walkOpts),
 		slog.Bool("cherrypickLimit", cherrypickLimit),
 		slog.Bool("considerAllBranches", considerAllBranches),
 	)
@@ -707,9 +761,9 @@ func affectedCommitsHandler(w http.ResponseWriter, req *http.Request) {
 
 	switch {
 	case len(se.Limit) > 0:
-		affectedCommits, cherrypicks = repo.Limit(ctx, se, cherrypickIntro, cherrypickLimit)
+		affectedCommits, cherrypicks = repo.Limit(ctx, se, walkOpts.CherrypickIntroduced, cherrypickLimit)
 	case considerAllBranches || (len(se.Fixed) == 0 && len(se.LastAffected) == 0):
-		affectedCommits, cherrypicks = repo.Affected(ctx, se, cherrypickIntro, cherrypickFixed)
+		affectedCommits, cherrypicks = repo.Affected(ctx, se, walkOpts)
 	default:
 		affectedCommits = repo.AffectedSingleBranch(ctx, se)
 	}

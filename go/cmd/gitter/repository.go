@@ -49,6 +49,10 @@ type Repository struct {
 	hashToIndex map[SHA1]int
 	// Store tags to commit index
 	tagToCommit map[string]int
+	// Commit indices pointed to by at least one non-tag ref (e.g. origin/main, HEAD).
+	// Used by tag-spur resolution to tell a short continuing branch apart from a dead-end RC spur,
+	// since a real branch carries a branch ref while a tag-only spur has none.
+	branchHeads map[int]struct{}
 	// For cherry-pick detection: PatchID -> []commit indexes
 	patchIDToCommits map[SHA1][]int
 	// Root commits (commits with no parents)
@@ -87,6 +91,7 @@ func NewRepository(url string) *Repository {
 		URL:              url,
 		hashToIndex:      make(map[SHA1]int),
 		tagToCommit:      make(map[string]int),
+		branchHeads:      make(map[int]struct{}),
 		patchIDToCommits: make(map[SHA1][]int),
 	}
 
@@ -107,6 +112,7 @@ func LoadRepository(ctx context.Context, repoPath string) (*Repository, error) {
 		repoPath:         repoPath,
 		hashToIndex:      make(map[SHA1]int),
 		tagToCommit:      make(map[string]int),
+		branchHeads:      make(map[int]struct{}),
 		patchIDToCommits: make(map[SHA1][]int),
 	}
 
@@ -242,18 +248,20 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 		var childHash SHA1
 		parentHashes := []SHA1{}
 		tags := []string{}
+		hasBranchRef := false
 
 		switch len(commitInfo) {
 		case 3:
-			// tags are separated by commas
+			// refs are separated by commas
 			rawRefs := strings.Split(commitInfo[2], ", ")
 			for _, ref := range rawRefs {
 				if ref == "" {
 					continue
 				}
-				// Only keep tags
 				if after, ok := strings.CutPrefix(ref, "tag: "); ok {
 					tags = append(tags, after)
+				} else {
+					hasBranchRef = true
 				}
 			}
 
@@ -287,6 +295,9 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 		childIdx := r.getOrCreateIndex(childHash)
 		commit := r.commits[childIdx]
 		commit.Tags = tags
+		if hasBranchRef {
+			r.branchHeads[childIdx] = struct{}{}
+		}
 
 		// We want to keep the root commit (no parent) easily accessible for introduced=0
 		if len(parentHashes) == 0 {
@@ -614,6 +625,184 @@ func (r *Repository) findAncestorRoots(from []int) []int {
 	return foundRoots
 }
 
+// Tag spur resolution handles repos (like php-src) that tag releases on short dead-end
+// branches ("spurs") instead of directly on their main/release branches. Because a tagged
+// leaf has no children, a forward walk from an INTRODUCED leaf cannot reach later affected
+// commits, and a FIXED or LAST_AFFECTED leaf cannot stop traversal from continuing along
+// the parent branch.
+
+// findTagSpurFork walks backward along first parents from a tagged leaf commit (up to
+// maxLength steps) to find where the release spur branched off its parent branch.
+// Returns (forkIdx, spurEntry, true), where forkIdx is the commit on the parent branch and
+// spurEntry is the first commit of the spur itself.
+//
+// Note: intentionally ignores branchHeads while climbing the spur. Some repos leave retired
+// per-release branch refs (e.g. origin/PHP-8.2.35) on the tag commit or its parent; treating
+// those as active branches would stop the climb early and fail to reach the real parent branch.
+func (r *Repository) findTagSpurFork(commitIdx, maxLength int) (int, int, bool) {
+	if maxLength <= 0 || commitIdx < 0 || commitIdx >= len(r.commits) || commitIdx >= len(r.commitGraph) {
+		return 0, 0, false
+	}
+	// Only resolve dead-end tagged leaves; interior on-branch commits and untagged leaves are unchanged.
+	if len(r.commitGraph[commitIdx]) > 0 || len(r.commits[commitIdx].Tags) == 0 {
+		return 0, 0, false
+	}
+
+	curr := commitIdx
+	for range maxLength {
+		parents := r.commits[curr].Parents
+		// Reached a root commit with no qualifying fork along the path.
+		if len(parents) == 0 {
+			return 0, 0, false
+		}
+
+		parent := parents[0]
+		children := r.commitGraph[parent]
+		if len(children) > 1 {
+			for _, ch := range children {
+				// Stop once parent has a sibling outside our spur that isn't a dead-end tag-only chain (e.g. an RC).
+				if ch != curr && !r.isTagOnlyChain(ch, maxLength) {
+					return parent, curr, true
+				}
+			}
+		}
+
+		curr = parent
+	}
+
+	return 0, 0, false
+}
+
+// isTagOnlyChain reports whether idx starts a short throwaway tag chain (e.g. a pre-release
+// RC spur) rather than a real continuing branch.
+// Returns true only if following single children reaches a tagged leaf within maxLength
+// commits without hitting a branch ref or another fork.
+func (r *Repository) isTagOnlyChain(idx, maxLength int) bool {
+	curr := idx
+	for range maxLength {
+		// Commit carries a branch ref (e.g. origin/main), so it belongs to a branch, not a tag-only chain.
+		if _, ok := r.branchHeads[curr]; ok {
+			return false
+		}
+		children := r.commitGraph[curr]
+		// Dead-end leaf: only counts as a tag-only chain if it carries at least one tag.
+		if len(children) == 0 {
+			return len(r.commits[curr].Tags) > 0
+		}
+		// Chain splits further (e.g. a sub-fork or diamond merge): conservatively treat as a real branch.
+		if len(children) > 1 {
+			return false
+		}
+		curr = children[0]
+	}
+
+	return false
+}
+
+// resolveTagSpurContinuations returns extra parent-branch commits to mark as FIXED for
+// FIXED or LAST_AFFECTED events that land on off-branch tag leaves.
+// Marks the parent branch's continuing child after the fork (not the fork commit or spur
+// itself) so earlier sibling tags (like RCs) and LAST_AFFECTED tags stay affected.
+func (r *Repository) resolveTagSpurContinuations(events, introduced []int, maxLength int) []int {
+	if len(events) == 0 {
+		return nil
+	}
+
+	introSet := make(map[int]struct{}, len(introduced))
+	for _, idx := range introduced {
+		introSet[idx] = struct{}{}
+	}
+
+	seen := make(map[int]struct{}, len(events))
+	var extraFixes []int
+	for _, idx := range events {
+		forkIdx, spurEntry, ok := r.findTagSpurFork(idx, maxLength)
+		if !ok {
+			continue
+		}
+
+		for _, childIdx := range r.commitGraph[forkIdx] {
+			// Skip the tag's own spur so earlier sibling tags on it (e.g. an RC2 off the patch branch)
+			// and LAST_AFFECTED tag leaves themselves stay affected.
+			if childIdx == spurEntry {
+				continue
+			}
+			// Skip dead-end tag-only sibling chains (e.g. an RC1 cut from the same fork) so they stay affected.
+			if r.isTagOnlyChain(childIdx, maxLength) {
+				continue
+			}
+			// Skip cross-branch merges where forkIdx is a non-first parent (Parents[1+]): merging the fork
+			// into another branch does not include any fixes committed on the spur after the fork.
+			parents := r.commits[childIdx].Parents
+			if len(parents) == 0 || parents[0] != forkIdx {
+				continue
+			}
+			// Skip if an INTRODUCED event starts at childIdx (e.g. an adjacent regression FIXED: tag0, INTRODUCED: tag1),
+			// otherwise shifting the fix boundary forward to childIdx would cancel out the new range.
+			if _, isIntro := introSet[childIdx]; isIntro {
+				continue
+			}
+			if _, exists := seen[childIdx]; exists {
+				continue
+			}
+
+			// Direct continuation of forkIdx's own branch (e.g. next commit on a dev branch).
+			seen[childIdx] = struct{}{}
+			extraFixes = append(extraFixes, childIdx)
+		}
+	}
+
+	return extraFixes
+}
+
+// resolveTagSpurIntroduced returns extra parent-branch fork commits to add to INTRODUCED for
+// off-branch tag leaves, so forward BFS covers both the spur and later commits on the parent
+// branch.
+func (r *Repository) resolveTagSpurIntroduced(introduced, allFixes, lastAffected []int, maxLength int) []int {
+	if len(introduced) == 0 {
+		return nil
+	}
+
+	skipSet := make(map[int]struct{}, len(allFixes)+len(lastAffected))
+	for _, idx := range allFixes {
+		skipSet[idx] = struct{}{}
+	}
+	// lastAffected is passed separately because allFixes only holds children of lastAffected
+	// (never lastAffected itself — and leaf tags have 0 children).
+	for _, idx := range lastAffected {
+		skipSet[idx] = struct{}{}
+	}
+	seen := make(map[int]struct{}, len(introduced))
+	for _, idx := range introduced {
+		seen[idx] = struct{}{}
+	}
+
+	var extraIntro []int
+	for _, idx := range introduced {
+		// Skip expanding to forkIdx when idx is already in allFixes (INTRODUCED == FIXED) or
+		// lastAffected (INTRODUCED == LAST_AFFECTED). In the latter case idx itself still stays
+		// in introduced (matching normal on-branch [X, X] -> [X]); jumping back to forkIdx would
+		// leak into ancestors, upward-merged branches, or walk unboundedly if ResolveTagSpurLastAffected is off.
+		if _, skip := skipSet[idx]; skip {
+			continue
+		}
+
+		forkIdx, _, ok := r.findTagSpurFork(idx, maxLength)
+		if !ok {
+			continue
+		}
+		// Avoid adding duplicate fork commits (or a fork already present in introduced).
+		if _, exists := seen[forkIdx]; exists {
+			continue
+		}
+
+		seen[forkIdx] = struct{}{}
+		extraIntro = append(extraIntro, forkIdx)
+	}
+
+	return extraIntro
+}
+
 type cherrypickedHashes struct {
 	Introduced []string
 	Fixed      []string
@@ -621,9 +810,11 @@ type cherrypickedHashes struct {
 }
 
 type resolvedEvents struct {
-	// Introduced commits (from input) + cherrypicked intro commits (if enabled) + resolved roots (if there is intro=0)
+	// Introduced commits (from input) + cherry-picked intro commits + resolved roots (intro=0)
+	// + parent-branch fork commits for introduced tag spurs if ResolveTagSpurIntroduced is enabled.
 	introduced []int
-	// Fixed commits (from input) + children of last_affected commits (from input) + cherrypick of fixed commit (if enabled)
+	// Fixed commits (from input) + children of last_affected commits + cherry-picked fixed commits
+	// + fork continuation children for fixed/last_affected tag spurs if enabled.
 	allFixes []int
 	// Cherrypicked commit hash strings (excluding original input commits)
 	cherrypicked cherrypickedHashes
@@ -631,14 +822,14 @@ type resolvedEvents struct {
 
 // resolveEvents parses and expands SeparatedEvents into lists of introduced and fixed commits
 // In case of intro=0, it will not include root commits that are not ancestors of any fixed commits
-func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) resolvedEvents {
+func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, opts AffectedWalkOptions) resolvedEvents {
 	// Parsing and expanding fixed events first because we need them to find relevant roots for intro=0
 	fixed := r.parseHashes(ctx, se.Fixed)
 	lastAffected := r.parseHashes(ctx, se.LastAffected)
 
 	var cherrypickedFixedHashes []string
 	// lastAffected should not be expanded because it does not imply a "fix" commit that can be cherrypicked to other branches
-	if cherrypickFixed {
+	if opts.CherrypickFixed {
 		newFixed := r.expandByCherrypick(fixed)
 		cherrypickedFixedHashes = r.hexHashes(newFixed)
 		fixed = append(fixed, newFixed...)
@@ -646,7 +837,7 @@ func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, che
 
 	// Fixed commits and children of last affected are both in this list
 	// For graph traversal sake they are both considered the fix
-	allFixes := make([]int, 0, len(se.Fixed)+len(se.LastAffected))
+	allFixes := make([]int, 0, len(fixed)+len(lastAffected))
 	allFixes = append(allFixes, fixed...)
 	for _, idx := range lastAffected {
 		if idx < len(r.commitGraph) {
@@ -667,20 +858,55 @@ func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, che
 	introduced := r.parseHashes(ctx, filteredIntro)
 
 	if hasIntroZero {
-		if len(allFixes) > 0 {
-			// If there are fixes, introduced=0 should only include root commits that are ancestors of the fixes
-			introduced = append(introduced, r.findAncestorRoots(allFixes)...)
+		// Seed ancestor-root lookup with both allFixes and lastAffected itself, because a leaf
+		// last_affected commit (such as an off-branch release tag) has 0 children in allFixes.
+		if len(allFixes) > 0 || len(lastAffected) > 0 {
+			targets := make([]int, 0, len(allFixes)+len(lastAffected))
+			targets = append(targets, allFixes...)
+			targets = append(targets, lastAffected...)
+			introduced = append(introduced, r.findAncestorRoots(targets)...)
 		} else {
-			// If there are no fixes, then introduced=0 means all root commits
+			// If there are no fixes or last_affected events, then introduced=0 means all root commits
 			introduced = append(introduced, r.rootCommits...)
 		}
 	}
 
 	var cherrypickedIntroHashes []string
-	if cherrypickIntro {
+	if opts.CherrypickIntroduced {
 		newIntro := r.expandByCherrypick(introduced)
 		cherrypickedIntroHashes = r.hexHashes(newIntro)
 		introduced = append(introduced, newIntro...)
+	}
+
+	// Run tag spur resolution after cherry-pick expansion so synthetic fork anchors
+	// are never cherry-pick expanded or reported as cherry-picked events.
+	// Range validation lives in parseAffectedWalkOptions; default 0 here for direct Go callers.
+	maxSpurLength := opts.ResolveTagSpurMaxLength
+	if maxSpurLength == 0 {
+		maxSpurLength = defaultResolveTagSpurMaxLength
+	}
+	// Resolve introduced before fixed/last_affected so continuation fixes skip any commit
+	// that would collide with an INTRODUCED commit (e.g. an adjacent regression range).
+	if opts.ResolveTagSpurIntroduced {
+		extraIntro := r.resolveTagSpurIntroduced(introduced, allFixes, lastAffected, maxSpurLength)
+		if len(extraIntro) > 0 {
+			logger.DebugContext(ctx, "Resolved introduced tag spurs", slog.Any("extraIntro", r.hexHashes(extraIntro)), slog.Int("maxSpurLength", maxSpurLength))
+			introduced = append(introduced, extraIntro...)
+		}
+	}
+	if opts.ResolveTagSpurFixed {
+		extraFixes := r.resolveTagSpurContinuations(fixed, introduced, maxSpurLength)
+		if len(extraFixes) > 0 {
+			logger.DebugContext(ctx, "Resolved fixed tag spurs", slog.Any("extraFixes", r.hexHashes(extraFixes)), slog.Int("maxSpurLength", maxSpurLength))
+			allFixes = append(allFixes, extraFixes...)
+		}
+	}
+	if opts.ResolveTagSpurLastAffected {
+		extraFixes := r.resolveTagSpurContinuations(lastAffected, introduced, maxSpurLength)
+		if len(extraFixes) > 0 {
+			logger.DebugContext(ctx, "Resolved last_affected tag spurs", slog.Any("extraFixes", r.hexHashes(extraFixes)), slog.Int("maxSpurLength", maxSpurLength))
+			allFixes = append(allFixes, extraFixes...)
+		}
 	}
 
 	return resolvedEvents{
@@ -697,11 +923,11 @@ func (r *Repository) resolveEvents(ctx context.Context, se *SeparatedEvents, che
 // It also returns two slices of hex hashes for newly identified cherry-picked introduced and fixed commits.
 // A commit is affected when: from at least one introduced that is an ancestor of the commit, there is no path between them that passes through a fix.
 // A fix can either be a fixed commit, or the children of a lastAffected commit.
-func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, cherrypickIntro, cherrypickFixed bool) ([]*Commit, cherrypickedHashes) {
+func (r *Repository) Affected(ctx context.Context, se *SeparatedEvents, opts AffectedWalkOptions) ([]*Commit, cherrypickedHashes) {
 	logger.DebugContext(ctx, "Starting affected commits (all branches) walking")
 	start := time.Now()
 
-	resEvents := r.resolveEvents(ctx, se, cherrypickIntro, cherrypickFixed)
+	resEvents := r.resolveEvents(ctx, se, opts)
 	introduced, allFixes := resEvents.introduced, resEvents.allFixes
 
 	logger.DebugContext(ctx, "Resolved affected commit events to walk", slog.Any("introduced", introduced), slog.Any("allFixes", allFixes))

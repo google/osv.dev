@@ -68,9 +68,10 @@ resource "google_service_account" "metrics_adapter_sa" {
 
 locals {
   datastore_workloads = {
-    worker          = google_service_account.worker_sa.email
-    importer        = google_service_account.importer_sa.email
-    process_results = google_service_account.process_results_sa.email
+    worker           = google_service_account.worker_sa.email
+    importer         = google_service_account.importer_sa.email
+    make_bugs_public = data.google_compute_default_service_account.default.email
+    process_results  = google_service_account.process_results_sa.email
   }
 
   workload_identity_bindings = {

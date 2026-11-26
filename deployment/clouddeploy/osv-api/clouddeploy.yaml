@@ -43,7 +43,7 @@ run:
   location: projects/oss-vdb-test/locations/us-central1
 deployParameters:
   serviceName: "osv-grpc-backend-batch"
-  containerConcurrency: "1"
+  containerConcurrency: "2"
 executionConfigs:
 - usages:
   - RENDER
@@ -83,7 +83,7 @@ run:
   location: projects/oss-vdb/locations/us-central1
 deployParameters:
   serviceName: "osv-grpc-backend-batch"
-  containerConcurrency: "1"
+  containerConcurrency: "2"
 executionConfigs:
 - usages:
   - RENDER

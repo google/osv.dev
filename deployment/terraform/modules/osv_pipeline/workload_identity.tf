@@ -33,6 +33,10 @@ locals {
       sa_name = google_service_account.worker_sa.name
       ksa     = "default/osv-worker"
     }
+    indexer = {
+      sa_name = google_service_account.worker_sa.name
+      ksa     = "default/osv-indexer"
+    }
     gitter = {
       sa_name = google_service_account.gitter_sa[0].name
       ksa     = "default/osv-gitter"

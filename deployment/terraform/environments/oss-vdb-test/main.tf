@@ -57,6 +57,7 @@ module "osv_test" {
 
   project_id                       = "oss-vdb-test"
   worker_service_account_email     = module.osv_pipeline.worker_service_account_email
+  enable_workload_identity         = true
   workload_identity_pool           = module.osv_pipeline.workload_identity_pool
   backup_service_account_email     = module.osv_pipeline.backup_service_account_email
   deployment_service_account_email = var.deployment_service_account_email

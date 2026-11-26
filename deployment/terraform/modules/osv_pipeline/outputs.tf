@@ -107,6 +107,7 @@ output "datastore_database_id" {
 output "workload_identity_pool" {
   value       = local.workload_identity_pool
   description = "The GKE Workload Identity pool (empty when enable_workload_identity is false)"
+  depends_on  = [google_container_cluster.workers]
 }
 
 output "backup_service_account_email" {

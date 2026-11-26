@@ -782,6 +782,17 @@ func IsGitCommitSHA(s string) bool {
 	return true
 }
 
+// normalizeCommitSHA trims whitespace, lowercases hex characters, and returns
+// the canonical full-length Git commit SHA if valid per the OSV schema.
+func normalizeCommitSHA(s string) (string, bool) {
+	s = strings.ToLower(strings.TrimSpace(s))
+	if !IsGitCommitSHA(s) {
+		return "", false
+	}
+
+	return s, true
+}
+
 // isHexCommitPrefix checks whether a string is a 7-to-64 character hexadecimal Git commit hash/prefix.
 func isHexCommitPrefix(s string) bool {
 	s = strings.TrimSpace(s)
@@ -797,7 +808,7 @@ func isHexCommitPrefix(s string) bool {
 	return true
 }
 
-// IsDirectGitRange determines if a range is already composed of Git commit hashes rather than tag/version names.
+// IsDirectGitRange determines if a range is already composed of full-length Git commit hashes rather than tag/version names.
 func IsDirectGitRange(vr models.RangeWithMetadata) bool {
 	if vr.Range == nil {
 		return false
@@ -807,30 +818,32 @@ func IsDirectGitRange(vr models.RangeWithMetadata) bool {
 		return false
 	}
 
-	checkSHA := IsGitCommitSHA
-	if vr.Range.GetType() == osvschema.Range_GIT {
-		checkSHA = isHexCommitPrefix
-	}
-
 	hasCommit := false
 	for _, e := range events {
 		intro := e.GetIntroduced()
 		if intro != "" && intro != "0" {
-			if !checkSHA(intro) {
+			if !IsGitCommitSHA(intro) {
 				return false
 			}
 			hasCommit = true
 		}
 		fixed := e.GetFixed()
 		if fixed != "" {
-			if !checkSHA(fixed) {
+			if !IsGitCommitSHA(fixed) {
 				return false
 			}
 			hasCommit = true
 		}
 		lastAffected := e.GetLastAffected()
 		if lastAffected != "" {
-			if !checkSHA(lastAffected) {
+			if !IsGitCommitSHA(lastAffected) {
+				return false
+			}
+			hasCommit = true
+		}
+		limit := e.GetLimit()
+		if limit != "" {
+			if !IsGitCommitSHA(limit) {
 				return false
 			}
 			hasCommit = true
@@ -838,6 +851,54 @@ func IsDirectGitRange(vr models.RangeWithMetadata) bool {
 	}
 
 	return hasCommit
+}
+
+// hasAbbreviatedGitSHA reports whether a GIT range contains a short hex commit
+// prefix (not a full-length 40/64-char SHA) so ProcessRanges can treat it as
+// unresolved rather than attempting to match it as a Git tag.
+func hasAbbreviatedGitSHA(vr models.RangeWithMetadata) bool {
+	if vr.Range == nil || vr.Range.GetType() != osvschema.Range_GIT {
+		return false
+	}
+	for _, e := range vr.Range.GetEvents() {
+		for _, v := range []string{e.GetIntroduced(), e.GetFixed(), e.GetLastAffected(), e.GetLimit()} {
+			if v == "" || v == "0" || IsGitCommitSHA(v) {
+				continue
+			}
+			if isLikelyGitSHA(v) {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// normalizeRangeCommitSHAs lowercases and trims commit hashes on a direct GIT range
+// to satisfy the OSV schema pattern ^(0|[a-f0-9]{40}|[a-f0-9]{64})$.
+func normalizeRangeCommitSHAs(r *osvschema.Range) {
+	for _, e := range r.GetEvents() {
+		if v := e.GetIntroduced(); v != "" && v != "0" {
+			if sha, ok := normalizeCommitSHA(v); ok {
+				e.Introduced = sha
+			}
+		}
+		if v := e.GetFixed(); v != "" {
+			if sha, ok := normalizeCommitSHA(v); ok {
+				e.Fixed = sha
+			}
+		}
+		if v := e.GetLastAffected(); v != "" {
+			if sha, ok := normalizeCommitSHA(v); ok {
+				e.LastAffected = sha
+			}
+		}
+		if v := e.GetLimit(); v != "" {
+			if sha, ok := normalizeCommitSHA(v); ok {
+				e.Limit = sha
+			}
+		}
+	}
 }
 
 // ProcessRanges attempts to resolve the given ranges to commits and updates the metrics accordingly.
@@ -860,6 +921,7 @@ func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *m
 			if repo != "" {
 				vr.Range.Repo = repo
 				vr.Range.Type = osvschema.Range_GIT
+				normalizeRangeCommitSHAs(vr.Range)
 				if len(vr.Range.GetEvents()) > 0 && vr.Range.GetDatabaseSpecific() == nil {
 					if databaseSpecific, err := buildRangeDatabaseSpecific(vr); err != nil {
 						metrics.AddNotef("failed to make database specific: %v", err)
@@ -873,6 +935,9 @@ func ProcessRanges(ranges []models.RangeWithMetadata, repos []string, metrics *m
 				metrics.AddNotef("no repository available for git commit range")
 				unresolvedRanges = append(unresolvedRanges, vr)
 			}
+		} else if hasAbbreviatedGitSHA(vr) {
+			metrics.AddNotef("skipping abbreviated git commit hash in range")
+			unresolvedRanges = append(unresolvedRanges, vr)
 		} else {
 			tagVersionRanges = append(tagVersionRanges, vr)
 		}

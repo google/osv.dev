@@ -48,7 +48,7 @@ module "osv_pipeline" {
 
   create_oss_fuzz_subnet = true
 
-  postgres_tier              = "db-perf-optimized-N-4"
+  postgres_tier              = "db-perf-optimized-N-8"
   postgres_availability_type = "ZONAL"
 }
 

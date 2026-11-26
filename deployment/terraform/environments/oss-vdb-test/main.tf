@@ -47,7 +47,7 @@ module "osv_pipeline" {
 
   cluster_location = "us-west2-b"
 
-  postgres_tier              = "db-perf-optimized-N-4"
+  postgres_tier              = "db-perf-optimized-N-8"
   postgres_availability_type = "ZONAL"
 }
 

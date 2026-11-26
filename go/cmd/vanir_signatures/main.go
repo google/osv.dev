@@ -25,6 +25,9 @@ import (
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/storage"
 	osvdatastore "github.com/google/osv.dev/go/internal/database/datastore"
+	"github.com/google/osv.dev/go/internal/database/dualwrite"
+	"github.com/google/osv.dev/go/internal/database/postgres"
+	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/vanir"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
@@ -78,10 +81,23 @@ func main() {
 	defer storageClient.Close()
 
 	gcsClient := clients.NewGCSClient(storageClient, bucketName)
-	vulnStore := osvdatastore.NewVulnerabilityStore(osvdatastore.VulnStoreConfig{
+	var vulnStore models.VulnerabilityStore = osvdatastore.NewVulnerabilityStore(osvdatastore.VulnStoreConfig{
 		Client: dsClient,
 		GCS:    gcsClient,
 	})
+	if os.Getenv("POSTGRES_HOST") != "" {
+		pgPool, err := postgres.NewPoolFromEnv(ctx)
+		if err != nil {
+			logger.FatalContext(ctx, "Failed to create Postgres pool", slog.Any("error", err))
+		}
+		defer pgPool.Close()
+
+		pgVulnStore := postgres.NewVulnerabilityStore(postgres.VulnStoreConfig{
+			DB: pgPool,
+		})
+		vulnStore = dualwrite.NewVulnerabilityStore(vulnStore, pgVulnStore)
+		logger.InfoContext(ctx, "Enabled PostgreSQL dual-write for VulnerabilityStore")
+	}
 	jobStore := osvdatastore.NewJobDataStore(dsClient)
 	generator := vanir.NewPythonGenerator(pythonBin, scriptPath)
 

@@ -55,7 +55,7 @@ resource "google_sql_database_instance" "postgres" {
       }
       flags {
         name  = "query_wait_timeout"
-        value = "10"
+        value = "120"
       }
     }
 

@@ -12,7 +12,7 @@ This repository (`google/osv.dev`) contains the backend services, database model
 - **Cloud Platform**: The entire system runs on **Google Cloud Platform (GCP)**.
 - **Database (Indexes)**: We currently use **Google Cloud Datastore** to store and query indexes.
 - **Database (Full Records)**: Full vulnerability records are stored as **protocol buffers (protos) in Google Cloud Storage (GCS)**.
-- *Future Architecture*: A migration of the database backend to **PostgreSQL** (Cloud SQL) is in progress. Cloud SQL instances are provisioned via Terraform, and the API currently serves reads from Datastore/GCS while shadow-reading PostgreSQL (see `dualread/` below); the details are still evolving. **Rule**: Any new Go code interacting with the database must be abstracted behind interfaces to facilitate this migration. Much of this abstraction is already in place—refer to the shared domain interfaces defined under [`go/internal/models/`](go/internal/models/).
+- *Future Architecture*: A migration of the database backend to **PostgreSQL** (Cloud SQL) is in progress. Cloud SQL instances are provisioned via Terraform, and services currently read/write via Datastore/GCS while shadow-reading and dual-writing PostgreSQL (see `dualread/` and `dualwrite/` below); the details are still evolving. **Rule**: Any new Go code interacting with the database must be abstracted behind interfaces to facilitate this migration. Much of this abstraction is already in place—refer to the shared domain interfaces defined under [`go/internal/models/`](go/internal/models/).
 
 ### Monorepo Structure
 It is structured as a multi-language monorepo:
@@ -108,7 +108,7 @@ The project uses `poetry` for Python dependency management, `pnpm` for website f
   make build-protos
   ```
 - **PostgreSQL Codegen (`sqlc`)**:
-  If you modify [`go/internal/database/postgres/queries.sql`](go/internal/database/postgres/queries.sql) or [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/), regenerate the Go query code (`go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest` if not installed):
+  If you modify [`go/internal/database/postgres/queries/`](go/internal/database/postgres/queries/) or [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/), regenerate the Go query code (`go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest` if not installed):
   ```bash
   cd go/internal/database/postgres && sqlc generate
   ```
@@ -169,7 +169,7 @@ Always format and lint your code before proposing changes. The repository provid
 ### Pull Request (PR) Guidelines
 - **PR Description**: Follow the [pull request template](.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) (Overview, Details, Testing), and clearly state if the PR is AI-assisted (see [`CONTRIBUTING.md`](CONTRIBUTING.md)).
 - **PR Metadata**: Feel free to append metadata, tracking notes, or categories inside hidden HTML comments at the very end of your PR descriptions (for example, `<!-- AI-PR -->` or other tags). This keeps the rendered description page clean while preserving useful context in the raw markdown.
-- **Generated Code**: Some generated files are regenerated automatically by CI bots, which open their own PRs: `go generate ./...` in `go/` (`.github/workflows/go-generate.yml`), `make build-protos` (`.github/workflows/generate-protos.yml`), and nightly API snapshot updates (`.github/workflows/snapshots.yml`). Still regenerate files your change affects, but never hand-edit generated files (`*_pb2.py`, `*.pb.go`, `queries.sql.go`, `schema_generated.json`).
+- **Generated Code**: Some generated files are regenerated automatically by CI bots, which open their own PRs: `go generate ./...` in `go/` (`.github/workflows/go-generate.yml`), `make build-protos` (`.github/workflows/generate-protos.yml`), and nightly API snapshot updates (`.github/workflows/snapshots.yml`). Still regenerate files your change affects, but never hand-edit generated files (`*_pb2.py`, `*.pb.go`, `*.sql.go`, `schema_generated.json`).
 
 ---
 
@@ -362,13 +362,14 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
 - **`osvutil/`**: Small shared utilities: request `batcher/`, OSV schema validation (`schema/`), `safe/` helpers, and event helpers.
 - **`metrics/`**: Shared Prometheus metric definitions and HTTP `/metrics` exposition server for OSV services (`worker`, `recoverer`, `gitter`, `custommetrics`).
 - **`vanir/`**: Orchestration, filtering, and domain mutation logic for Vanir signature generation.
-- **`database/`**: Shared database clients and repository store implementations (`datastore/`, `postgres/`, `dualread/`, `jsonstore/`).
+- **`database/`**: Shared database clients and repository store implementations (`datastore/`, `postgres/`, `dualread/`, `dualwrite/`, `jsonstore/`).
   - **`datastore/`**: Cloud Datastore + GCS implementation of the domain interfaces ([`go/internal/database/datastore/`](go/internal/database/datastore/)).
     - *Design Pattern*: Models here are the primary Datastore definitions. Kinds still used by Python code are kept in sync with the legacy Python models in [`osv/models.py`](osv/models.py).
     - *Consistency Testing*: To prevent synchronization drift between Go and Python database models, a database validation test is maintained under [`go/internal/database/datastore/internal/validate/`](go/internal/database/datastore/internal/validate/) (run via `run_validate.sh`).
     - *Schema Quirks (Crucial for Agents)*: In the Datastore database, the legacy term `bug` was used for vulnerabilities. Consequently, many Datastore fields still use names like `bug_id` or `bug_ids`. In the Go codebase, these are mapped to Go struct fields like `VulnID` or `VulnIDs` (e.g., `AffectedCommits` has `VulnID string datastore:"bug_id"`). Pay close attention to the `datastore:` tag when writing queries or defining new fields!
-  - **`postgres/`**: PostgreSQL implementation of the domain interfaces using `sqlc` and `pgx/v5` ([`go/internal/database/postgres/`](go/internal/database/postgres/)). Schema migrations are managed with `goose` under [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/) and applied automatically in CI/CD via the private `osv-db-migrate` Cloud Run Job (`gcr.io/oss-vdb/goose-migrations`, built from [`docker/goose/`](docker/goose/)). `queries.sql.go` and `models.go` are generated by `sqlc generate` (see *Setup Commands*) and must not be edited by hand.
+  - **`postgres/`**: PostgreSQL implementation of the domain interfaces using `sqlc` and `pgx/v5` ([`go/internal/database/postgres/`](go/internal/database/postgres/)). Schema migrations are managed with `goose` under [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/) and applied automatically in CI/CD via the private `osv-db-migrate` Cloud Run Job (`gcr.io/oss-vdb/goose-migrations`, built from [`docker/goose/`](docker/goose/)). `*.sql.go` and `models.go` are generated by `sqlc generate` (see *Setup Commands*) and must not be edited by hand.
   - **`dualread/`**: Shadow dual-reader wrapper ([`go/internal/database/dualread/`](go/internal/database/dualread/)) that serves primary reads from Datastore/GCS while probabilistically shadowing queries (`POSTGRES_SHADOW_RATE`) to PostgreSQL in the background to compare results and latency.
+  - **`dualwrite/`**: Dual-writer wrapper ([`go/internal/database/dualwrite/`](go/internal/database/dualwrite/)) that serves reads from Datastore/GCS and executes writes and mutations (`Write`, `Mutate`) on PostgreSQL first before writing Datastore/GCS (propagating secondary errors so retries don't early-exit on already-updated primary state, except `models.ErrNotFound` on `Mutate` prior to backfill completion).
   - **`jsonstore/`**: Local JSON-file-backed store used by local tooling (e.g. `ubuntubinarymapper -output-json`).
 - **`gitter/`**: Client logic to interface with the Gitter caching service.
 

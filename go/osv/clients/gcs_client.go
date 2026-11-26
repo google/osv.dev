@@ -56,7 +56,14 @@ func (p *GCSStorageProvider) Bucket(name string) CloudStorage {
 }
 
 func (c *GCSClient) ReadObject(ctx context.Context, path string) ([]byte, error) {
+	return c.ReadObjectGeneration(ctx, path, 0)
+}
+
+func (c *GCSClient) ReadObjectGeneration(ctx context.Context, path string, generation int64) ([]byte, error) {
 	obj := c.bucket.Object(path)
+	if generation > 0 {
+		obj = obj.Generation(generation)
+	}
 	reader, err := obj.NewReader(ctx)
 	if err != nil {
 		if errors.Is(err, storage.ErrObjectNotExist) {

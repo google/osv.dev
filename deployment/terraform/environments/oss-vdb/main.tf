@@ -24,6 +24,8 @@ locals {
     "${try(manifest.kind, "")}--${try(manifest.metadata.name, "")}" => manifest
     if try(manifest.kind, "") == "CronJob"
   }
+
+  enable_workload_identity = false
 }
 
 module "osv_pipeline" {
@@ -47,6 +49,8 @@ module "osv_pipeline" {
   ]
 
   create_oss_fuzz_subnet = true
+
+  enable_workload_identity = local.enable_workload_identity
 
   postgres_tier              = "db-perf-optimized-N-8"
   postgres_availability_type = "ZONAL"
@@ -164,6 +168,39 @@ module "k8s_cron_alert" {
   notification_channel             = "projects/oss-vdb/notificationChannels/17648103713296264012"
 }
 
+# Monitoring (Plutono / GMP) static Ingress IP and dedicated Workload Identity SA
+resource "google_compute_global_address" "grafana_ingress_ip" {
+  project = "oss-vdb"
+  name    = "grafana-ingress-ip"
+}
+
+resource "google_service_account" "monitoring_sa" {
+  project      = "oss-vdb"
+  account_id   = "osv-monitoring-sa"
+  display_name = "OSV Monitoring (Plutono / GMP) Service Account"
+}
+
+resource "google_project_iam_member" "monitoring_sa_roles" {
+  for_each = toset([
+    "roles/monitoring.viewer",
+    "roles/logging.viewer",
+  ])
+
+  project = "oss-vdb"
+  role    = each.value
+  member  = "serviceAccount:${google_service_account.monitoring_sa.email}"
+}
+
+resource "google_service_account_iam_member" "monitoring_sa_wi" {
+  count = local.enable_workload_identity ? 1 : 0
+
+  service_account_id = google_service_account.monitoring_sa.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:oss-vdb.svc.id.goog[default/grafana-sa]"
+
+  depends_on = [module.osv_pipeline]
+}
+
 import {
   to = module.osv_pipeline.google_firestore_database.datastore
   id = "oss-vdb/(default)"
@@ -202,6 +239,11 @@ output "postgres_primary_private_ip" {
 output "postgres_read_pool_private_ip" {
   description = "Private IP address of the Cloud SQL PostgreSQL read pool instance"
   value       = module.osv_api.read_pool_private_ip_address
+}
+
+output "grafana_ingress_ip" {
+  description = "Global static IP address reserved for monitoring.osv.dev Ingress"
+  value       = google_compute_global_address.grafana_ingress_ip.address
 }
 
 terraform {

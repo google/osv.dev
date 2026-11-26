@@ -1,5 +1,6 @@
 resources:
 - ../../base
+- service-accounts.yaml
 patches:
 - path: indexer-controller.yaml
 - path: indexer-worker.yaml

@@ -12,6 +12,7 @@ spec:
     spec:
       template:
         spec:
+          serviceAccountName: osv-worker
           containers:
           - name: staging-api-test
             image: staging-api-test

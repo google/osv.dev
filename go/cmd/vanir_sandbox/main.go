@@ -16,9 +16,8 @@
 
 // Package main implements the untrusted Vanir sandbox HTTP server for Cloud Run Gen2.
 // Each request processes a single vulnerability record under a unique non-root Linux UID,
-// isolated work directory, stripped environment, IPC/UTS namespaces, and fail-closed
-// post-request UID process reaping. Authentication is enforced by Cloud Run IAM
-// (roles/run.invoker).
+// isolated work directory, stripped environment, and fail-closed post-request UID process
+// reaping. Authentication is enforced by Cloud Run IAM (roles/run.invoker).
 //
 // TODO: Integrate with gitter's /commit-pack endpoint (--git-instead-ofs) so Git-only
 // requests can run offline inside an empty CLONE_NEWNET network namespace.
@@ -59,6 +58,8 @@ const (
 	uidSpan          = 50000
 	probeUID         = 65534 // nobody
 )
+
+var errChildTimeout = errors.New("vanir sandbox execution timed out")
 
 // cappedBuffer buffers up to limit bytes and silently discards excess writes so a
 // noisy child cannot OOM the supervisor or stall on a full stdout/stderr pipe.
@@ -103,14 +104,13 @@ type GenerateResponse struct {
 }
 
 type sandboxServer struct {
-	pythonBin        string
-	scriptPath       string
-	baseWorkDir      string
-	timeout          time.Duration
-	useSetuid        bool
-	supportsIPCUTSNS bool
-	selfExe          string
-	onShutdown       func()
+	pythonBin   string
+	scriptPath  string
+	baseWorkDir string
+	timeout     time.Duration
+	useSetuid   bool
+	selfExe     string
+	onShutdown  func()
 
 	execMu  sync.Mutex
 	seq     atomic.Int64
@@ -185,7 +185,11 @@ func (s *sandboxServer) handleGenerate(w http.ResponseWriter, r *http.Request) {
 			slog.String("vuln_id", meta.ID),
 			slog.Int64("seq", n),
 			slog.Any("error", err))
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		status := http.StatusInternalServerError
+		if errors.Is(err, errChildTimeout) {
+			status = http.StatusGatewayTimeout
+		}
+		http.Error(w, err.Error(), status)
 
 		return
 	}
@@ -281,9 +285,6 @@ func (s *sandboxServer) executeRequest(ctx context.Context, seq int64, uid uint3
 	if s.useSetuid {
 		sysProcAttr.Credential = &syscall.Credential{Uid: uid, Gid: uid, Groups: []uint32{}}
 	}
-	if s.supportsIPCUTSNS {
-		sysProcAttr.Cloneflags |= syscall.CLONE_NEWIPC | syscall.CLONE_NEWUTS
-	}
 	cmd.SysProcAttr = sysProcAttr
 	cmd.Cancel = func() error {
 		return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
@@ -321,6 +322,9 @@ func (s *sandboxServer) executeRequest(ctx context.Context, seq int64, uid uint3
 			slog.String("vuln_id", vulnID),
 			slog.Any("error", waitErr),
 			slog.String("output", outBuf.String()))
+		if errors.Is(cmdCtx.Err(), context.DeadlineExceeded) && ctx.Err() == nil {
+			return nil, fmt.Errorf("%w: %w", errChildTimeout, waitErr)
+		}
 
 		return nil, fmt.Errorf("vanir sandbox execution failed: %w", waitErr)
 	}
@@ -394,7 +398,7 @@ func (s *sandboxServer) reapUID(parentCtx context.Context, uid uint32) error {
 	return nil
 }
 
-func probeCapability(selfExe string, cloneFlags uintptr) error {
+func probeSetuid(selfExe string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -402,7 +406,6 @@ func probeCapability(selfExe string, cloneFlags uintptr) error {
 	cmd.Env = []string{}
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Credential: &syscall.Credential{Uid: probeUID, Gid: probeUID, Groups: []uint32{}},
-		Cloneflags: cloneFlags,
 	}
 
 	return cmd.Run()
@@ -458,16 +461,10 @@ func main() {
 	}
 
 	useSetuid := isRoot
-	supportsIPCUTSNS := false
 	if useSetuid {
 		syscall.Umask(0022)
-		if err := probeCapability(selfExe, 0); err != nil {
+		if err := probeSetuid(selfExe); err != nil {
 			logger.FatalContext(ctx, "CAP_SETUID/CAP_SETGID probe failed (Cloud Run Gen2 is required for UID isolation)", slog.Any("error", err))
-		}
-		if err := probeCapability(selfExe, syscall.CLONE_NEWIPC|syscall.CLONE_NEWUTS); err != nil {
-			logger.WarnContext(ctx, "CLONE_NEWIPC/CLONE_NEWUTS probe failed; continuing without IPC/UTS namespace isolation", slog.Any("error", err))
-		} else {
-			supportsIPCUTSNS = true
 		}
 	}
 
@@ -487,14 +484,13 @@ func main() {
 	defer srvCancel()
 
 	sb := &sandboxServer{
-		pythonBin:        *pythonBin,
-		scriptPath:       *scriptPath,
-		baseWorkDir:      baseWorkDir,
-		timeout:          *timeout,
-		useSetuid:        useSetuid,
-		supportsIPCUTSNS: supportsIPCUTSNS,
-		selfExe:          selfExe,
-		onShutdown:       srvCancel,
+		pythonBin:   *pythonBin,
+		scriptPath:  *scriptPath,
+		baseWorkDir: baseWorkDir,
+		timeout:     *timeout,
+		useSetuid:   useSetuid,
+		selfExe:     selfExe,
+		onShutdown:  srvCancel,
 	}
 
 	httpServer := &http.Server{
@@ -507,8 +503,7 @@ func main() {
 
 	logger.InfoContext(ctx, "Starting vanir_sandbox server",
 		slog.Int("port", *port),
-		slog.Bool("use_setuid", useSetuid),
-		slog.Bool("supports_ipc_uts_ns", supportsIPCUTSNS))
+		slog.Bool("use_setuid", useSetuid))
 
 	go func() {
 		if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {

@@ -111,11 +111,13 @@ func (g *HTTPSignatureGenerator) GenerateBatch(ctx context.Context, vulns []*osv
 	return result, nil
 }
 
+// isRetryableSandboxStatus returns true for transient ingress/capacity errors.
+// 504 is intentionally excluded because vanir_sandbox returns 504 when a child
+// exceeds its per-request timeout (25m) and should not be immediately retried.
 func isRetryableSandboxStatus(code int) bool {
 	return code == http.StatusTooManyRequests ||
 		code == http.StatusBadGateway ||
-		code == http.StatusServiceUnavailable ||
-		code == http.StatusGatewayTimeout
+		code == http.StatusServiceUnavailable
 }
 
 func isValidSignatureValue(val *structpb.Value) bool {

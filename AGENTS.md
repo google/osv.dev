@@ -334,7 +334,7 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
    - Cron job orchestrated in Go (`go/cmd/vanir_signatures/` and `go/internal/vanir/`) that queries modified vulnerabilities, generates Vanir signatures, and writes them back to the database. Supports both remote Cloud Run `vanir-sandbox` execution (via `VANIR_SANDBOX_URL`) and local `generate_signatures.py` fallback.
 
 14. **`vanir_sandbox`**:
-   - Untrusted Cloud Run Gen2 HTTP service (`go/cmd/vanir_sandbox/`) that executes `generate_signatures.py` for a single vulnerability record per request under a unique non-root Linux UID, isolated `0700` work directory, IPC/UTS namespaces, and fail-closed post-request `kill(-1, SIGKILL)` UID reaping, running with a zero-IAM-role service account and no VPC access.
+   - Untrusted Cloud Run Gen2 HTTP service (`go/cmd/vanir_sandbox/`) that executes `generate_signatures.py` for a single vulnerability record per request under a unique non-root Linux UID, isolated `0700` work directory, and fail-closed post-request `kill(-1, SIGKILL)` UID reaping, running with a zero-IAM-role service account and no VPC access.
 
 15. **`ubuntubinarymapper`**:
    - Run as a cron job (`go/cmd/ubuntubinarymapper/`).

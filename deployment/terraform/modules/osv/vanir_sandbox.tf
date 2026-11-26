@@ -19,7 +19,9 @@ resource "google_service_account_iam_member" "vanir_sandbox_deployer_act_as" {
 }
 
 # Untrusted Cloud Run Gen2 microVM sandbox for running Vanir signature generation.
-# Intentionally has NO vpc_access block (physically air-gapped from internal VPC / GKE / Redis / Cloud SQL).
+# Note: template is in lifecycle.ignore_changes, so Terraform only bootstraps the initial
+# revision; deployment/clouddeploy/vanir-sandbox/run-{staging,prod}.yaml are the source of
+# truth for runtime settings (zero-IAM SA, Gen2, concurrency=1, and no VPC access).
 resource "google_cloud_run_v2_service" "vanir_sandbox" {
   project  = var.project_id
   name     = "vanir-sandbox"

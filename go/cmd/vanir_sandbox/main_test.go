@@ -196,7 +196,7 @@ func TestSandboxHTTPGuardsAndErrors(t *testing.T) {
 			wantBody string
 		}{
 			{"non-zero exit", "sys.stderr.write('boom')\nsys.exit(1)\n", 10 * time.Second, http.StatusInternalServerError, ""},
-			{"timeout kills child", "time.sleep(10)\n", 200 * time.Millisecond, http.StatusInternalServerError, ""},
+			{"timeout kills child", "time.sleep(10)\n", 200 * time.Millisecond, http.StatusGatewayTimeout, ""},
 			{"null output falls back to empty object", "open(args.output, 'w').write('{\"OSV-1\": null}')\n", 10 * time.Second, http.StatusOK, `{"signatures":{}}`},
 			{"malformed output.json", "open(args.output, 'w').write('{bad')\n", 10 * time.Second, http.StatusInternalServerError, ""},
 			{"oversized output.json", "open(args.output, 'w').write('x' * (5 * 1024 * 1024))\n", 10 * time.Second, http.StatusInternalServerError, ""},

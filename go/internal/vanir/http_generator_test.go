@@ -127,6 +127,19 @@ func TestHTTPSignatureGenerator_RetriesAndErrors(t *testing.T) {
 		t.Fatalf("retry failed: got=%+v err=%v attempts=%d", got, err, attempts.Load())
 	}
 
+	// Does not retry 504 child timeout.
+	var timeoutAttempts atomic.Int32
+	timedOut := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		timeoutAttempts.Add(1)
+		http.Error(w, "vanir sandbox execution timed out", http.StatusGatewayTimeout)
+	}))
+	t.Cleanup(timedOut.Close)
+	_, err = (&HTTPSignatureGenerator{SandboxURL: timedOut.URL, HTTPClient: timedOut.Client(), retryBackoff: time.Millisecond}).
+		GenerateBatch(context.Background(), []*osvschema.Vulnerability{testVuln("OSV-TIMEOUT")}, "")
+	if err == nil || !strings.Contains(err.Error(), "status 504") || timeoutAttempts.Load() != 1 {
+		t.Fatalf("expected 504 to fail without retry: err=%v attempts=%d", err, timeoutAttempts.Load())
+	}
+
 	// Refuses both 302 (POST->GET) and 307 redirects via CheckRedirect: refuseRedirects.
 	for _, code := range []int{http.StatusFound, http.StatusTemporaryRedirect} {
 		var redirectHit atomic.Bool

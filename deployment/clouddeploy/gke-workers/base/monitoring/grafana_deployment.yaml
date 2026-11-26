@@ -18,6 +18,7 @@ spec:
         app.kubernetes.io/name: grafana
         app.kubernetes.io/part-of: osv-monitoring
     spec:
+      serviceAccountName: grafana-sa
       containers:
       - name: grafana
         image: ghcr.io/credativ/plutono:v7.5.52@sha256:5e5c86066c5adc0e7fa06f33eeb3396ac6f98cf1f387253c681fb7783c610f5e

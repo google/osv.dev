@@ -1,5 +1,15 @@
 resources:
 - ../../base
+# Uncomment once out-of-band prerequisites in oss-vdb are provisioned:
+#   1. K8s Secret `grafana-iap-oauth` in `default` namespace (IAP OAuth client + IAP accessor IAM)
+#   2. Applied Terraform `google_compute_global_address.grafana_ingress_ip` (`deployment/terraform/environments/oss-vdb`)
+#   3. DNS `A` record for `monitoring.osv.dev` pointing to `grafana-ingress-ip`
+#   4. Enable Workload Identity (`local.enable_workload_identity = true` in `deployment/terraform/environments/oss-vdb/main.tf`,
+#      annotate `default` KSA with `iam.gke.io/gcp-service-account=osv-worker@oss-vdb.iam.gserviceaccount.com`,
+#      then enable `enable_default_pool_workload_metadata = true`) so `grafana-sa` runs as `osv-monitoring-sa` rather than node `osv-worker`
+#   5. Uncomment and apply `prod_monitoring_sa_roles` in `deployment/terraform/environments/oss-vdb-test/main.tf`
+#      so `gmp-frontend-test` can query `oss-vdb-test` Cloud Monitoring
+# - monitoring
 patches:
 - path: workers.yaml
 - path: workers-cves.yaml

@@ -1,0 +1,26 @@
+apiVersion: networking.gke.io/v1
+kind: ManagedCertificate
+metadata:
+  name: grafana-managed-cert
+spec:
+  domains:
+    - monitoring.osv.dev
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ingress
+  annotations:
+    kubernetes.io/ingress.global-static-ip-name: "grafana-ingress-ip"
+spec:
+  rules:
+  - host: monitoring.osv.dev
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana
+            port:
+              number: 3000

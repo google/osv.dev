@@ -7,11 +7,12 @@ import (
 	"log/slog"
 	"net/http"
 	"path"
+	"slices"
 	"strings"
 
 	"cloud.google.com/go/pubsub/v2"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv.dev/go/internal/gitter"
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/worker/pipeline"
 	"github.com/google/osv.dev/go/logger"
@@ -19,7 +20,7 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -63,9 +64,11 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 	var err error
 	params.SourceRepo, err = e.Stores.SourceRepo.Get(ctx, task.SourceID)
 	if err != nil {
+		metrics.RecordWorkerFailedTask(metrics.WorkerErrorSourceRepo, true)
 		return err
 	}
 	if task.Vuln == nil {
+		metrics.RecordWorkerFailedTask(metrics.WorkerErrorParse, false)
 		return errors.New("vuln not provided")
 	}
 
@@ -75,6 +78,7 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 		params.ExistingVuln = current
 	} else if !errors.Is(err, models.ErrNotFound) {
 		logger.ErrorContext(ctx, "Failed to get current vuln state", slog.String("vuln_id", task.Vuln.GetId()), slog.Any("error", err))
+		metrics.RecordWorkerFailedTask(metrics.WorkerErrorDatastoreGet, true)
 
 		return fmt.Errorf("failed to get current vuln state: %w", err)
 	}
@@ -87,6 +91,7 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 				slog.String("enricher", fmt.Sprintf("%T", enricher)),
 				slog.Any("error", err),
 			)
+			metrics.RecordWorkerFailedTask(metrics.WorkerErrorEnrich, true)
 
 			return err
 		}
@@ -95,6 +100,7 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 	commits, err := e.populateAffectedCommitsAndTags(ctx, enriched, params.SourceRepo)
 	if err != nil {
 		logger.ErrorContext(ctx, "Populate affected commits failed", slog.String("id", enriched.GetId()), slog.Any("error", err))
+		metrics.RecordWorkerFailedTask(metrics.WorkerErrorCommitEnum, true)
 
 		return err
 	}
@@ -118,6 +124,7 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 		Enriched:        enriched,
 		AffectedCommits: commits,
 	}); err != nil {
+		metrics.RecordWorkerFailedTask(metrics.WorkerErrorWrite, true)
 		return err
 	}
 
@@ -136,11 +143,40 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 	return nil
 }
 
+// semanticallyIgnoredFields are the top-level Vulnerability fields that are not
+// considered when deciding whether a vulnerability has changed.
+var semanticallyIgnoredFields = []protoreflect.Name{"modified", "published", "schema_version"}
+
+// isSemanticallyDifferent reports whether the two vulnerabilities differ in any
+// field other than semanticallyIgnoredFields.
+//
+// This intentionally uses proto.Equal rather than go-cmp with protocmp.Transform:
+// protocmp converts every message into nested maps, which for large records
+// (e.g. Ubuntu kernel USNs with big database_specific Structs) allocated
+// gigabytes and took tens of seconds per comparison, causing worker OOMs.
 func (e *Engine) isSemanticallyDifferent(vuln1, vuln2 *osvschema.Vulnerability) bool {
-	return !cmp.Equal(vuln1, vuln2,
-		protocmp.Transform(),
-		protocmp.IgnoreFields(&osvschema.Vulnerability{}, "modified", "published", "schema_version"),
-	)
+	return !proto.Equal(withoutSemanticallyIgnoredFields(vuln1), withoutSemanticallyIgnoredFields(vuln2))
+}
+
+// withoutSemanticallyIgnoredFields returns a shallow copy of vuln with the
+// semanticallyIgnoredFields cleared. Nested messages and lists are shared with
+// vuln rather than copied, so the result must only be read, never modified.
+func withoutSemanticallyIgnoredFields(vuln *osvschema.Vulnerability) *osvschema.Vulnerability {
+	if vuln == nil {
+		return nil
+	}
+	src := vuln.ProtoReflect()
+	dst := (&osvschema.Vulnerability{}).ProtoReflect()
+	src.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		if !slices.Contains(semanticallyIgnoredFields, fd.Name()) {
+			dst.Set(fd, v)
+		}
+
+		return true
+	})
+	dst.SetUnknown(src.GetUnknown())
+
+	return dst.Interface().(*osvschema.Vulnerability)
 }
 
 func (e *Engine) handleDelete(ctx context.Context, task Task) error {
@@ -157,6 +193,7 @@ func (e *Engine) handleDelete(ctx context.Context, task Task) error {
 		return nil // Nothing to do
 	}
 	if err != nil {
+		metrics.RecordWorkerFailedTask(metrics.WorkerErrorDelete, true)
 		return err
 	}
 
@@ -191,6 +228,7 @@ func (e *Engine) handleDelete(ctx context.Context, task Task) error {
 		// When deleting, we clear the commit index
 		AffectedCommits: models.AffectedCommitsResult{Skip: false, Commits: nil},
 	}); err != nil {
+		metrics.RecordWorkerFailedTask(metrics.WorkerErrorDelete, true)
 		return err
 	}
 

@@ -40,5 +40,8 @@ Full vulnerability information in the osv format should be posted at the endpoin
 ### 3. The extension used for the individual vulnerability endpoints:
 The ``.json`` extension is preferred, but discuss in your issue if you need to use a different extension.
 
+### 4. A URL documenting the license for the data:
+Provide a link to a publicly accessible page stating the license under which the vulnerability data is published (for example, [CC-BY 4.0](https://creativecommons.org/licenses/by/4.0/) or [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)).
+
 
 ### Open an issue [here](https://github.com/google/osv.dev/issues).

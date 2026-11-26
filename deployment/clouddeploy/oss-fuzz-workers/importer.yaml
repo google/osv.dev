@@ -11,6 +11,7 @@ spec:
     spec:
       template:
         spec:
+          serviceAccountName: oss-fuzz-importer
           containers:
           - name: importer
             image: importer
@@ -18,8 +19,6 @@ spec:
             env:
             - name: GOOGLE_CLOUD_PROJECT
               value: oss-vdb
-            - name: OSV_VULNERABILITIES_BUCKET
-              value: osv-vulnerabilities
             args:
               - "--ssh_key_public=/secrets/ssh.pub"
               - "--ssh_key_private=/secrets/ssh"
@@ -40,7 +39,8 @@ spec:
           volumes:
           - name: "ssd"
             hostPath:
-              path: "/mnt/disks/ssd0"
+              path: "/mnt/disks/ssd0/importer"
+              type: DirectoryOrCreate
           - name: secrets
             secret:
               items:

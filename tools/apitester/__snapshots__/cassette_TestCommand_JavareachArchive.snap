@@ -49,10 +49,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "com.example:hello-tester",
-          "ecosystem": "Maven"
-        },
+        "package": { "name": "com.example:hello-tester", "ecosystem": "Maven" },
         "version": "1.0-SNAPSHOT"
       },
       "vulns": []
@@ -76,6 +73,10 @@
         "version": "2.14.0"
       },
       "vulns": [
+        {
+          "id": "GHSA-7hhh-6rmp-j9qf",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
         {
           "id": "GHSA-h46c-h94j-95f3",
           "modified": "<RFC3339 date with the year 2026>"
@@ -114,6 +115,10 @@
         {
           "id": "GHSA-5949-rw7g-wx7w",
           "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-5gvw-p9qm-jgwh",
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-5r5r-6hpj-8gg9",
@@ -178,6 +183,10 @@
         {
           "id": "GHSA-cvm9-fjm9-3572",
           "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-cxp5-3px4-pw24",
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-f3j5-rmmp-3fc5",
@@ -294,6 +303,10 @@
         {
           "id": "GHSA-wh8g-3j2c-rqj5",
           "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-wv8q-qhhj-9h54",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -329,10 +342,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "joda-time:joda-time",
-          "ecosystem": "Maven"
-        },
+        "package": { "name": "joda-time:joda-time", "ecosystem": "Maven" },
         "version": "2.8.1"
       },
       "vulns": []
@@ -531,10 +541,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "com.example:hello-tester",
-          "ecosystem": "Maven"
-        },
+        "package": { "name": "com.example:hello-tester", "ecosystem": "Maven" },
         "version": "1.0-SNAPSHOT"
       },
       "vulns": []
@@ -558,6 +565,10 @@
         "version": "2.14.0"
       },
       "vulns": [
+        {
+          "id": "GHSA-7hhh-6rmp-j9qf",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
         {
           "id": "GHSA-h46c-h94j-95f3",
           "modified": "<RFC3339 date with the year 2026>"
@@ -596,6 +607,10 @@
         {
           "id": "GHSA-5949-rw7g-wx7w",
           "modified": "<RFC3339 date with the year 2025>"
+        },
+        {
+          "id": "GHSA-5gvw-p9qm-jgwh",
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-5r5r-6hpj-8gg9",
@@ -660,6 +675,10 @@
         {
           "id": "GHSA-cvm9-fjm9-3572",
           "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-cxp5-3px4-pw24",
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-f3j5-rmmp-3fc5",
@@ -776,6 +795,10 @@
         {
           "id": "GHSA-wh8g-3j2c-rqj5",
           "modified": "<RFC3339 date with the year 2024>"
+        },
+        {
+          "id": "GHSA-wv8q-qhhj-9h54",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
@@ -811,10 +834,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "joda-time:joda-time",
-          "ecosystem": "Maven"
-        },
+        "package": { "name": "joda-time:joda-time", "ecosystem": "Maven" },
         "version": "2.8.1"
       },
       "vulns": []

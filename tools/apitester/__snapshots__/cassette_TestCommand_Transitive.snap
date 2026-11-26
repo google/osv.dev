@@ -22,10 +22,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "django",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "django", "ecosystem": "PyPI" },
         "version": "1.11.29"
       },
       "vulns": [
@@ -74,11 +71,19 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-q238-5cxm-5c9h",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-qw25-v68c-qjf3",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-rrqc-c2jx-6jgv",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-wvqv-fj8w-qmhm",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -92,15 +97,16 @@
         {
           "id": "PYSEC-2026-3717",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4035",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "flask",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask", "ecosystem": "PyPI" },
         "version": "1.0.0"
       },
       "vulns": [
@@ -124,10 +130,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "requests",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "requests", "ecosystem": "PyPI" },
         "version": "2.20.0"
       },
       "vulns": [
@@ -175,10 +178,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "flask",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask", "ecosystem": "PyPI" },
         "version": "1.0.0"
       },
       "vulns": [
@@ -202,10 +202,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "flask-cors",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask-cors", "ecosystem": "PyPI" },
         "version": "1.0.0"
       },
       "vulns": [
@@ -261,10 +258,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "pandas",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "pandas", "ecosystem": "PyPI" },
         "version": "0.23.4"
       },
       "vulns": [
@@ -881,10 +875,14 @@
         },
         {
           "id": "GHSA-7rjr-3q55-vv33",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-8489-44mv-ggj8",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-h383-gmxw-35v2",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -921,10 +919,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "django",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "django", "ecosystem": "PyPI" },
         "version": "1.11.29"
       },
       "vulns": [
@@ -973,11 +968,19 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-q238-5cxm-5c9h",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-qw25-v68c-qjf3",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-rrqc-c2jx-6jgv",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-wvqv-fj8w-qmhm",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -991,15 +994,16 @@
         {
           "id": "PYSEC-2026-3717",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4035",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "flask",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask", "ecosystem": "PyPI" },
         "version": "1.0.0"
       },
       "vulns": [
@@ -1023,20 +1027,14 @@
     },
     {
       "query": {
-        "package": {
-          "name": "numpy",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "numpy", "ecosystem": "PyPI" },
         "version": "2.3.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "requests",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "requests", "ecosystem": "PyPI" },
         "version": "2.20.0"
       },
       "vulns": [
@@ -1681,10 +1679,14 @@
         },
         {
           "id": "GHSA-7rjr-3q55-vv33",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-8489-44mv-ggj8",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-h383-gmxw-35v2",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -1721,10 +1723,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "junit:junit",
-          "ecosystem": "Maven"
-        },
+        "package": { "name": "junit:junit", "ecosystem": "Maven" },
         "version": "4.12"
       },
       "vulns": [
@@ -1786,10 +1785,14 @@
         },
         {
           "id": "GHSA-7rjr-3q55-vv33",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-8489-44mv-ggj8",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-h383-gmxw-35v2",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -1858,10 +1861,14 @@
         },
         {
           "id": "GHSA-7rjr-3q55-vv33",
-          "modified": "<RFC3339 date with the year 2025>"
+          "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-8489-44mv-ggj8",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-h383-gmxw-35v2",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -1898,45 +1905,37 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "certifi",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "certifi", "ecosystem": "PyPI" },
         "version": "2025.10.5"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "chardet",
-          "ecosystem": "PyPI"
-        },
-        "version": "3.0.4"
-      },
-      "vulns": []
-    },
-    {
-      "query": {
-        "package": {
-          "name": "click",
-          "ecosystem": "PyPI"
-        },
-        "version": "8.3.0"
       },
       "vulns": [
         {
-          "id": "PYSEC-2026-2132",
+          "id": "GHSA-6q48-6c7w-9gw2",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4320",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "django",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "chardet", "ecosystem": "PyPI" },
+        "version": "3.0.4"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": { "name": "click", "ecosystem": "PyPI" },
+        "version": "8.3.0"
+      },
+      "vulns": []
+    },
+    {
+      "query": {
+        "package": { "name": "django", "ecosystem": "PyPI" },
         "version": "1.11.29"
       },
       "vulns": [
@@ -1985,11 +1984,19 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "GHSA-q238-5cxm-5c9h",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "GHSA-qw25-v68c-qjf3",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
           "id": "GHSA-rrqc-c2jx-6jgv",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-wvqv-fj8w-qmhm",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -2003,15 +2010,16 @@
         {
           "id": "PYSEC-2026-3717",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4035",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "flask",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask", "ecosystem": "PyPI" },
         "version": "1.0"
       },
       "vulns": [
@@ -2035,10 +2043,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "idna",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "idna", "ecosystem": "PyPI" },
         "version": "2.7"
       },
       "vulns": [
@@ -2062,50 +2067,35 @@
     },
     {
       "query": {
-        "package": {
-          "name": "itsdangerous",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "itsdangerous", "ecosystem": "PyPI" },
         "version": "2.2.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "jinja2",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "jinja2", "ecosystem": "PyPI" },
         "version": "3.1.6"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "markupsafe",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "markupsafe", "ecosystem": "PyPI" },
         "version": "3.0.3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "pytz",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "pytz", "ecosystem": "PyPI" },
         "version": "2025.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "requests",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "requests", "ecosystem": "PyPI" },
         "version": "2.20.0"
       },
       "vulns": [
@@ -2145,10 +2135,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "urllib3",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "urllib3", "ecosystem": "PyPI" },
         "version": "1.24.3"
       },
       "vulns": [
@@ -2182,6 +2169,10 @@
         },
         {
           "id": "GHSA-v845-jxx5-vc9f",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-vxq7-64xx-v4gw",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -2223,15 +2214,16 @@
         {
           "id": "PYSEC-2026-1999",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4177",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "werkzeug",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "werkzeug", "ecosystem": "PyPI" },
         "version": "3.1.3"
       },
       "vulns": [
@@ -2241,6 +2233,10 @@
         },
         {
           "id": "GHSA-87hc-h4r5-73f7",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GHSA-g6x2-hccm-hh4m",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -2257,6 +2253,10 @@
         },
         {
           "id": "PYSEC-2026-2320",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "PYSEC-2026-4312",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]

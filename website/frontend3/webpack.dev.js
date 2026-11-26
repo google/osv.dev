@@ -25,7 +25,7 @@ module.exports = {
       cacheGroups: {
         vendorsJs: {
           test: /node_modules/,
-          chunks: 'initial',
+          chunks: (chunk) => chunk.name !== 'linter',
           name: 'vendors',
           priority: 1,
           maxInitialRequests: 2,

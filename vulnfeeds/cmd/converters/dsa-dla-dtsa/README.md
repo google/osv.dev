@@ -16,7 +16,7 @@ go run main.go -o OUTPUT_DIR [-webwml WEBWML_REPO] [-security-tracker SECURITY_T
 #### Options:
 
 `-o`:
-Output directory to place the converted osv `.json` files. If `-upload-to-gcs` is set, this directory is used as a prefix for GCS paths.
+Output directory to place the converted osv `.json` files (required when `-upload-to-gcs` is not set). If `-upload-to-gcs` is set, this is an optional GCS path prefix prepended to `dsa-osv`, `dla-osv`, and `dtsa-osv`.
 
 `-webwml`:
 (Optional) Path to the cloned webwml repository. If not provided, it will be cloned to a temporary directory.

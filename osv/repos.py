@@ -190,7 +190,7 @@ def clone(git_url,
     cmd = ['git', 'clone']
     if blobless:
       cmd.append('--filter=blob:none')
-    cmd.extend([_git_mirror(git_url), checkout_dir])
+    cmd.extend(['--', _git_mirror(git_url), checkout_dir])
     subprocess.run(cmd, env=env, capture_output=True, check=True)
     return open_repo(checkout_dir)
   except subprocess.CalledProcessError as e:

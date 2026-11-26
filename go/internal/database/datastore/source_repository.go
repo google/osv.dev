@@ -124,6 +124,7 @@ func (sr *SourceRepository) toModel() *models.SourceRepository {
 		msr.REST = &models.SourceRepoREST{
 			URL:                     sr.RESTAPIURL,
 			LastUpdated:             sr.LastUpdateDate,
+			HTTPLastModified:        sr.RESTHTTPLastModified,
 			IgnoreLastImportTime:    sr.IgnoreLastImportTime,
 			IgnoreDeletionThreshold: sr.IgnoreDeletionThreshold,
 		}
@@ -173,6 +174,7 @@ func newSourceRepositoryFromModel(r *models.SourceRepository) *SourceRepository 
 	if r.REST != nil {
 		sr.RESTAPIURL = r.REST.URL
 		sr.LastUpdateDate = r.REST.LastUpdated
+		sr.RESTHTTPLastModified = r.REST.HTTPLastModified
 		sr.IgnoreLastImportTime = r.REST.IgnoreLastImportTime
 		sr.IgnoreDeletionThreshold = r.REST.IgnoreDeletionThreshold
 	}

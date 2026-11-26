@@ -101,7 +101,6 @@ run-website-prod: stage-website-assets
 
 
 
-# Run with `make run-api-server ARGS=--no-backend` to launch esp without backend.
 # Run the Go developer server orchestrator (launches both ESPv2 and the Go API server).
 # Run with `make run-api-server ARGS=--no-backend` to launch esp without backend.
 run-api-server: ## Run local Go API server with ESPv2 proxy
@@ -110,10 +109,44 @@ run-api-server: ## Run local Go API server with ESPv2 proxy
 	@cd go && go build -o ./api-devserver ./cmd/api-devserver && (GOOGLE_CLOUD_PROJECT=oss-vdb OSV_VULNERABILITIES_BUCKET=osv-vulnerabilities ./api-devserver $(ARGS); EXIT_CODE=$$?; rm -f ./api-devserver; exit $$EXIT_CODE)
 
 # Run the Go developer server orchestrator against the staging/test environment.
+# When connecting over `make run-pg-tunnel-staging` without POSTGRES_PASSWORD set,
+# a short-lived IAM login token (~1h) is generated automatically. For sessions > 1h,
+# pass POSTGRES_USER=osv-readonly and fetch `osv-db-readonly-password` from Secret Manager.
+# Prefix with an explicit empty `POSTGRES_PASSWORD=` (e.g.
+# `POSTGRES_PASSWORD= make run-api-server-test`) for an unauthenticated local database.
 run-api-server-test:
 	test -f $(HOME)/.config/gcloud/application_default_credentials.json || (echo "GCP Application Default Credentials not set, try 'gcloud auth application-default login'"; exit 1)
 	docker inspect osv/esp:latest >/dev/null 2>&1 || docker build -f docker/esp/Dockerfile -t osv/esp:latest docker/esp
-	@cd go && go build -o ./api-devserver ./cmd/api-devserver && (GOOGLE_CLOUD_PROJECT=oss-vdb-test OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities ./api-devserver $(ARGS); EXIT_CODE=$$?; rm -f ./api-devserver; exit $$EXIT_CODE)
+	@cd go && go build -o ./api-devserver ./cmd/api-devserver && ( \
+		trap 'rm -f ./api-devserver' EXIT; \
+		if [ -z "$${POSTGRES_PASSWORD+x}" ]; then \
+			PG_PASS=$$(gcloud sql generate-login-token) || exit 1; \
+		else \
+			PG_PASS="$${POSTGRES_PASSWORD}"; \
+		fi; \
+		GOOGLE_CLOUD_PROJECT=oss-vdb-test \
+		OSV_VULNERABILITIES_BUCKET=osv-test-vulnerabilities \
+		OSV_NORMALIZE_MATCH_NAMES=$${OSV_NORMALIZE_MATCH_NAMES:-true} \
+		POSTGRES_SHADOW_RATE=$${POSTGRES_SHADOW_RATE:-1.0} \
+		POSTGRES_HOST=$${POSTGRES_HOST:-127.0.0.1} \
+		POSTGRES_PORT=$${POSTGRES_PORT:-5432} \
+		POSTGRES_USER=$${POSTGRES_USER:-$$(gcloud config get-value account)} \
+		POSTGRES_PASSWORD="$$PG_PASS" \
+		POSTGRES_DB=$${POSTGRES_DB:-osv} \
+		POSTGRES_SSLMODE=$${POSTGRES_SSLMODE:-require} \
+		./api-devserver $(ARGS))
+
+run-grafana-local: ## Run local Grafana for testing
+	./tools/run_grafana_local.sh $(ARGS)
+
+run-pg-tunnel: ## Port-forward to prod Cloud SQL read pool via deploy/pg-tunnel-read-pool (TARGET=pg-tunnel for primary)
+	./tools/pg_tunnel.sh oss-vdb '$(TARGET)' '$(LOCAL_PORT)' '$(REMOTE_PORT)'
+
+run-pg-tunnel-staging: ## Port-forward to staging (oss-vdb-test) Cloud SQL read pool via deploy/pg-tunnel-read-pool (TARGET=pg-tunnel for primary)
+	./tools/pg_tunnel.sh oss-vdb-test '$(TARGET)' '$(LOCAL_PORT)' '$(REMOTE_PORT)'
+
+run-pg-tunnel-private: ## Port-forward to private-osv Cloud SQL primary via deploy/pg-tunnel
+	./tools/pg_tunnel.sh private-osv '$(TARGET)' '$(LOCAL_PORT)' '$(REMOTE_PORT)'
 
 # TODO: API integration tests.
 all-tests: lib-tests vulnfeed-tests bindings-tests go-tests ## Run all tests

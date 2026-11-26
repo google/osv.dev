@@ -1,13 +1,18 @@
 resources:
 - worker_pod_monitoring.yaml
-- grafana_service_account.yaml
 - configmaps/grafana_datasources.yaml
 - configmaps/grafana_dashboards_prov.yaml
 - grafana_deployment.yaml
 - grafana_service.yaml
 - grafana_ingress.yaml
 
+generatorOptions:
+  disableNameSuffixHash: true
+
 configMapGenerator:
 - name: grafana-dashboards
   files:
+  - home.json=dashboards/home.json
   - executive-overview.json=dashboards/executive-overview.json
+  - pipeline-ingestion-ops.json=dashboards/pipeline-ingestion-ops.json
+  - data-quality-drift.json=dashboards/data-quality-drift.json

@@ -21,6 +21,7 @@ type Server struct {
 
 // NewServer creates a new metrics server on the given address.
 func NewServer(addr string) *Server {
+	initDefaultSeries()
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {

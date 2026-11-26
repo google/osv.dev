@@ -32,6 +32,7 @@ type ImportFinding struct {
 	LastAttempt time.Time
 }
 
+//nolint:interfacebloat // Domain repository interface covering CRUD, GCS result sync, and batch/projection queries.
 type ImportFindingsStore interface {
 	// Clear deletes all entries from the store for a given vulnerability.
 	Clear(ctx context.Context, id string) error
@@ -60,4 +61,60 @@ type ImportFindingsStore interface {
 
 	// ListAllFromSource lists all import findings for a given source.
 	ListAllFromSource(ctx context.Context, source string) ([]*ImportFinding, error)
+
+	// ListAll lists all import findings across all sources.
+	ListAll(ctx context.Context) ([]*ImportFinding, error)
+
+	// ListTimestamps returns maps of bug ID to LastAttempt and FirstSeen Unix timestamps (seconds)
+	// across all import findings using lightweight projection scans when supported.
+	ListTimestamps(ctx context.Context) (lastAttempts, firstSeen map[string]int64, err error)
+}
+
+// UnimplementedImportFindingsStore provides a default unimplemented stub for ImportFindingsStore.
+type UnimplementedImportFindingsStore struct{}
+
+var _ ImportFindingsStore = UnimplementedImportFindingsStore{}
+
+func (UnimplementedImportFindingsStore) Clear(_ context.Context, _ string) error {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) ListIDs(_ context.Context) ([]string, error) {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) GetMulti(_ context.Context, _ []string) ([]*ImportFinding, error) {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) PutMulti(_ context.Context, _ []*ImportFinding) error {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) DeleteMulti(_ context.Context, _ []string) error {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) UploadResult(_ context.Context, _ string, _ []byte) error {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) ListResultSources(_ context.Context) ([]string, error) {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) DeleteResult(_ context.Context, _ string) error {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) ListAllFromSource(_ context.Context, _ string) ([]*ImportFinding, error) {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) ListAll(_ context.Context) ([]*ImportFinding, error) {
+	panic("not implemented")
+}
+
+func (UnimplementedImportFindingsStore) ListTimestamps(_ context.Context) (map[string]int64, map[string]int64, error) {
+	panic("not implemented")
 }

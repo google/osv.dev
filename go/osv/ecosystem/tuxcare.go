@@ -21,6 +21,16 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvconstants"
 )
 
+// tuxcareRPMInnerNames are the inner names TuxCare uses for distributions that
+// are not OSV ecosystems (e.g. "TuxCare:CentOS:7"). Their package versions
+// follow RPM ordering.
+var tuxcareRPMInnerNames = map[string]bool{
+	"CentOS":        true,
+	"CentOS-Stream": true,
+	"OracleLinux":   true,
+	"RHEL":          true,
+}
+
 // tuxcareEcosystem represents "TuxCare:<ecosystem>" advisories. It delegates
 // version handling to the inner ecosystem, resolved lazily via the Provider
 // so that this factory can be registered in the ecosystems map without
@@ -46,6 +56,9 @@ func tuxcareFactory(p *Provider, suffix string) Ecosystem {
 // double-wrapping the resulting Version (which would fail to compare against
 // a singly-wrapped Version from the same inner ecosystem).
 func (e tuxcareEcosystem) resolve() (Ecosystem, error) {
+	if innerName, _, _ := strings.Cut(e.suffix, ":"); tuxcareRPMInnerNames[innerName] {
+		return rpmEcosystem{}, nil
+	}
 	inner, ok := e.p.Get(e.suffix)
 	if !ok {
 		return nil, fmt.Errorf("TuxCare: unknown inner ecosystem %q", e.suffix)
@@ -77,17 +90,4 @@ func (e tuxcareEcosystem) Coarse(version string) (string, error) {
 // the inner ecosystem's behavior.
 func (e tuxcareEcosystem) IsSemver() bool {
 	return false
-}
-
-// unwrap strips the wrapper added by Provider.Get, so callers that wrap us
-// again don't produce a doubly-wrapped Version.
-func unwrap(e Ecosystem) Ecosystem {
-	switch w := e.(type) {
-	case *ecosystemWrapper:
-		return w.Ecosystem
-	case *enumerableWrapper:
-		return w.Enumerable
-	}
-
-	return e
 }

@@ -75,6 +75,9 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     storage_patcher = mock.patch('google.cloud.storage.Client')
     self.addCleanup(storage_patcher.stop)
     self.mock_storage_client = storage_patcher.start()
+    self._mock_buckets = {}
+    self.mock_storage_client.return_value.bucket.side_effect = (
+        lambda name: self._mock_buckets.setdefault(name, mock.MagicMock()))
 
     self.remote_source_repo_path = self.mock_repo.path
     self.source_repo = osv.SourceRepository(
@@ -205,8 +208,8 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
     source_repo = osv.SourceRepository.get_by_id('oss-fuzz')
     self.assertEqual(str(commit.id), source_repo.last_synced_hash)
 
-    self.mock_storage_client().get_bucket.assert_called_with('bucket')
-    bucket = self.mock_storage_client().get_bucket('bucket')
+    self.mock_storage_client().bucket.assert_any_call('bucket')
+    bucket = self.mock_storage_client().bucket('bucket')
 
     expected_json = bucket.blob().upload_from_string.call_args[0][0]
     self.expect_equal('expected.json', expected_json)
@@ -219,6 +222,44 @@ class ImporterTest(unittest.TestCase, tests.ExpectationTest(TEST_DATA_DIR)):
         mock.call().upload_from_string(
             expected_json, retry=retry.DEFAULT_RETRY),
     ])
+
+  @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
+  def test_withdraw(self, unused_mock_publish: mock.MagicMock):
+    """Test withdrawing an already exported OSS-Fuzz entry updates the repo."""
+    self.mock_repo.add_file('file/OSV-2017-134.yaml', _MIN_VALID_VULNERABILITY)
+    self.mock_repo.commit('OSV', 'infra@osv.dev')
+
+    osv.Bug(
+        db_id='OSV-2017-134',
+        affected_packages=[{
+            'package': {
+                'ecosystem': 'OSS-Fuzz',
+                'name': 'file',
+            },
+            'versions': ['FILE5_29'],
+        }],
+        public=True,
+        source_id='oss-fuzz:5417710252982272',
+        source_of_truth=osv.SourceOfTruth.INTERNAL,
+        status=osv.BugStatus.INVALID,
+        withdrawn=datetime.datetime(2022, 1, 1, tzinfo=datetime.UTC),
+        last_modified=datetime.datetime(2022, 1, 1, tzinfo=datetime.UTC),
+        timestamp=datetime.datetime(2021, 1, 15, tzinfo=datetime.UTC),
+    ).put()
+
+    imp = importer.Importer('fake_public_key', 'fake_private_key', self.tmp_dir,
+                            importer.DEFAULT_PUBLIC_LOGGING_BUCKET, 'bucket',
+                            True, False)
+    imp.run()
+
+    bug = osv.Bug.get_by_id('OSV-2017-134')
+    self.assertEqual(osv.SourceOfTruth.SOURCE_REPO, bug.source_of_truth)
+
+    repo = pygit2.Repository(self.remote_source_repo_path)
+    commit = repo.head.peel()
+    self.assertEqual('Import from OSS-Fuzz', commit.message)
+    diff = repo.diff(commit.parents[0], commit)
+    self.assertIn("withdrawn: '2022-01-01T00:00:00Z'", diff.patch)
 
   @mock.patch('google.cloud.pubsub_v1.PublisherClient.publish')
   def test_invalid(self, mock_publish: mock.MagicMock):

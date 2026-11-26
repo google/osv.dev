@@ -66,12 +66,15 @@ func isRefConflictError(err error) bool {
 	// conflicting ref names (e.g. branch vs directory name)
 	return errContainsAny(err, "refname conflict") ||
 		// stale local tracking branches that conflict with remote
-		errContainsAll(err, "some local refs could not be updated", "try running 'git remote prune origin'")
+		errContainsAll(err, "some local refs could not be updated", "git remote prune")
 }
 
 // isRateLimitError checks if an error indicates rate limiting (HTTP 429) or upstream load shedding by the git host.
 func isRateLimitError(err error) bool {
-	if extractHTTPStatusCode(err) == 429 {
+	code := extractHTTPStatusCode(err)
+	// HTTP 429 (Too Many Requests) is the standard
+	// HTTP 418 (I'm a teapot) is used by some git hosts like Alpine GitLab for bot/rate throttling
+	if code == http.StatusTooManyRequests || code == http.StatusTeapot {
 		return true
 	}
 
@@ -89,7 +92,7 @@ func isRateLimitError(err error) bool {
 // network timeout, TLS error, or remote server resource exhaustion (e.g. OOM during pack generation).
 func isRemoteHostError(err error) bool {
 	code := extractHTTPStatusCode(err)
-	if code >= 500 {
+	if code >= http.StatusInternalServerError {
 		return true
 	}
 
@@ -121,7 +124,7 @@ func isRemoteHostError(err error) bool {
 
 // isAuthError checks if an error is due to missing git credentials or authentication failure.
 func isAuthError(err error) bool {
-	if extractHTTPStatusCode(err) == 401 {
+	if extractHTTPStatusCode(err) == http.StatusUnauthorized {
 		return true
 	}
 
@@ -133,7 +136,7 @@ func isAuthError(err error) bool {
 
 // isForbiddenError checks if access to the remote repository was denied (HTTP 403).
 func isForbiddenError(err error) bool {
-	if extractHTTPStatusCode(err) == 403 {
+	if extractHTTPStatusCode(err) == http.StatusForbidden {
 		return true
 	}
 
@@ -142,13 +145,23 @@ func isForbiddenError(err error) bool {
 	)
 }
 
-// isNotFoundError returns true if the requested repository does not exist (HTTP 404 or repository not found).
+// isNotFoundError returns true if the requested repository does not exist (HTTP 404 or repository not found)
+// or if the URL does not point to a valid git repository.
 func isNotFoundError(err error) bool {
-	if extractHTTPStatusCode(err) == 404 {
+	if extractHTTPStatusCode(err) == http.StatusNotFound {
 		return true
 	}
 
-	return errContainsAll(err, "repository", "not found")
+	return errContainsAll(err, "repository", "not found") ||
+		errContainsAny(err,
+			// git:// protocol server error when the repository does not exist
+			"no such repository",
+			// the repo url redirects to a non-git page (e.g. login or web page)
+			"unable to update url base from redirection",
+			// when the repo url is not a valid git repository
+			"is this a git repository",
+			"does not appear to be a git repository",
+		)
 }
 
 // isRefNotFoundError returns true if the requested branch, tag, or commit hash cannot be resolved.

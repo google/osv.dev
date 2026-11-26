@@ -4,10 +4,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "github.com/gogo/protobuf",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "github.com/gogo/protobuf", "ecosystem": "Go" },
         "version": "1.3.1"
       },
       "vulns": [
@@ -23,10 +20,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "github.com/ipfs/go-bitfield",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "github.com/ipfs/go-bitfield", "ecosystem": "Go" },
         "version": "1.0.0"
       },
       "vulns": [
@@ -42,10 +36,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "golang.org/x/image",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "golang.org/x/image", "ecosystem": "Go" },
         "version": "0.4.0"
       },
       "vulns": [
@@ -137,10 +128,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "github.com/gogo/protobuf",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "github.com/gogo/protobuf", "ecosystem": "Go" },
         "version": "1.3.1"
       },
       "vulns": [
@@ -164,10 +152,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "github.com/gogo/protobuf",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "github.com/gogo/protobuf", "ecosystem": "Go" },
         "version": "1.3.1"
       },
       "vulns": [

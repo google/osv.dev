@@ -28,3 +28,4 @@ jobs:
           use-quiet-mode: "yes"
           base-branch: "master"
           check-modified-files-only: ${{ github.event_name == 'schedule' && 'yes' || 'no'}}
+          config-file: "mlc_config.json"

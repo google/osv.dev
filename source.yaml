@@ -2,7 +2,7 @@
 - name: 'almalinux-alba'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!ALBA-).*$']
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
@@ -10,7 +10,7 @@
   db_prefix: ['ALBA-']
   accepted_ecosystems: ['AlmaLinux']
   ignore_git: False
-  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
+  human_link: 'https://errata.almalinux.org/{{ index .Ecosystems 0 | field ":" 1 }}/{{ .ID | replace ":" "-" }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
   strict_validation: False
@@ -18,7 +18,7 @@
 - name: 'almalinux-alea'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!ALEA-).*$']
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
@@ -26,7 +26,7 @@
   db_prefix: ['ALEA-']
   accepted_ecosystems: ['AlmaLinux']
   ignore_git: False
-  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
+  human_link: 'https://errata.almalinux.org/{{ index .Ecosystems 0 | field ":" 1 }}/{{ .ID | replace ":" "-" }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
   strict_validation: False
@@ -34,7 +34,7 @@
 - name: 'almalinux-alsa'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!ALSA-).*$']
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/AlmaLinux/osv-database.git'
   detect_cherrypicks: False
@@ -42,7 +42,7 @@
   db_prefix: ['ALSA-']
   accepted_ecosystems: ['AlmaLinux']
   ignore_git: False
-  human_link: '{% if ECOSYSTEMS|length >= 2 %}https://errata.almalinux.org/{{ ECOSYSTEMS[1].split(":")[1] }}/{{ BUG_ID | replace(":", "-", 1) }}.html{% endif %}'
+  human_link: 'https://errata.almalinux.org/{{ index .Ecosystems 0 | field ":" 1 }}/{{ .ID | replace ":" "-" }}.html'
   link: 'https://github.com/AlmaLinux/osv-database/blob/master/'
   editable: False
   strict_validation: False
@@ -50,7 +50,7 @@
 - name: 'alpine'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!ALPINE-).*$']
+  ignore_patterns: []
   directory_path: 'alpine'
   detect_cherrypicks: False
   extension: '.json'
@@ -58,7 +58,7 @@
   db_prefix: ['ALPINE-']
   accepted_ecosystems: ['Alpine']
   ignore_git: True
-  human_link: 'https://security.alpinelinux.org/vuln/{{ BUG_ID | replace("ALPINE-", "") }}'
+  human_link: 'https://security.alpinelinux.org/vuln/{{ .ID | replace "ALPINE-" "" }}'
   link: 'https://storage.googleapis.com/cve-osv-conversion/'
   editable: False
   strict_validation: True
@@ -66,7 +66,7 @@
 - name: 'android'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!(ASB|PUB|A)-).*$']
+  ignore_patterns: []
   detect_cherrypicks: False
   extension: '.json'
   bucket: 'android-osv'
@@ -80,7 +80,7 @@
 - name: 'azurelinux'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!AZL-).*$']
+  ignore_patterns: []
   directory_path: 'osv'
   repo_url: 'https://github.com/microsoft/AzureLinuxVulnerabilityData.git'
   detect_cherrypicks: False
@@ -95,7 +95,7 @@
 - name: 'bellsoft'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!BELL-CVE-).*$']
+  ignore_patterns: []
   directory_path: 'BELL-CVE'
   repo_url: 'https://github.com/bell-sw/osv-database.git'
   detect_cherrypicks: False
@@ -103,7 +103,7 @@
   db_prefix: ['BELL-']
   accepted_ecosystems: ['Alpaquita', 'BellSoft Hardened Containers']
   ignore_git: False
-  human_link: 'https://docs.bell-sw.com/security/cves/{{ BUG_ID }}/'
+  human_link: 'https://docs.bell-sw.com/security/cves/{{ .ID }}/'
   link: 'https://github.com/bell-sw/osv-database/blob/master/'
   editable: False
   strict_validation: True
@@ -111,7 +111,7 @@
 - name: 'bitnami'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!BIT-).*$']
+  ignore_patterns: []
   directory_path: 'data'
   repo_url: 'https://github.com/bitnami/vulndb.git'
   detect_cherrypicks: False
@@ -127,14 +127,14 @@
   versions_from_repo: False
   type: 2
   rest_api_url: 'https://api.root.io/external/osv/all.json'
-  ignore_patterns: ['^(?!ROOT-).*$']
+  ignore_patterns: []
   directory_path: 'osv'
   detect_cherrypicks: False
   extension: '.json'
   db_prefix: ['ROOT-']
   accepted_ecosystems: ['Root']
   ignore_git: True
-  human_link: 'https://root.io/security/{{ BUG_ID }}'
+  human_link: 'https://root.io/security/{{ .ID }}'
   link: 'https://api.root.io/external/osv/'
   editable: False
   strict_validation: True
@@ -143,7 +143,7 @@
   versions_from_repo: False
   rest_api_url: 'https://advisories.cgr.dev/chainguard/v3/osv/all.json'
   type: 2
-  ignore_patterns: ['^(?!CGA-).*$']  # NOTE: Not currently supported for REST sources
+  ignore_patterns: []
   directory_path: 'chainguard/osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -151,14 +151,14 @@
   accepted_ecosystems: ['Chainguard', 'Wolfi']
   ignore_git: True
   link: 'https://advisories.cgr.dev/chainguard/v3/osv/'
-  human_link: 'https://images.chainguard.dev/security/{{ BUG_ID }}'
+  human_link: 'https://images.chainguard.dev/security/{{ .ID }}'
   editable: False
   strict_validation: True
 
 - name: 'cleanstart'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!CLEANSTART-).*$']
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/cleanstart-dev/cleanstart-security-advisories'
   detect_cherrypicks: False
@@ -174,14 +174,14 @@
   versions_from_repo: False
   rest_api_url: 'https://curl.se/docs/vuln.json'
   type: 2
-  ignore_patterns: ['^(?!CURL-).*$']  # NOTE: Not currently supported for REST sources
+  ignore_patterns: []
   directory_path: 'docs'
   detect_cherrypicks: False
   extension: '.json'
   db_prefix: ['CURL-']
   accepted_ecosystems: [] # None: There is no curl ecosystem, they just publish GIT advisories
   ignore_git: False
-  human_link: 'https://curl.se/docs/{{ BUG_ID | replace("CURL-", "") }}.html'
+  human_link: 'https://curl.se/docs/{{ .ID | replace "CURL-" "" }}.html'
   link: 'https://curl.se/docs/'
   editable: False
   strict_validation: False
@@ -189,7 +189,7 @@
 - name: 'cve-osv'
   versions_from_repo: True
   type: 1
-  ignore_patterns: ['^(?!CVE-).*$']
+  ignore_patterns: []
   directory_path: 'osv-output'
   detect_cherrypicks: False
   extension: '.json'
@@ -197,7 +197,7 @@
   db_prefix: ['CVE-']
   accepted_ecosystems: ['*'] # All ecosystems (we maintain these conversions)
   ignore_git: False
-  human_link: 'https://cve.org/CVERecord?id={{ BUG_ID }}'
+  human_link: 'https://cve.org/CVERecord?id={{ .ID }}'
   link: 'https://storage.googleapis.com/cve-osv-conversion/'
   editable: False
   strict_validation: True
@@ -205,7 +205,7 @@
 - name: 'debian-cve'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!DEBIAN-).*$']
+  ignore_patterns: []
   directory_path: 'debian-cve-osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -213,7 +213,7 @@
   db_prefix: ['DEBIAN-']
   accepted_ecosystems: ['Debian']
   ignore_git: True
-  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID | replace("DEBIAN-", "") }}'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ .ID | replace "DEBIAN-" "" }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
   strict_validation: True
@@ -221,7 +221,7 @@
 - name: 'debian-dla'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!DLA-).*$']
+  ignore_patterns: []
   directory_path: 'dla-osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -229,7 +229,7 @@
   db_prefix: ['DLA-']
   accepted_ecosystems: ['Debian']
   ignore_git: True
-  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ .ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
   strict_validation: True
@@ -237,7 +237,7 @@
 - name: 'debian-dsa'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!DSA-).*$']
+  ignore_patterns: []
   directory_path: 'dsa-osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -245,7 +245,7 @@
   db_prefix: ['DSA-']
   accepted_ecosystems: ['Debian']
   ignore_git: True
-  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ .ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
   editable: False
   strict_validation: True
@@ -253,7 +253,7 @@
 - name: 'debian-dtsa'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!DTSA-).*$']
+  ignore_patterns: []
   directory_path: 'dtsa-osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -261,15 +261,31 @@
   db_prefix: ['DTSA-']
   accepted_ecosystems: ['Debian']
   ignore_git: True
-  human_link: 'https://security-tracker.debian.org/tracker/{{ BUG_ID }}'
+  human_link: 'https://security-tracker.debian.org/tracker/{{ .ID }}'
   link: 'https://storage.googleapis.com/debian-osv/'
+  editable: False
+  strict_validation: True
+
+- name: 'dhi'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: []
+  directory_path: 'dhi/osv'
+  repo_url: 'https://github.com/docker-hardened-images/advisories.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['DHI-']
+  accepted_ecosystems: ['Docker Hardened Images']
+  ignore_git: True
+  human_link: 'https://scout.docker.com/v/{{ .ID }}'
+  link: 'https://github.com/docker-hardened-images/advisories/blob/main/'
   editable: False
   strict_validation: True
 
 - name: 'drupal'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!DRUPAL-).*$']
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/DrupalSecurityTeam/drupal-advisory-database.git'
   detect_cherrypicks: False
@@ -285,7 +301,7 @@
   versions_from_repo: False
   rest_api_url: 'https://advisory.echohq.com/osv/all.json'
   type: 2
-  ignore_patterns: ['^(?!ECHO-).*$']
+  ignore_patterns: []
   directory_path: 'osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -301,11 +317,11 @@
   rest_api_url: 'https://cna.erlef.org/osv/all.json'
   db_prefix: ['EEF-']
   accepted_ecosystems: ['Hex','npm']
-  human_link: 'https://cna.erlef.org/osv/{{ BUG_ID }}.html'
+  human_link: 'https://cna.erlef.org/osv/{{ .ID }}.html'
   link:  'https://cna.erlef.org/osv/'
   directory_path: 'osv'
   extension: '.json'
-  ignore_patterns: ['^(?!EEF-).*$']
+  ignore_patterns: []
   # Not directly editable, but we're happy to take suggestions:
   # https://cna.erlef.org/contact
   editable: False
@@ -314,7 +330,7 @@
 - name: 'ghsa'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!GHSA-).*$']
+  ignore_patterns: []
   directory_path: 'advisories/github-reviewed'
   repo_url: 'https://github.com/github/advisory-database.git'
   detect_cherrypicks: False
@@ -322,7 +338,7 @@
   db_prefix: ['GHSA-']
   accepted_ecosystems: ['*'] # All ecosystems (We trust GHSA)
   ignore_git: False
-  human_link: 'https://github.com/advisories/{{ BUG_ID }}'
+  human_link: 'https://github.com/advisories/{{ .ID }}'
   link: 'https://github.com/github/advisory-database/blob/main/'
   editable: False
   strict_validation: False
@@ -330,7 +346,7 @@
 - name: 'go'
   versions_from_repo: True
   type: 1
-  ignore_patterns: ['^(?!GO-).*$']
+  ignore_patterns: []
   directory_path: 'ID'
   detect_cherrypicks: True
   extension: '.json'
@@ -338,7 +354,7 @@
   db_prefix: ['GO-']
   accepted_ecosystems: ['Go']
   ignore_git: True
-  human_link: 'https://pkg.go.dev/vuln/{{ BUG_ID }}'
+  human_link: 'https://pkg.go.dev/vuln/{{ .ID }}'
   link: 'https://vuln.go.dev/'
   editable: False
   strict_validation: True
@@ -346,7 +362,7 @@
 - name: 'haskell'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!HSEC-).*$']
+  ignore_patterns: []
   repo_branch: 'generated/osv-export'
   repo_url: 'https://github.com/haskell/security-advisories.git'
   detect_cherrypicks: False
@@ -362,7 +378,7 @@
 - name: 'julia'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!JLSEC-).*$']
+  ignore_patterns: []
   repo_branch: 'generated/osv'
   repo_url: 'https://github.com/JuliaLang/SecurityAdvisories.jl.git'
   detect_cherrypicks: False
@@ -370,24 +386,40 @@
   db_prefix: ['JLSEC-']
   accepted_ecosystems: ['Julia']
   ignore_git: False
-  human_link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/blob/main/advisories/published/{{ BUG_ID.split("-")[1] }}/{{ BUG_ID }}.md'
+  human_link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/blob/main/advisories/published/{{ .ID | field "-" 1 }}/{{ .ID }}.md'
   link: 'https://github.com/JuliaLang/SecurityAdvisories.jl/tree/generated/osv/'
   editable: False
   repo_username: 'git'
   strict_validation: True
 
+- name: 'lightwell'
+  versions_from_repo: False
+  type: 0
+  ignore_patterns: []
+  directory_path: 'advisories'
+  repo_url: 'https://github.com/project-lightwell/lightwell-osv.git'
+  detect_cherrypicks: False
+  extension: '.json'
+  db_prefix: ['RHLW-']
+  accepted_ecosystems: ['Red Hat Lightwell']
+  ignore_git: False
+  human_link: 'https://github.com/project-lightwell/lightwell-osv/blob/main/advisories/{{ .ID }}.json'
+  link: 'https://github.com/project-lightwell/lightwell-osv/blob/main/'
+  editable: False
+  strict_validation: False
+
 - name: 'mageia'
   versions_from_repo: False
   rest_api_url: 'https://advisories.mageia.org/vulns.json'
   type: 2
-  ignore_patterns: ['^(?!MGASA-).*$']
+  ignore_patterns: []
   directory_path: .
   detect_cherrypicks: False
   extension: '.json'
   db_prefix: ['MGASA-']
   accepted_ecosystems: ['Mageia']
   ignore_git: True
-  human_link: 'https://advisories.mageia.org/{{ BUG_ID }}.html'
+  human_link: 'https://advisories.mageia.org/{{ .ID }}.html'
   link: 'https://advisories.mageia.org/'
   editable: False
   strict_validation: False
@@ -395,7 +427,7 @@
 - name: 'malicious-packages'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['MAL-0000.*', '^(?!MAL-).*$']
+  ignore_patterns: ['MAL-0000.*']
   directory_path: 'osv'
   repo_url: 'https://github.com/ossf/malicious-packages.git'
   detect_cherrypicks: False
@@ -411,7 +443,7 @@
   versions_from_repo: False
   rest_api_url: 'https://packages.mini.dev/advisories/osv/all.json'
   type: 2
-  ignore_patterns: ['^(?!MINI-).*$']
+  ignore_patterns: []
   directory_path: 'advisories/osv'
   detect_cherrypicks: False
   extension: '.json'
@@ -425,7 +457,7 @@
 - name: 'opam'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!OSEC-).*$']
+  ignore_patterns: []
   repo_branch: 'generated-osv'
   repo_url: 'https://github.com/ocaml/security-advisories.git'
   detect_cherrypicks: False
@@ -442,38 +474,37 @@
   versions_from_repo: False
   rest_api_url: 'https://repo.openeuler.org/security/data/osv/all.json'
   type: 2
-  ignore_patterns: ['^(?!OESA-).*$']
+  ignore_patterns: []
   directory_path: 'security/data/osv'
   detect_cherrypicks: False
   extension: '.json'
   db_prefix: ['OESA-']
   accepted_ecosystems: ['openEuler']
   ignore_git: True
-  human_link: 'https://www.openeuler.org/en/security/security-bulletins/detail/?id=openEuler-SA-{{ BUG_ID | replace("OESA-", "") }}'
+  human_link: 'https://www.openeuler.org/en/security/security-bulletins/detail/?id=openEuler-SA-{{ .ID | replace "OESA-" "" }}'
   link: 'https://repo.openeuler.org/security/data/osv/'
   editable: False
   strict_validation: False
 
-- name: 'oss-fuzz'
+- name: 'oss-fuzz-vulns'
   versions_from_repo: True
   type: 0
-  ignore_patterns: ['^(?!OSV-).*$']
+  ignore_patterns: []
   directory_path: 'vulns'
-  repo_url: 'ssh://github.com/google/oss-fuzz-vulns'
+  repo_url: 'https://github.com/google/oss-fuzz-vulns.git'
   detect_cherrypicks: True
   extension: '.yaml'
   db_prefix: ['OSV-']
   accepted_ecosystems: ['OSS-Fuzz']
   ignore_git: False
   link: 'https://github.com/google/oss-fuzz-vulns/blob/main/'
-  editable: True
-  repo_username: 'git'
+  editable: False
   strict_validation: True
 
 - name: 'psf'
   versions_from_repo: True
   type: 0
-  ignore_patterns: ['^(?!PSF-).*$']
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/psf/advisory-database.git'
   detect_cherrypicks: False
@@ -488,7 +519,7 @@
 - name: 'python'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['PYSEC-0000.*', '^(?!PYSEC-).*$']
+  ignore_patterns: ['PYSEC-0000.*']
   directory_path: 'vulns'
   repo_url: 'https://github.com/pypa/advisory-database'
   detect_cherrypicks: False
@@ -503,7 +534,7 @@
 - name: 'r'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!RSEC-).*$']
+  ignore_patterns: []
   directory_path: 'vulns'
   repo_url: 'https://github.com/RConsortium/r-advisory-database.git'
   detect_cherrypicks: False
@@ -521,12 +552,12 @@
   type: 2
   directory_path: 'data/osv'
   detect_cherrypicks: False
-  ignore_patterns: ['^(?!RH[BES]{1}A-).*$']
+  ignore_patterns: []
   extension: '.json'
   db_prefix: ['RHBA-', 'RHEA-', 'RHSA-']
   accepted_ecosystems: ['Red Hat']
   ignore_git: False
-  human_link: 'https://access.redhat.com/errata/{{ BUG_ID }}'
+  human_link: 'https://access.redhat.com/errata/{{ .ID }}'
   link: 'https://security.access.redhat.com/data/osv/'
   editable: False
   strict_validation: False
@@ -534,14 +565,14 @@
 - name: 'rockylinux-rlsa'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!RLSA-).*$']
+  ignore_patterns: []
   detect_cherrypicks: False
   extension: '.json'
   bucket: 'resf-osv-data'
   db_prefix: ['RLSA-']
   accepted_ecosystems: ['Rocky Linux']
   ignore_git: False
-  human_link: 'https://errata.rockylinux.org/{{ BUG_ID }}'
+  human_link: 'https://errata.rockylinux.org/{{ .ID }}'
   link: 'https://storage.googleapis.com/resf-osv-data/'
   editable: False
   strict_validation: False
@@ -549,14 +580,14 @@
 - name: 'rockylinux-rxsa'
   versions_from_repo: False
   type: 1
-  ignore_patterns: ['^(?!RXSA-).*$']
+  ignore_patterns: []
   detect_cherrypicks: False
   extension: '.json'
   bucket: 'resf-osv-data'
   db_prefix: ['RXSA-']
   accepted_ecosystems: ['Rocky Linux']
   ignore_git: False
-  human_link: 'https://errata.rockylinux.org/{{ BUG_ID }}'
+  human_link: 'https://errata.rockylinux.org/{{ .ID }}'
   link: 'https://storage.googleapis.com/resf-osv-data/'
   editable: False
   strict_validation: False
@@ -564,7 +595,7 @@
 - name: 'rust'
   versions_from_repo: True
   type: 0
-  ignore_patterns: ['^(?!RUSTSEC-).*$']
+  ignore_patterns: []
   repo_branch: 'osv'
   directory_path: 'crates'
   repo_url: 'https://github.com/rustsec/advisory-db.git'
@@ -573,7 +604,7 @@
   db_prefix: ['RUSTSEC-']
   accepted_ecosystems: ['crates.io']
   ignore_git: False
-  human_link: 'https://rustsec.org/advisories/{{ BUG_ID }}'
+  human_link: 'https://rustsec.org/advisories/{{ .ID }}'
   link: 'https://github.com/rustsec/advisory-db/blob/osv/'
   editable: False
   repo_username: 'git'
@@ -583,14 +614,14 @@
   versions_from_repo: False
   rest_api_url: 'https://ftp.suse.com/pub/projects/security/osv/all.json'
   type: 2
-  ignore_patterns: ['^(?!(?:open)?SUSE-[FORS]U-).*$']  # NOTE: Not currently supported for REST sources
+  ignore_patterns: []
   directory_path: 'pub/projects/security/osv'
   detect_cherrypicks: False
   extension: '.json'
   db_prefix: ['openSUSE-', 'SUSE-']
   accepted_ecosystems: ['openSUSE', 'SUSE']
   ignore_git: True
-  human_link: 'https://www.suse.com/support/update/announcement/{{ BUG_ID.split(":")[0].split("-")[2] }}/{{ BUG_ID | replace(":", "") | lower }}/'
+  human_link: 'https://www.suse.com/support/update/announcement/{{ .ID | field ":" 0 | field "-" 2 }}/{{ .ID | replace ":" "" | lower }}/'
   link: 'https://ftp.suse.com/pub/projects/security/osv/'
   editable: False
   strict_validation: False
@@ -598,7 +629,7 @@
 - name: 'tuxcare'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!CLSA-).*$']
+  ignore_patterns: []
   directory_path: 'data'
   repo_url: 'https://github.com/cloudlinux/tuxcare-osv.git'
   detect_cherrypicks: False
@@ -613,7 +644,7 @@
 - name: 'ubuntu-cve'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!UBUNTU-).*$']
+  ignore_patterns: []
   directory_path: 'osv'
   repo_url: 'https://github.com/canonical/ubuntu-security-notices.git'
   detect_cherrypicks: False
@@ -621,7 +652,7 @@
   db_prefix: ['UBUNTU-']
   accepted_ecosystems: ['Ubuntu']
   ignore_git: False
-  human_link: 'https://ubuntu.com/security/{{ BUG_ID | replace("UBUNTU-", "") }}'
+  human_link: 'https://ubuntu.com/security/{{ .ID | replace "UBUNTU-" "" }}'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
   editable: False
   strict_validation: False
@@ -629,7 +660,7 @@
 - name: 'ubuntu-lsn'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!LSN-).*$']
+  ignore_patterns: []
   directory_path: 'osv'
   repo_url: 'https://github.com/canonical/ubuntu-security-notices.git'
   detect_cherrypicks: False
@@ -637,7 +668,7 @@
   db_prefix: ['LSN-']
   accepted_ecosystems: ['Ubuntu']
   ignore_git: False
-  human_link: 'https://ubuntu.com/security/notices/{{ BUG_ID }}'
+  human_link: 'https://ubuntu.com/security/notices/{{ .ID }}'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
   editable: False
   strict_validation: True
@@ -645,7 +676,7 @@
 - name: 'ubuntu-usn'
   versions_from_repo: False
   type: 0
-  ignore_patterns: ['^(?!USN-).*$']
+  ignore_patterns: []
   directory_path: 'osv'
   repo_url: 'https://github.com/canonical/ubuntu-security-notices.git'
   detect_cherrypicks: False
@@ -653,7 +684,7 @@
   db_prefix: ['USN-']
   accepted_ecosystems: ['Ubuntu']
   ignore_git: False
-  human_link: 'https://ubuntu.com/security/notices/{{ BUG_ID }}'
+  human_link: 'https://ubuntu.com/security/notices/{{ .ID }}'
   link: 'https://github.com/canonical/ubuntu-security-notices/blob/main/'
   editable: False
   strict_validation: False
@@ -661,14 +692,14 @@
 - name: 'uvi'
   versions_from_repo: True
   type: 0
-  ignore_patterns: ['^(?!GSD-).*$']
+  ignore_patterns: []
   repo_url: 'https://github.com/cloudsecurityalliance/gsd-database.git'
   detect_cherrypicks: False
   extension: '.json'
   db_prefix: ['GSD-']
   accepted_ecosystems: ['Linux']
   ignore_git: False
-  human_link: 'https://data.gsd.id/{{ BUG_ID }}'
+  human_link: 'https://data.gsd.id/{{ .ID }}'
   link: 'https://github.com/cloudsecurityalliance/gsd-database/blob/main/'
   editable: False
   key_path: 'OSV'
@@ -678,7 +709,7 @@
 - name: 'V8'
   versions_from_repo: True
   type: 0
-  ignore_patterns: [ '^(?!V8-advisory).*$' ]
+  ignore_patterns: []
   directory_path: 'advisories'
   repo_url: 'https://github.com/google/chromium-policy-vulnfeed.git'
   detect_cherrypicks: False

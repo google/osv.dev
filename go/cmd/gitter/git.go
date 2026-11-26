@@ -114,9 +114,13 @@ func attemptGitRecovery(ctx context.Context, repoPath string, err error) bool {
 	return false
 }
 
-// fetchRepo fetches remote origin and updates origin/HEAD to the remote's default branch
+// fetchRepo fetches remote origin and updates origin/HEAD to the remote's default branch.
+// --tags is needed because a plain fetch only follows tags that point into fetched branch
+// history, and some projects (e.g. php-src) tag each release on a commit no branch contains.
+// --force lets a tag that was moved upstream be updated rather than failing the fetch.
+// --prune and --prune-tags remove branches and tags that were deleted upstream.
 func fetchRepo(ctx context.Context, repoPath string) error {
-	_, err := runCmd(ctx, repoPath, []string{"GIT_TERMINAL_PROMPT=0"}, "git", "-c", "remote.origin.followRemoteHead=always", "fetch", "origin")
+	_, err := runCmd(ctx, repoPath, []string{"GIT_TERMINAL_PROMPT=0"}, "git", "-c", "remote.origin.followRemoteHead=always", "fetch", "--tags", "--prune", "--prune-tags", "--force", "origin")
 	if err != nil {
 		return fmt.Errorf("git fetch failed: %w", err)
 	}
@@ -171,6 +175,9 @@ func refreshRepo(ctx context.Context, repoURL string, forceUpdate bool) error {
 				// If still failing or recovery wasn't attempted, check if we should reclone as a fallback
 				if err != nil {
 					var reason string
+					// isNotFoundError (404) is intentionally omitted here so that
+					// if an upstream repository is deleted, the local clone is removed as well, and further attempts to reclone will 404.
+					// This ensures we respect the upstream's decision to delete or private the repo, instead of serving stale content indefinitely.
 					switch {
 					case isAuthError(err):
 						reason = "401 Unauthorized / auth error"

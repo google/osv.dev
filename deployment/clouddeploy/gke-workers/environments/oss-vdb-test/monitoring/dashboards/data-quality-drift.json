@@ -1,0 +1,1304 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Plutono --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": false,
+  "gnetId": null,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [
+    {
+      "icon": "external link",
+      "tags": [],
+      "targetBlank": false,
+      "title": "Observability Directory",
+      "tooltip": "Return to OSV.dev Observability Directory",
+      "type": "link",
+      "url": "/d/osv-home"
+    },
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "osv"
+      ],
+      "targetBlank": false,
+      "title": "OSV Dashboards",
+      "type": "dashboards"
+    }
+  ],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 100,
+      "panels": [],
+      "title": "Dataset Inventory & Data Integrity KPIs",
+      "type": "row"
+    },
+    {
+      "datasource": "GMP (Prometheus)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.52",
+      "targets": [
+        {
+          "expr": "max(osv_dataset_total_vulnerabilities{ecosystem=\"all\"}) or sum(max by (ecosystem) (osv_dataset_total_vulnerabilities))",
+          "refId": "A",
+          "legendFormat": "Total Vulns"
+        }
+      ],
+      "title": "Total Vulnerabilities",
+      "type": "stat"
+    },
+    {
+      "datasource": "GMP (Prometheus)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.52",
+      "targets": [
+        {
+          "expr": "sum(max by (type) (osv_recordchecker_drift)) or vector(0)",
+          "refId": "A",
+          "legendFormat": "Datastore vs GCS Drift"
+        }
+      ],
+      "title": "Datastore vs GCS Drift",
+      "type": "stat"
+    },
+    {
+      "datasource": "GMP (Prometheus)",
+      "description": "Active osv-linter findings across upstream sources. Click to open test.osv.dev/linter.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Open Linter Findings (test.osv.dev/linter)",
+              "url": "https://test.osv.dev/linter"
+            }
+          ],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 50
+              },
+              {
+                "color": "red",
+                "value": 200
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "id": 3,
+      "links": [
+        {
+          "targetBlank": true,
+          "title": "Open Linter Findings (test.osv.dev/linter)",
+          "url": "https://test.osv.dev/linter"
+        }
+      ],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.52",
+      "targets": [
+        {
+          "expr": "sum(max by (source, rule_code, severity) (osv_data_quality_findings{severity=~\"error|warning\", source=~\"$source\"})) or vector(0)",
+          "refId": "A",
+          "legendFormat": "Active Linter Findings"
+        }
+      ],
+      "title": "Active Linter Findings (Warn & Error)",
+      "type": "stat"
+    },
+    {
+      "datasource": "GMP (Prometheus)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.52",
+      "targets": [
+        {
+          "expr": "max(osv_export_zip_size_bytes{ecosystem=\"all\"}) or sum(max by (ecosystem) (osv_export_zip_size_bytes))",
+          "refId": "A",
+          "legendFormat": "all.zip Size"
+        }
+      ],
+      "title": "Export all.zip Size",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "id": 101,
+      "panels": [],
+      "title": "State Synchronization Drift & Record Verification",
+      "type": "row"
+    },
+    {
+      "aliasColors": {
+        "Drift: gcs_missing_or_stale": "#F2495C",
+        "Recoverer: gcs_gen_mismatch (success)": "#73BF69",
+        "Recoverer: gcs_missing (success)": "#2F9E8F",
+        "Recoverer: gcs_retry (success)": "#56A64B",
+        "Recoverer: generic (success)": "#96D98D",
+        "Recoverer: gcs_gen_mismatch (error)": "#FF9830",
+        "Recoverer: gcs_missing (error)": "#E02F44",
+        "Recoverer: gcs_retry (error)": "#FF780A",
+        "Recoverer: generic (error)": "#C4162A"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 6
+      },
+      "hiddenSeries": false,
+      "id": 5,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true,
+        "hideEmpty": true,
+        "hideZero": true
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "/^Drift:.*/",
+          "color": "#F2495C",
+          "linewidth": 2,
+          "fill": 2
+        },
+        {
+          "alias": "/^Recoverer:.*/",
+          "yaxis": 2
+        },
+        {
+          "alias": "/^Recoverer:.*\\(error\\)$/",
+          "yaxis": 2,
+          "dashes": true,
+          "dashLength": 8,
+          "spaceLength": 4
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "max by (type) (osv_recordchecker_drift)",
+          "refId": "A",
+          "legendFormat": "Drift: {{type}}"
+        },
+        {
+          "expr": "sum by (reason, status) (increase(osv_recoverer_processed_records_total[1h]))",
+          "refId": "B",
+          "legendFormat": "Recoverer: {{reason}} ({{status}})"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Datastore vs. GCS Drift Discrepancies & Recoverer Activity",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": "Drift Records",
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": "Recovered / 1h",
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "Invalid: none": "#73BF69"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 6
+      },
+      "hiddenSeries": false,
+      "id": 6,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true,
+        "hideEmpty": true,
+        "hideZero": false,
+        "sort": "current",
+        "sortDesc": true
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "/^Invalid: (?!none$).*/",
+          "color": "#FF780A",
+          "linewidth": 2
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "max by (source) (osv_recordchecker_invalid_records{source=~\"$source\"}) or label_replace(vector(0), \"source\", \"none\", \"\", \"\")",
+          "refId": "A",
+          "legendFormat": "Invalid: {{source}}"
+        }
+      ],
+      "thresholds": [
+        {
+          "colorMode": "critical",
+          "fill": false,
+          "line": true,
+          "op": "gt",
+          "value": 0
+        }
+      ],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Invalid Records Detected by Record Checker",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 102,
+      "panels": [],
+      "title": "Data Quality Linter Findings (ImportFindings)",
+      "type": "row"
+    },
+    {
+      "aliasColors": {
+        "[error] SCH:001": "#F2495C",
+        "[error] REC:001": "#C4162A",
+        "[error] RNG:001": "#FF7383",
+        "[error] PKG:001": "#E02F44",
+        "[error] COMMIT:001": "#B82837",
+        "[warning] REC:002": "#FF9830",
+        "[warning] REC:003": "#FADE2A",
+        "[warning] REC:004": "#FF780A",
+        "[warning] PKG:002": "#E0B400",
+        "[warning] PKG:003": "#FFA657",
+        "[warning] CVE:001": "#C68B00",
+        "[warning] OTHER": "#D97706",
+        "[info] DEL:001": "#5794F2"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 18
+      },
+      "hiddenSeries": false,
+      "id": 7,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true,
+        "hideEmpty": true,
+        "hideZero": true,
+        "sort": "current",
+        "sortDesc": true
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "/^\\[error\\].*/",
+          "color": "#F2495C"
+        },
+        {
+          "alias": "/^\\[warning\\].*/",
+          "color": "#FF9830"
+        },
+        {
+          "alias": "/^\\[info\\].*/",
+          "color": "#5794F2"
+        },
+        {
+          "alias": "[error] SCH:001",
+          "color": "#F2495C"
+        },
+        {
+          "alias": "[error] REC:001",
+          "color": "#C4162A"
+        },
+        {
+          "alias": "[error] RNG:001",
+          "color": "#FF7383"
+        },
+        {
+          "alias": "[error] PKG:001",
+          "color": "#E02F44"
+        },
+        {
+          "alias": "[error] COMMIT:001",
+          "color": "#B82837"
+        },
+        {
+          "alias": "[warning] REC:002",
+          "color": "#FF9830"
+        },
+        {
+          "alias": "[warning] REC:003",
+          "color": "#FADE2A"
+        },
+        {
+          "alias": "[warning] REC:004",
+          "color": "#FF780A"
+        },
+        {
+          "alias": "[warning] PKG:002",
+          "color": "#E0B400"
+        },
+        {
+          "alias": "[warning] PKG:003",
+          "color": "#FFA657"
+        },
+        {
+          "alias": "[warning] CVE:001",
+          "color": "#C68B00"
+        },
+        {
+          "alias": "[warning] OTHER",
+          "color": "#D97706"
+        },
+        {
+          "alias": "[info] DEL:001",
+          "color": "#5794F2"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum by (rule_code, severity) (max by (source, rule_code, severity) (osv_data_quality_findings{source=~\"$source\"}))",
+          "refId": "A",
+          "legendFormat": "[{{severity}}] {{rule_code}}"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Linter Findings by Rule Code & Severity",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 18
+      },
+      "hiddenSeries": false,
+      "id": 8,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true,
+        "hideEmpty": true,
+        "hideZero": true,
+        "sort": "current",
+        "sortDesc": true
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "topk(10, sum by (source) (max by (source, rule_code, severity) (osv_data_quality_findings{source=~\"$source\", severity=~\"error|warning\"})))",
+          "refId": "A",
+          "legendFormat": "{{source}}"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Top Upstream Sources by Linter Findings",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 29
+      },
+      "id": 103,
+      "panels": [],
+      "title": "Upstream Feed Freshness & Ingestion Cadence",
+      "type": "row"
+    },
+    {
+      "datasource": "GMP (Prometheus)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 1,
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 24
+              },
+              {
+                "color": "red",
+                "value": 72
+              }
+            ]
+          },
+          "unit": "h"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 0,
+        "y": 30
+      },
+      "id": 9,
+      "options": {
+        "displayMode": "basic",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showUnfilled": true
+      },
+      "pluginVersion": "7.5.52",
+      "targets": [
+        {
+          "expr": "sort_desc((time() - max by (source) (osv_importer_last_new_record_timestamp_seconds{source=~\"$source\"})) / 3600)",
+          "refId": "A",
+          "legendFormat": "{{source}}",
+          "instant": true
+        }
+      ],
+      "title": "Feed Ingestion Staleness — All Sources (Hours Since Last New Record)",
+      "type": "bargauge"
+    },
+    {
+      "aliasColors": {},
+      "bars": true,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 8,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 12,
+        "w": 12,
+        "x": 12,
+        "y": 30
+      },
+      "hiddenSeries": false,
+      "id": 10,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true,
+        "hideEmpty": true,
+        "hideZero": true
+      },
+      "lines": false,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "topk(10, sum by (source) (increase(osv_importer_records_discovered_total{source=~\"$source\"}[1d])))",
+          "refId": "A",
+          "legendFormat": "{{source}}",
+          "interval": "1d"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Daily Discovered Records by Upstream Source (Top 10)",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "id": 104,
+      "panels": [],
+      "title": "Gitter Graph Operations & Dataset Export Archive",
+      "type": "row"
+    },
+    {
+      "aliasColors": {
+        "Commits Scanned / s": "#73BF69",
+        "Error: fetch_error": "#F2495C",
+        "Error: bad_repo_url": "#FF9830",
+        "Error: bad_hash": "#C4162A"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 43
+      },
+      "hiddenSeries": false,
+      "id": 11,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true,
+        "hideEmpty": true,
+        "hideZero": true
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "/^Error:.*/",
+          "yaxis": 2,
+          "color": "#F2495C"
+        },
+        {
+          "alias": "Error: fetch_error",
+          "yaxis": 2,
+          "color": "#F2495C"
+        },
+        {
+          "alias": "Error: bad_repo_url",
+          "yaxis": 2,
+          "color": "#FF9830"
+        },
+        {
+          "alias": "Error: bad_hash",
+          "yaxis": 2,
+          "color": "#C4162A"
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(osv_gitter_commits_scanned_total[5m]))",
+          "refId": "A",
+          "legendFormat": "Commits Scanned / s"
+        },
+        {
+          "expr": "sum by (error_type) (rate(osv_gitter_data_errors_total[5m]))",
+          "refId": "B",
+          "legendFormat": "Error: {{error_type}}"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Gitter Commit Scanning Velocity & Data Errors",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "ops",
+          "label": "Commits / s",
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "ops",
+          "label": "Errors / s",
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {
+        "all.zip (Total)": "#B877D9"
+      },
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "GMP (Prometheus)",
+      "fill": 2,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 12,
+        "y": 43
+      },
+      "hiddenSeries": false,
+      "id": 12,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": true,
+        "max": true,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": true,
+        "sort": "current",
+        "sortDesc": true
+      },
+      "lines": true,
+      "linewidth": 2,
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.52",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [
+        {
+          "alias": "all.zip (Total)",
+          "yaxis": 2,
+          "color": "#B877D9",
+          "dashes": true,
+          "dashLength": 10,
+          "spaceLength": 6,
+          "fill": 0
+        }
+      ],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "topk(10, max by (ecosystem) (osv_export_zip_size_bytes{ecosystem!=\"all\"}))",
+          "refId": "A",
+          "legendFormat": "{{ecosystem}}"
+        },
+        {
+          "expr": "max(osv_export_zip_size_bytes{ecosystem=\"all\"})",
+          "refId": "B",
+          "legendFormat": "all.zip (Total)"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Export Archive Expansion (Top Ecosystems & all.zip)",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "bytes",
+          "label": "Ecosystem ZIP",
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        },
+        {
+          "format": "bytes",
+          "label": "all.zip Total",
+          "logBase": 1,
+          "max": null,
+          "min": 0,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 27,
+  "style": "dark",
+  "tags": [
+    "osv",
+    "quality",
+    "drift",
+    "linter",
+    "mvp"
+  ],
+  "templating": {
+    "list": [
+      {
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": "GMP (Prometheus)",
+        "definition": "label_values(osv_importer_last_new_record_timestamp_seconds, source)",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Source",
+        "multi": true,
+        "name": "source",
+        "options": [],
+        "query": "label_values(osv_importer_last_new_record_timestamp_seconds, source)",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "tags": [],
+        "type": "query",
+        "useTags": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-7d",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ]
+  },
+  "timezone": "browser",
+  "title": "3. Vulnerability Data Quality & Ecosystem Health",
+  "uid": "osv-data-quality-drift",
+  "version": 1
+}

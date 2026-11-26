@@ -31,6 +31,7 @@ import (
 	"cloud.google.com/go/storage"
 	osvdatastore "github.com/google/osv.dev/go/internal/database/datastore"
 	"github.com/google/osv.dev/go/internal/gitter"
+	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/internal/recoverer"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
@@ -87,6 +88,11 @@ func run() error {
 	defaultTaskPool := envOrDefault("DEFAULT_TASK_POOL", "default")
 	reimportTaskPool := envOrDefault("REIMPORT_TASK_POOL", "reimport")
 	gitterHost := os.Getenv("GITTER_HOST")
+	metricsPort := envOrDefault("METRICS_PORT", "9090")
+
+	if metricsPort != "" {
+		metrics.StartMetricsServer(ctx, metricsPort)
+	}
 
 	dsClient, err := datastore.NewClientWithDatabase(ctx, project, datastoreID)
 	if err != nil {

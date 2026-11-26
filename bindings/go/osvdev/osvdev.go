@@ -27,8 +27,14 @@ const (
 	// DetermineVersionEndpoint is the URL for posting determineversion queries to OSV.
 	DetermineVersionEndpoint = "/v1experimental/determineversion"
 
+	// UbuntuBinaryToSourceEndpoint is the URL for posting Ubuntu binary-to-source package mapping queries to OSV.
+	UbuntuBinaryToSourceEndpoint = "/v1experimental/ubuntu/binary-to-source"
+
 	// MaxQueriesPerQueryBatchRequest is a limit set in osv.dev's API, so is not configurable
 	MaxQueriesPerQueryBatchRequest = 1000
+
+	// MaxPackagesPerUbuntuMappingRequest is a limit set in osv.dev's API, so is not configurable
+	MaxPackagesPerUbuntuMappingRequest = 1000
 
 	DefaultBaseURL = "https://api.osv.dev"
 )
@@ -181,6 +187,71 @@ func (c *OSVClient) ExperimentalDetermineVersion(ctx context.Context, query *api
 	}
 
 	return &result, nil
+}
+
+// ExperimentalQueryUbuntuPackageMapping is an interface to the experimental
+// /v1experimental/ubuntu/binary-to-source endpoint:
+// https://google.github.io/osv.dev/post-v1-ubuntu-binary-to-source/
+//
+// If more than MaxPackagesPerUbuntuMappingRequest binary names are provided,
+// requests are automatically chunked and executed concurrently.
+func (c *OSVClient) ExperimentalQueryUbuntuPackageMapping(
+	ctx context.Context,
+	params *api.UbuntuPackageMappingParameters,
+) (*api.UbuntuPackageMappingResponse, error) {
+	if params == nil {
+		return nil, errors.New("params cannot be nil")
+	}
+
+	if len(params.GetBinaryNames()) <= MaxPackagesPerUbuntuMappingRequest {
+		var result api.UbuntuPackageMappingResponse
+		if err := c.makeRequest(ctx, UbuntuBinaryToSourceEndpoint, params, &result); err != nil {
+			return nil, err
+		}
+
+		return &result, nil
+	}
+
+	nameChunks := chunkBy(params.GetBinaryNames(), MaxPackagesPerUbuntuMappingRequest)
+	batchedResults := make([][]*api.SourcePackages, len(nameChunks))
+
+	g, errGrpCtx := errgroup.WithContext(ctx)
+	if c.Config.MaxConcurrentBatchRequests > 0 {
+		g.SetLimit(c.Config.MaxConcurrentBatchRequests)
+	}
+	for batchIndex, chunk := range nameChunks {
+		g.Go(func() error {
+			if errGrpCtx.Err() != nil {
+				return errGrpCtx.Err()
+			}
+
+			var chunkResp api.UbuntuPackageMappingResponse
+			err := c.makeRequest(errGrpCtx, UbuntuBinaryToSourceEndpoint, &api.UbuntuPackageMappingParameters{
+				Ecosystem:   params.GetEcosystem(),
+				BinaryNames: chunk,
+			}, &chunkResp)
+			if err != nil {
+				return err
+			}
+
+			batchedResults[batchIndex] = chunkResp.GetResults()
+
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
+	}
+
+	totalResp := &api.UbuntuPackageMappingResponse{
+		Results: make([]*api.SourcePackages, 0, len(params.GetBinaryNames())),
+	}
+	for _, batch := range batchedResults {
+		totalResp.Results = append(totalResp.Results, batch...)
+	}
+
+	return totalResp, nil
 }
 
 func (c *OSVClient) makeRequest(ctx context.Context, endpoint string, reqBody, resBody proto.Message) error {

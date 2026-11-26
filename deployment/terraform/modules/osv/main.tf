@@ -152,31 +152,23 @@ resource "google_pubsub_topic" "pypi_bridge" {
   name    = "pypi-bridge"
 }
 
-# Service account permissions
-data "google_compute_default_service_account" "default" {
-  project = var.project_id
+# Public read access on public OSV feed, import log, indexer config, and sitemap buckets
+resource "google_storage_bucket_iam_member" "public_bucket_viewers" {
+  for_each = var.public_buckets ? toset(compact([
+    google_storage_bucket.osv_public_import_logs.name,
+    google_storage_bucket.cve_osv_conversion.name,
+    google_storage_bucket.debian_osv_conversion_bucket.name,
+    var.indexer_configs_bucket,
+  ])) : toset([])
+
+  bucket = each.value
+  role   = "roles/storage.objectViewer"
+  member = "allUsers"
 }
 
-resource "google_project_iam_member" "compute_service" {
-  project = var.project_id
-  role    = "roles/editor"
-  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
-}
-
-resource "google_project_iam_member" "compute_service_datastore" {
-  project = var.project_id
-  role    = "roles/datastore.importExportAdmin"
-  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
-}
-
-resource "google_service_account" "deployment_service" {
-  project      = var.project_id
-  account_id   = "deployment"
-  display_name = "deployment"
-}
-
-resource "google_project_iam_member" "deployment_service" {
-  project = var.project_id
-  role    = "roles/editor"
-  member  = "serviceAccount:${google_service_account.deployment_service.email}"
+resource "google_storage_bucket_iam_member" "public_sitemap_reader" {
+  count  = var.public_buckets ? 1 : 0
+  bucket = google_storage_bucket.osv_dev_sitemap_bucket.name
+  role   = "roles/storage.legacyObjectReader"
+  member = "allUsers"
 }

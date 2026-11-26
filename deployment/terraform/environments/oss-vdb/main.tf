@@ -29,8 +29,14 @@ locals {
 module "osv_pipeline" {
   source = "../../modules/osv_pipeline"
 
-  project_id                                     = "oss-vdb"
+  project_id                       = "oss-vdb"
+  deployment_service_account_email = "${google_service_account.deployment_service.account_id}@${google_service_account.deployment_service.project}.iam.gserviceaccount.com"
+  migrator_deployer_service_account_emails = compact([
+    "${google_service_account.deployment_service.account_id}@${google_service_account.deployment_service.project}.iam.gserviceaccount.com",
+    var.terraform_service_account_email,
+  ])
   vulnerabilities_export_bucket                  = "osv-vulnerabilities"
+  public_export_bucket                           = true
   affected_commits_backups_bucket                = "osv-affected-commits"
   affected_commits_backups_bucket_retention_days = 3
   logs_bucket                                    = "osv-logs"
@@ -41,13 +47,25 @@ module "osv_pipeline" {
   ]
 
   create_oss_fuzz_subnet = true
+
+  postgres_tier              = "db-perf-optimized-N-4"
+  postgres_availability_type = "ZONAL"
 }
 
 module "osv" {
   source = "../../modules/osv"
 
-  project_id                   = "oss-vdb"
-  worker_service_account_email = module.osv_pipeline.worker_service_account_email
+  project_id                       = "oss-vdb"
+  worker_service_account_email     = module.osv_pipeline.worker_service_account_email
+  deployment_service_account_email = "${google_service_account.deployment_service.account_id}@${google_service_account.deployment_service.project}.iam.gserviceaccount.com"
+  frontend_deployer_service_account_emails = [
+    "${google_service_account.deployment_service.account_id}@${google_service_account.deployment_service.project}.iam.gserviceaccount.com",
+    var.terraform_service_account_email,
+  ]
+  vulnerabilities_export_bucket = module.osv_pipeline.vulnerabilities_export_bucket_name
+  failed_tasks_topic_name       = module.osv_pipeline.failed_tasks_topic_name
+  datastore_database_id         = module.osv_pipeline.datastore_database_id
+  website_ingress               = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
 
   public_import_logs_bucket     = "osv-public-import-logs"
   cve_osv_conversion_bucket     = "cve-osv-conversion"
@@ -56,23 +74,87 @@ module "osv" {
   osv_dev_sitemap_bucket        = "osv-dev-sitemap"
   backups_bucket                = "osv-backup"
   backups_bucket_retention_days = 60
-  gcs_log_dir                   = "gs://oss-vdb-tf/apply-logs"
 
   website_domain = "osv.dev"
-  api_url        = "api.osv.dev"
-  esp_version    = "2.55.3"
 
   indexer_configs_bucket = "osv-indexer-configs"
   indexer_repos_bucket   = "osv-indexer-repos"
+  public_buckets         = true
+}
+
+module "osv_api" {
+  source = "../../modules/osv_api"
+
+  project_id                     = "oss-vdb"
+  api_url                        = "api.osv.dev"
+  esp_version                    = "2.57.2"
+  frontend_service_account_email = module.osv.frontend_service_account_email
+  service_account_email          = module.osv.frontend_service_account_email
+
+  postgres_primary_instance_name = module.osv_pipeline.postgres_instance_name
+  postgres_region                = module.osv_pipeline.postgres_region
+  postgres_read_pool_tier        = "db-perf-optimized-N-16"
+  postgres_read_pool_node_count  = 2
 }
 
 module "oss_fuzz" {
   source                       = "../../modules/oss_fuzz"
   project_id                   = "oss-vdb"
   tasks_topic_id               = module.osv_pipeline.tasks_topic_id
+  tasks_topic_name             = module.osv_pipeline.tasks_topic_name
   failed_tasks_topic_id        = module.osv_pipeline.failed_tasks_topic_id
   pubsub_service_account_email = module.osv_pipeline.pubsub_service_account_email
   subnetwork                   = module.osv_pipeline.oss_fuzz_subnet_self_link
+  datastore_database_id        = module.osv_pipeline.datastore_database_id
+  public_import_logs_bucket    = module.osv.public_import_logs_bucket_name
+  oss_fuzz_export_bucket       = "oss-fuzz-osv-vulns"
+}
+
+# Production CI/CD deployment service account
+resource "google_service_account" "deployment_service" {
+  project      = "oss-vdb"
+  account_id   = "deployment"
+  display_name = "deployment"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "google_project_iam_member" "deployment_service" {
+  project = "oss-vdb"
+  role    = "roles/editor"
+  member  = "serviceAccount:${google_service_account.deployment_service.email}"
+}
+
+# Legacy Default Compute SA bindings (to be removed once prod Cloud Run and OSS-Fuzz migrate off Default Compute SA)
+data "google_compute_default_service_account" "default" {
+  project = "oss-vdb"
+}
+
+resource "google_project_iam_member" "compute_service" {
+  project = "oss-vdb"
+  role    = "roles/editor"
+  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
+resource "google_project_iam_member" "compute_service_datastore" {
+  project = "oss-vdb"
+  role    = "roles/datastore.importExportAdmin"
+  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
+resource "google_project_iam_member" "website_secret_accessor" {
+  project = "oss-vdb"
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "legacy_compute_readonly_secret_access" {
+  project   = "oss-vdb"
+  secret_id = "osv-db-readonly-password"
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${data.google_compute_default_service_account.default.email}"
 }
 
 # Cloud Router and NAT in us-central1 for private OSS-Fuzz workers cluster
@@ -127,9 +209,29 @@ import {
   id = "projects/oss-vdb/regions/us-central1/routers/router/nat-config"
 }
 
+import {
+  to = module.osv_pipeline.google_compute_global_address.private_ip_address
+  id = "projects/oss-vdb/global/addresses/google-managed-services-default"
+}
+
+import {
+  to = module.osv_pipeline.google_service_networking_connection.private_vpc_connection
+  id = "projects/oss-vdb/global/networks/default:servicenetworking.googleapis.com"
+}
+
 output "website_dns_records" {
   description = "DNS records that need to be created for the osv.dev website"
   value       = module.osv.website_dns_records
+}
+
+output "postgres_primary_private_ip" {
+  description = "Private IP address of the primary Cloud SQL PostgreSQL instance"
+  value       = module.osv_pipeline.postgres_private_ip_address
+}
+
+output "postgres_read_pool_private_ip" {
+  description = "Private IP address of the Cloud SQL PostgreSQL read pool instance"
+  value       = module.osv_api.read_pool_private_ip_address
 }
 
 terraform {
@@ -140,11 +242,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 7.46.0"
+      version = "~> 8.11.0"
     }
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "~> 7.46.0"
+      version = "~> 8.11.0"
     }
     external = {
       source  = "hashicorp/external"
@@ -155,4 +257,24 @@ terraform {
       version = "~> 3.3.0"
     }
   }
+}
+
+variable "terraform_service_account_email" {
+  type        = string
+  description = "Service account used to apply Terraform changes (granted actAs on the frontend and migrator service accounts)."
+  default     = "terraform-apply@oss-vdb.iam.gserviceaccount.com"
+}
+
+variable "impersonate_service_account" {
+  type        = string
+  description = "Service account to impersonate for local runs (pass empty string in CI where Cloud Build already runs as terraform-plan)."
+  default     = "terraform-apply@oss-vdb.iam.gserviceaccount.com"
+}
+
+provider "google" {
+  impersonate_service_account = var.impersonate_service_account != "" ? var.impersonate_service_account : null
+}
+
+provider "google-beta" {
+  impersonate_service_account = var.impersonate_service_account != "" ? var.impersonate_service_account : null
 }

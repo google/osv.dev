@@ -2,3 +2,4 @@ ENV
 __pycache__
 testdata
 Pipfile*
+requirements.txt

@@ -20,3 +20,4 @@ go/api-devserver
 go/api
 esp.log
 .venv/
+coverage.out

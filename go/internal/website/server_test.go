@@ -103,8 +103,11 @@ type mockLinterStore struct {
 	models.UnimplementedLinterStore
 }
 
-func (m mockLinterStore) ListSources(_ context.Context) ([]string, error) {
-	return []string{"cve-osv", "ghsa"}, nil
+func (m mockLinterStore) ListSourceInfos(_ context.Context) ([]models.LinterSourceInfo, error) {
+	return []models.LinterSourceInfo{
+		{Source: "cve-osv"},
+		{Source: "ghsa"},
+	}, nil
 }
 
 func (m mockLinterStore) GetFindings(_ context.Context, source string) ([]byte, error) {

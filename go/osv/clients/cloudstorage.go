@@ -43,10 +43,20 @@ type WriteOptions struct {
 	ContentType string
 }
 
+// DeleteOptions specifies options for a delete operation.
+type DeleteOptions struct {
+	// IfGenerationMatches is a precondition. The delete will only succeed if
+	// the object's current generation matches this value.
+	// If nil, no precondition is enforced.
+	IfGenerationMatches *int64
+}
+
 // Attrs contains metadata about a storage object.
 type Attrs struct {
 	// Generation is the generation of the object.
 	Generation int64
+	// Size is the length of the object's content in bytes.
+	Size int64
 	// CustomTime is the custom time metadata of the object.
 	CustomTime time.Time
 	// CRC32C is the CRC32 checksum of the object, using the Castagnoli93 polynomial.
@@ -79,6 +89,11 @@ type CloudStorage interface {
 
 	// Objects returns an iterator over objects that match the prefix.
 	Objects(ctx context.Context, prefix string) iter.Seq2[*Object, error]
+
+	// DeleteObject deletes an object.
+	// It must return ErrNotFound if the object does not exist, and
+	// ErrPreconditionFailed if opts.IfGenerationMatches is set and does not match.
+	DeleteObject(ctx context.Context, path string, opts *DeleteOptions) error
 
 	// Close closes the CloudStorage client.
 	Close() error

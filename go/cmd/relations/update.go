@@ -200,15 +200,26 @@ ConsumerLoop:
 
 			continue
 		}
-		listedVuln := osvdatastore.NewListedVulnerabilityFromProto(v)
 		listedKey := datastore.NameKey("ListedVulnerability", id, nil)
-		if _, err := tx.Put(listedKey, listedVuln); err != nil {
-			logger.Error("failed to put listed vuln to Datastore", slog.String("id", id), slog.Any("err", err))
-			if err := tx.Rollback(); err != nil {
-				logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
-			}
+		if vuln.IsWithdrawn || v.GetWithdrawn() != nil {
+			if err := tx.Delete(listedKey); err != nil && !errors.Is(err, datastore.ErrNoSuchEntity) {
+				logger.Error("failed to delete listed vuln from Datastore", slog.String("id", id), slog.Any("err", err))
+				if err := tx.Rollback(); err != nil {
+					logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
+				}
 
-			continue
+				continue
+			}
+		} else {
+			listedVuln := osvdatastore.NewListedVulnerabilityFromProto(v)
+			if _, err := tx.Put(listedKey, listedVuln); err != nil {
+				logger.Error("failed to put listed vuln to Datastore", slog.String("id", id), slog.Any("err", err))
+				if err := tx.Rollback(); err != nil {
+					logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
+				}
+
+				continue
+			}
 		}
 		if _, err := tx.Commit(); err != nil {
 			logger.Error("failed to commit transaction", slog.String("id", id), slog.Any("err", err))

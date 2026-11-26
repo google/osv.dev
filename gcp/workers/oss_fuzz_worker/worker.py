@@ -47,10 +47,6 @@ TASK_SUBSCRIPTION = 'oss-fuzz-tasks'
 MAX_LEASE_DURATION = 6 * 60 * 60  # 4 hours.
 _TIMEOUT_SECONDS = 60
 
-_ECOSYSTEM_PUSH_TOPICS = {
-    'PyPI': 'pypi-bridge',
-}
-
 _state = threading.local()
 _state.source_id = None
 _state.bug_id = None
@@ -162,11 +158,13 @@ def mark_bug_invalid(message):
   """Mark a bug as invalid."""
   source_id = get_source_id(message)
   for bug in osv.Bug.query(osv.Bug.source_id == source_id):
-    bug.withdrawn = datetime.datetime.now(datetime.UTC)
+    now = osv.utcnow()
+    bug.withdrawn = now
+    bug.last_modified = now
     bug.status = osv.BugStatus.INVALID
+    if bug.source_of_truth == osv.SourceOfTruth.SOURCE_REPO:
+      bug.source_of_truth = osv.SourceOfTruth.INTERNAL
     bug.put()
-
-    osv.delete_affected_commits(bug.key.id())
 
 
 def get_source_id(message):
@@ -305,14 +303,20 @@ def filter_unknown_ecosystems(vulnerability):
 class TaskRunner:
   """Task runner."""
 
-  def __init__(self, ndb_client, oss_fuzz_dir, work_dir, ssh_key_public_path,
-               ssh_key_private_path):
+  def __init__(self,
+               ndb_client,
+               oss_fuzz_dir,
+               work_dir,
+               ssh_key_public_path,
+               ssh_key_private_path,
+               enable_bisect=False):
     self._ndb_client = ndb_client
     self._oss_fuzz_dir = oss_fuzz_dir
     self._work_dir = work_dir
     self._sources_dir = os.path.join(self._work_dir, 'sources')
     self._ssh_key_public_path = ssh_key_public_path
     self._ssh_key_private_path = ssh_key_private_path
+    self._enable_bisect = enable_bisect
     os.makedirs(self._sources_dir, exist_ok=True)
     logging.info('Created task runner')
 
@@ -482,6 +486,9 @@ class TaskRunner:
     if not result.has_changes and not added_fix_info:
       return result
 
+    if added_fix_info and not result.has_changes:
+      vulnerability.modified.FromDatetime(osv.utcnow())
+
     if not source_repo.editable:
       return result
 
@@ -513,8 +520,8 @@ class TaskRunner:
 
     # Fully enrich the vulnerability object in memory.
     try:
-      result = self._analyze_vulnerability(source_repo, repo, vulnerability,
-                                           relative_path, original_sha256)
+      self._analyze_vulnerability(source_repo, repo, vulnerability,
+                                  relative_path, original_sha256)
     except UpdateConflictError:
       # Discard changes due to conflict.
       return
@@ -580,27 +587,7 @@ class TaskRunner:
       logging.exception('Unexpected exception while writing %s to Datastore',
                         vulnerability.id)
 
-    osv.update_affected_commits(bug.key.id(), result.commits, bug.public)
-    self._notify_ecosystem_bridge(vulnerability)
     self._maybe_remove_import_findings(bug)
-
-  def _notify_ecosystem_bridge(self, vulnerability):
-    """Notify ecosystem bridges."""
-    ecosystems = set()
-    for affected in vulnerability.affected:
-      if affected.package.ecosystem in ecosystems:
-        continue
-
-      ecosystems.add(affected.package.ecosystem)
-      ecosystem_push_topic = _ECOSYSTEM_PUSH_TOPICS.get(
-          affected.package.ecosystem)
-      if ecosystem_push_topic:
-        publisher = pubsub_v1.PublisherClient()
-        cloud_project = os.environ['GOOGLE_CLOUD_PROJECT']
-        push_topic = publisher.topic_path(cloud_project, ecosystem_push_topic)
-        publisher.publish(
-            push_topic,
-            data=json.dumps(osv.vulnerability_to_dict(vulnerability)).encode())
 
   def _maybe_remove_import_findings(self, vulnerability: osv.Bug):
     """Remove any stale import findings for a successfully processed Bug,"""
@@ -638,8 +625,12 @@ class TaskRunner:
                         task_type, source_id)
 
         if task_type in ('regressed', 'fixed'):
-          oss_fuzz.process_bisect_task(self._oss_fuzz_dir, task_type, source_id,
-                                       message)
+          oss_fuzz.process_bisect_task(
+              self._oss_fuzz_dir,
+              task_type,
+              source_id,
+              message,
+              enable_bisect=self._enable_bisect)
         elif task_type == 'impact':
           try:
             oss_fuzz.process_impact_task(source_id, message)
@@ -713,7 +704,8 @@ class TaskRunner:
     def process_task(ack_id, message):
       """Process a task."""
       osv.ensure_updated_checkout(OSS_FUZZ_GIT_URL, self._oss_fuzz_dir)
-      clean_artifacts(self._oss_fuzz_dir)
+      if self._enable_bisect:
+        clean_artifacts(self._oss_fuzz_dir)
 
       # Enforce timeout by doing the work in another thread.
       done_event = threading.Event()
@@ -762,6 +754,11 @@ def main():
       '--redis_host', help='URL to redis instance, enables redis cache')
   parser.add_argument(
       '--redis_port', default=6379, help='Port of redis instance')
+  parser.add_argument(
+      '--enable_bisect',
+      action='store_true',
+      default=False,
+      help='Enable Docker-based OSS-Fuzz bisection (requires privileged pod)')
   args = parser.parse_args()
 
   if args.redis_host:
@@ -770,11 +767,12 @@ def main():
 
   osv.ecosystems.config.work_dir = args.work_dir
 
-  # Work around kernel bug: https://gvisor.dev/issue/1765
-  resource.setrlimit(resource.RLIMIT_MEMLOCK,
-                     (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+  if args.enable_bisect:
+    # Work around kernel bug: https://gvisor.dev/issue/1765
+    resource.setrlimit(resource.RLIMIT_MEMLOCK,
+                       (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
 
-  subprocess.call(('service', 'docker', 'start'))
+    subprocess.call(('service', 'docker', 'start'))
 
   oss_fuzz_dir = os.path.join(args.work_dir, 'oss-fuzz')
 
@@ -788,19 +786,25 @@ def main():
   os.makedirs(tmp_dir, exist_ok=True)
   os.environ['TMPDIR'] = tmp_dir
 
-  # Add oss-fuzz/infra to the import path so we can import from it.
-  sys.path.append(os.path.join(oss_fuzz_dir, 'infra'))
+  if args.enable_bisect:
+    # Add oss-fuzz/infra to the import path so we can import from it.
+    sys.path.append(os.path.join(oss_fuzz_dir, 'infra'))
 
-  # Suppress OSS-Fuzz build error logs. These are expected as part of
-  # bisection.
-  logging.getLogger('helper').setLevel(logging.CRITICAL)
+    # Suppress OSS-Fuzz build error logs. These are expected as part of
+    # bisection.
+    logging.getLogger('helper').setLevel(logging.CRITICAL)
 
   osv.ensure_updated_checkout(OSS_FUZZ_GIT_URL, oss_fuzz_dir)
 
   ndb_client = ndb.Client()
   with ndb_client.context():
-    task_runner = TaskRunner(ndb_client, oss_fuzz_dir, args.work_dir,
-                             args.ssh_key_public, args.ssh_key_private)
+    task_runner = TaskRunner(
+        ndb_client,
+        oss_fuzz_dir,
+        args.work_dir,
+        args.ssh_key_public,
+        args.ssh_key_private,
+        enable_bisect=args.enable_bisect)
     task_runner.loop()
 
 

@@ -30,7 +30,6 @@ from .packagist import Packagist
 from .pub import Pub
 from .pypi import PyPI
 from .redhat import RPM
-from .root import Root
 from .rubygems import RubyGems
 from .semver_ecosystem_helper import SemverEcosystem, SemverLike
 from .tuxcare import TuxCareEcosystem
@@ -71,7 +70,6 @@ _ecosystems = {
     'PyPI': PyPI,
     'Red Hat': RPM,
     'Rocky Linux': RPM,
-    'Root': Root,
     'RubyGems': RubyGems,
     'SUSE': RPM,
     'SwiftURL': SemverEcosystem,
@@ -105,7 +103,7 @@ def is_known(ecosystem: str) -> bool:
   if name == _TUXCARE:
     if not TuxCareEcosystem.is_valid_suffix(suffix):
       return False
-    return is_known(suffix)
+    return is_known(suffix) or TuxCareEcosystem.rpm_inner(suffix)
   return name in _ecosystems
 
 
@@ -147,6 +145,8 @@ def get(name: str) -> OrderedEcosystem | EnumerableEcosystem | None:
   if ecosys is None:
     return None
   if ecosys is TuxCareEcosystem:
+    if TuxCareEcosystem.rpm_inner(suffix):
+      return TuxCareEcosystem(suffix, inner=RPM(suffix.partition(':')[2]))
     return TuxCareEcosystem(suffix, inner=get(suffix))
   return ecosys(suffix)
 

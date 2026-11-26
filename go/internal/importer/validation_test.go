@@ -115,3 +115,77 @@ func TestImporterWorker_NonStrictResilience(t *testing.T) {
 		t.Errorf("Expected message to be published (ignoring unknown field), but got %d", len(mockPublisher.Messages))
 	}
 }
+
+func TestImporterWorker_IDValidation(t *testing.T) {
+	mockPublisher := &testutils.MockPublisher{}
+	config := Config{
+		Publisher:        mockPublisher,
+		StrictValidation: false,
+	}
+
+	tests := []struct {
+		name        string
+		data        string
+		idPrefixes  []string
+		wantPublish bool
+	}{
+		{
+			name:        "Valid ID",
+			data:        `{"id": "OSV-2023-123_a.b:1", "modified": "2023-01-01T00:00:00Z"}`,
+			idPrefixes:  []string{"OSV-"},
+			wantPublish: true,
+		},
+		{
+			name:        "Path traversal in ID",
+			data:        `{"id": "OSV-../../etc/passwd", "modified": "2023-01-01T00:00:00Z"}`,
+			idPrefixes:  []string{"OSV-"},
+			wantPublish: false,
+		},
+		{
+			name:        "Space in ID",
+			data:        `{"id": "SUSE-SU-403 Forbidden-1", "modified": "2023-01-01T00:00:00Z"}`,
+			idPrefixes:  []string{"SUSE-"},
+			wantPublish: false,
+		},
+		{
+			name:        "Dot-dot ID",
+			data:        `{"id": "..", "modified": "2023-01-01T00:00:00Z"}`,
+			wantPublish: false,
+		},
+		{
+			name:        "Empty ID",
+			data:        `{"modified": "2023-01-01T00:00:00Z"}`,
+			wantPublish: false,
+		},
+		{
+			name:        "Mismatched ID prefix",
+			data:        `{"id": "CVE-2023-1234", "modified": "2023-01-01T00:00:00Z"}`,
+			idPrefixes:  []string{"GHSA-"},
+			wantPublish: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockPublisher.Messages = nil
+
+			ch := make(chan WorkItem, 1)
+			ch <- WorkItem{
+				Context:      t.Context(),
+				SourceRecord: mockSourceRecord{DataToRead: []byte(tt.data)},
+				IDPrefixes:   tt.idPrefixes,
+				Format:       RecordFormatJSON,
+			}
+			close(ch)
+
+			importerWorker(t.Context(), ch, config)
+
+			if tt.wantPublish && len(mockPublisher.Messages) == 0 {
+				t.Errorf("Expected message to be published, but wasn't")
+			}
+			if !tt.wantPublish && len(mockPublisher.Messages) > 0 {
+				t.Errorf("Expected no message to be published, but got %d", len(mockPublisher.Messages))
+			}
+		})
+	}
+}

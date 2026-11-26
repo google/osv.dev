@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: ubuntu-binary-mapper
+  labels:
+    cronLastSuccessfulTimeMins: "420"
+spec:
+  timeZone: "Australia/Sydney"
+  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: ubuntu-binary-mapper
+            image: ubuntu-binary-mapper
+            imagePullPolicy: Always
+            resources:
+              requests:
+                cpu: "1"
+                memory: "2G"
+              limits:
+                cpu: "2"
+                memory: "4G"
+            env:
+              - name: TRACE_SAMPLE_RATE
+                value: "1.0"
+          restartPolicy: Never

@@ -16,6 +16,7 @@ package datastore
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -66,12 +67,40 @@ func setJobData[T any](ctx context.Context, client *datastore.Client, key string
 	return nil
 }
 
+func getJSONJobData[T any](ctx context.Context, client *datastore.Client, key string, dst *T) error {
+	if dst == nil {
+		return fmt.Errorf("%w: dst cannot be nil", models.ErrInvalidArgument)
+	}
+	var raw []byte
+	if err := getJobData(ctx, client, key, &raw); err != nil {
+		return err
+	}
+	if err := json.Unmarshal(raw, dst); err != nil {
+		return fmt.Errorf("failed to unmarshal JobData %s: %w", key, err)
+	}
+
+	return nil
+}
+
+func setJSONJobData[T any](ctx context.Context, client *datastore.Client, key string, val T) error {
+	raw, err := json.Marshal(val)
+	if err != nil {
+		return fmt.Errorf("failed to marshal JobData %s: %w", key, err)
+	}
+
+	return setJobData(ctx, client, key, raw)
+}
+
 func (s *JobDataStore) Get(ctx context.Context, key string, dst any) error {
 	switch d := dst.(type) {
 	case *time.Time:
 		return getJobData(ctx, s.client, key, d)
 	case *[]string:
 		return getJobData(ctx, s.client, key, d)
+	case *models.ReconcilerSummary:
+		return getJSONJobData(ctx, s.client, key, d)
+	case *models.DeleterSummary:
+		return getJSONJobData(ctx, s.client, key, d)
 	default:
 		return fmt.Errorf("%w: unsupported JobData destination type %T", models.ErrInvalidArgument, dst)
 	}
@@ -83,6 +112,10 @@ func (s *JobDataStore) Set(ctx context.Context, key string, val any) error {
 		return setJobData(ctx, s.client, key, v.UTC())
 	case []string:
 		return setJobData(ctx, s.client, key, v)
+	case models.ReconcilerSummary:
+		return setJSONJobData(ctx, s.client, key, v)
+	case models.DeleterSummary:
+		return setJSONJobData(ctx, s.client, key, v)
 	default:
 		return fmt.Errorf("%w: unsupported JobData value type %T", models.ErrInvalidArgument, val)
 	}

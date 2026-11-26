@@ -127,28 +127,20 @@ func run() error {
 			Client: dbClient,
 			GCS:    clients.NewGCSClient(gcsClient, vulnBucket),
 		}),
-		Relations:  db.NewRelationsStore(dbClient),
-		SourceRepo: db.NewSourceRepositoryStore(dbClient),
-		VulnSearch: db.NewVulnerabilitySearchStore(dbClient, redisClient),
-		Linter:     gcs.NewLinterStore(gcsClient.Bucket(linterBucket), "linter-result/"),
-		Triage:     gcs.NewTriageStore(gcsClient),
+		Relations:      db.NewRelationsStore(dbClient),
+		SourceRepo:     db.NewSourceRepositoryStore(dbClient),
+		VulnSearch:     db.NewVulnerabilitySearchStore(dbClient, redisClient),
+		Linter:         gcs.NewLinterStore(gcsClient.Bucket(linterBucket), "linter-result/"),
+		ImportFindings: db.NewImportFindingsStore(dbClient, nil, "", ""),
+		Triage:         gcs.NewTriageStore(gcsClient),
 	}
 
-	apiURL := os.Getenv("OSV_API_URL")
-	if apiURL == "" {
-		apiURL = os.Getenv("API_URL")
-	}
+	apiURL, redirectLinterToTest := resolveLinterConfig(project, os.Getenv("OSV_API_URL"), os.Getenv("API_URL"))
 	if apiURL == "" {
 		apiURL = "api.osv.dev"
 	}
 
 	secretKey := os.Getenv("SESSION_SECRET_KEY")
-	if secretKey == "" {
-		secretKey = os.Getenv("FLASK_SECRET_KEY")
-	}
-	if secretKey == "" {
-		secretKey = os.Getenv("SECRET_KEY")
-	}
 	if secretKey == "" && !bypassOAuth {
 		logger.WarnContext(ctx, "SESSION_SECRET_KEY environment variable is not set, authentication will not work")
 	}
@@ -160,11 +152,12 @@ func run() error {
 	)
 
 	srv, err := website.NewServer(website.Config{
-		StaticFS:       staticFiles,
-		DocsFS:         docsFiles,
-		Stores:         stores,
-		APIURL:         apiURL,
-		RequestTimeout: requestTimeout,
+		StaticFS:             staticFiles,
+		DocsFS:               docsFiles,
+		Stores:               stores,
+		APIURL:               apiURL,
+		RequestTimeout:       requestTimeout,
+		RedirectLinterToTest: redirectLinterToTest,
 		Auth: website.AuthConfig{
 			ClientID:     os.Getenv("GOOGLE_OAUTH_CLIENT_ID"),
 			ClientSecret: os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"),
@@ -177,6 +170,8 @@ func run() error {
 
 		return fmt.Errorf("failed to create website server: %w", err)
 	}
+
+	go srv.StartLinterRefresh(ctx)
 
 	httpServer := &http.Server{
 		Addr:         fmt.Sprintf(":%d", *port),
@@ -212,4 +207,29 @@ func run() error {
 	}
 
 	return nil
+}
+
+// resolveLinterConfig normalizes the configured OSV API host and determines whether
+// /linter* routes should redirect to test.osv.dev rather than building linterIndex.
+func resolveLinterConfig(project, osvAPIURL, legacyAPIURL string) (string, bool) {
+	explicit := strings.TrimSpace(osvAPIURL)
+	if explicit == "" {
+		explicit = strings.TrimSpace(legacyAPIURL)
+	}
+	explicit = strings.TrimPrefix(explicit, "https://")
+	explicit = strings.TrimPrefix(explicit, "http://")
+	explicit = strings.TrimRight(explicit, "/")
+
+	redirectToTest := project == "oss-vdb" || strings.EqualFold(explicit, "api.osv.dev")
+
+	apiURL := explicit
+	if apiURL == "" {
+		if project == "oss-vdb-test" {
+			apiURL = "api.test.osv.dev"
+		} else {
+			apiURL = "api.osv.dev"
+		}
+	}
+
+	return apiURL, redirectToTest
 }

@@ -1,0 +1,29 @@
+# Repository allowlist configuration
+# Supports exact URLs (type: url) and regex (Go RE2 syntax) patterns (type: regex).
+# Example:
+# - type: url
+#   value: "https://github.com/google/osv.dev.git"
+#   consider_all_branches: true
+# - type: regex
+#   value: 'github\.com/google/osv-.*'
+#   cherrypicks_fixed: true
+- type: url
+  value: 'https://github.com/vim/vim'
+  consider_all_branches: true
+  cherrypicks: true
+- type: url
+  value: 'https://github.com/imagemagick/imagemagick6'
+  consider_all_branches: true
+  cherrypicks: true
+- type: url
+  value: 'https://github.com/radareorg/radare2'
+  consider_all_branches: true
+  cherrypicks: true
+- type: url
+  value: 'https://github.com/imagemagick/imagemagick'
+  consider_all_branches: true
+  cherrypicks: true
+- type: url
+  value: 'https://github.com/curl/curl'
+  consider_all_branches: true
+  cherrypicks: true

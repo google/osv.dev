@@ -3,6 +3,7 @@ resource "google_cloud_run_v2_service" "website" {
   project  = var.project_id
   name     = "osv-website"
   location = "us-west2"
+  ingress  = var.website_ingress
 
   template {
     containers {
@@ -20,12 +21,6 @@ resource "google_cloud_run_v2_service" "website" {
     ]
     prevent_destroy = true
   }
-}
-
-resource "google_project_iam_member" "website_secret_accessor" {
-  project = var.project_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
 }
 
 # Allow unauthenticated access
@@ -92,8 +87,9 @@ resource "google_compute_backend_bucket" "osv_dev_sitemap_backend" {
 
 # Load Balancer
 module "gclb" {
-  source  = "terraform-google-modules/lb-http/google//modules/serverless_negs"
-  version = "~> 14.0"
+  # TODO(https://github.com/terraform-google-modules/terraform-google-lb-http/issues/618):
+  # Switch back to registry source once v14.3.0+ is published on registry.terraform.io.
+  source = "git::https://github.com/terraform-google-modules/terraform-google-lb-http.git//modules/serverless_negs?ref=v14.3.0"
 
   name    = "website"
   project = var.project_id

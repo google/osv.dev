@@ -15,6 +15,11 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// restImportLookbackWindow overlaps incremental REST index scans with the previous
+// LastUpdated watermark so advisories published out of order or whose individual
+// record endpoint briefly lagged behind the index are still picked up.
+const restImportLookbackWindow = 12 * time.Hour
+
 type restSourceRecord struct {
 	cl      *http.Client
 	urlBase string
@@ -56,19 +61,25 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
 	hasUpdateTime := false
 	var lastUpdated time.Time
+	var cutoff time.Time
 	if !sourceRepo.REST.IgnoreLastImportTime && sourceRepo.REST.LastUpdated != nil {
 		lastUpdated = *sourceRepo.REST.LastUpdated
+		cutoff = lastUpdated.Add(-restImportLookbackWindow)
 		hasUpdateTime = true
 	}
 	timeOfRun := time.Now()
-	var lastModTime time.Time
+	var httpLastModified time.Time
 	if hasUpdateTime {
 		var err error
-		lastModTime, err = checkHEAD(ctx, config, sourceRepo)
+		httpLastModified, err = checkHEAD(ctx, config, sourceRepo)
 		if err != nil {
 			return err
 		}
-		if !lastModTime.IsZero() && (lastModTime.Before(lastUpdated) || lastModTime.Equal(lastUpdated)) {
+		prevHTTPLastModified := lastUpdated
+		if sourceRepo.REST.HTTPLastModified != nil {
+			prevHTTPLastModified = *sourceRepo.REST.HTTPLastModified
+		}
+		if !httpLastModified.IsZero() && !httpLastModified.After(prevHTTPLastModified) {
 			logger.InfoContext(ctx, "No changes since last update.",
 				slog.String("source", sourceRepo.Name),
 				slog.String("url", sourceRepo.REST.URL))
@@ -91,6 +102,9 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 		logger.ErrorContext(ctx, "Failed to fetch REST API", slog.String("source", sourceRepo.Name), slog.Int("status_code", resp.StatusCode), slog.String("url", sourceRepo.REST.URL))
 
 		return fmt.Errorf("failed to fetch REST API: %d for %s", resp.StatusCode, sourceRepo.REST.URL)
+	}
+	if getHTTPLastModified, err := parseHTTPLastModified(resp.Header); err == nil && !getHTTPLastModified.IsZero() {
+		httpLastModified = getHTTPLastModified
 	}
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -132,10 +146,15 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 		if mod.After(maxModified) {
 			maxModified = mod
 		}
-		if hasUpdateTime && (mod.Before(lastUpdated) || mod.Equal(lastUpdated)) {
+		if hasUpdateTime && !mod.After(cutoff) {
 			return true
 		}
 		if shouldIgnore(id.String(), sourceRepo.IDPrefixes, compiledIgnorePatterns) {
+			return true
+		}
+		if !isValidID(id.String()) {
+			logger.ErrorContext(ctx, "Invalid vulnerability id", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()))
+
 			return true
 		}
 		path := id.String() + sourceRepo.Extension
@@ -156,6 +175,9 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 			},
 			SourceRepository:       sourceRepo.Name,
 			SourcePath:             path,
+			IDPrefixes:             sourceRepo.IDPrefixes,
+			KnownID:                id.String(),
+			KnownModified:          mod,
 			CompareAgainstDatabase: hasUpdateTime,
 			Format:                 RecordFormatJSON,
 			KeyPath:                sourceRepo.KeyPath,
@@ -181,10 +203,16 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 	if !maxModified.IsZero() && maxModified.Before(timeToUpdate) {
 		timeToUpdate = maxModified
 	}
-	if !lastModTime.IsZero() && lastModTime.Before(timeToUpdate) {
-		timeToUpdate = lastModTime
+	if !httpLastModified.IsZero() && httpLastModified.Before(timeToUpdate) {
+		timeToUpdate = httpLastModified
 	}
 	sourceRepo.REST.LastUpdated = &timeToUpdate
+	if !httpLastModified.IsZero() {
+		modUTC := httpLastModified.UTC()
+		sourceRepo.REST.HTTPLastModified = &modUTC
+	} else {
+		sourceRepo.REST.HTTPLastModified = nil
+	}
 	sourceRepo.REST.IgnoreLastImportTime = false
 	if err := config.SourceRepoStore.Update(ctx, sourceRepo.Name, sourceRepo); err != nil {
 		logger.ErrorContext(ctx, "Failed to update source repository", slog.Any("error", err), slog.String("source", sourceRepo.Name))
@@ -279,12 +307,14 @@ func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 	}
 
 	// Safety Check
+	dc := activeDeleterCounters.Load()
 	threshold := config.DeleteThreshold
 	if sourceRepo.REST.IgnoreDeletionThreshold {
 		threshold = 101.0
 	}
 	percentage := (float64(len(toDelete)) / float64(len(vulnsInDatastore))) * 100.0
 	if percentage >= threshold {
+		dc.recordRefused(sourceRepo.Name, len(toDelete))
 		logger.ErrorContext(ctx, "Cowardly refusing to delete missing records (threshold exceeded)",
 			slog.String("source", sourceRepo.Name),
 			slog.Int("to_delete", len(toDelete)),
@@ -295,6 +325,7 @@ func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 
 		return errors.New("deletion threshold exceeded")
 	}
+	dc.recordWithdrawn(sourceRepo.Name, len(toDelete))
 
 	// Trigger deletions
 	for _, entry := range toDelete {
@@ -319,6 +350,19 @@ func handleDeleteREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 	return nil
 }
 
+func parseHTTPLastModified(h http.Header) (time.Time, error) {
+	httpLastModified := h.Get("Last-Modified")
+	if httpLastModified == "" {
+		return time.Time{}, nil
+	}
+	t, err := http.ParseTime(httpLastModified)
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return t.UTC(), nil
+}
+
 // checkHEAD performs a HEAD request to check for updates
 func checkHEAD(ctx context.Context, config Config, sourceRepo *models.SourceRepository) (time.Time, error) {
 	req, err := http.NewRequest(http.MethodHead, sourceRepo.REST.URL, nil)
@@ -340,8 +384,7 @@ func checkHEAD(ctx context.Context, config Config, sourceRepo *models.SourceRepo
 		return time.Time{}, nil
 	}
 
-	lastModified := resp.Header.Get("Last-Modified")
-	if lastModified == "" {
+	if resp.Header.Get("Last-Modified") == "" {
 		logger.WarnContext(ctx, "No Last-Modified header found.",
 			slog.String("source", sourceRepo.Name),
 			slog.String("url", sourceRepo.REST.URL))
@@ -349,7 +392,7 @@ func checkHEAD(ctx context.Context, config Config, sourceRepo *models.SourceRepo
 		return time.Time{}, nil
 	}
 
-	lastModTime, err := time.Parse(time.RFC1123, lastModified)
+	httpLastModified, err := parseHTTPLastModified(resp.Header)
 	if err != nil {
 		logger.WarnContext(ctx, "Failed to parse Last-Modified header.",
 			slog.String("source", sourceRepo.Name),
@@ -359,10 +402,10 @@ func checkHEAD(ctx context.Context, config Config, sourceRepo *models.SourceRepo
 		return time.Time{}, nil
 	}
 
-	return lastModTime, nil
+	return httpLastModified, nil
 }
 
-func handleReconcileREST(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository) error {
+func handleReconcileREST(ctx context.Context, ch chan<- WorkItem, config Config, sourceRepo *models.SourceRepository, timeOfRun time.Time) error {
 	if sourceRepo.Type != models.SourceRepositoryTypeREST || sourceRepo.REST == nil {
 		return errors.New("invalid SourceRepository for REST reconcile")
 	}
@@ -414,6 +457,11 @@ func handleReconcileREST(ctx context.Context, ch chan<- WorkItem, config Config,
 		if shouldIgnore(id.String(), sourceRepo.IDPrefixes, compiledIgnorePatterns) {
 			return true
 		}
+		if !isValidID(id.String()) {
+			logger.ErrorContext(ctx, "Invalid vulnerability id in reconcile", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()))
+
+			return true
+		}
 
 		pathValue := id.String() + sourceRepo.Extension
 		sourceRecord := restSourceRecord{
@@ -422,7 +470,7 @@ func handleReconcileREST(ctx context.Context, ch chan<- WorkItem, config Config,
 			urlPath: pathValue,
 		}
 
-		checkReconcile(ctx, ch, sourceRepo, dbRecords, pathValue, &vuln, sourceRecord, RecordFormatJSON, config.ReimportTaskPool)
+		checkReconcile(ctx, ch, sourceRepo, dbRecords, pathValue, &vuln, sourceRecord, RecordFormatJSON, config.ReimportTaskPool, timeOfRun)
 
 		return true
 	})

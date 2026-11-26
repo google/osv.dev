@@ -108,6 +108,7 @@ func main() {
 		logger.FatalContext(ctx, "Failed to create datastore client", slog.Any("error", err))
 	}
 	config.SourceRepoStore = db.NewSourceRepositoryStore(datastoreClient)
+	config.JobDataStore = db.NewJobDataStore(datastoreClient)
 	// Needed for deletions only
 	config.VulnerabilityStore = db.NewVulnerabilityStore(db.VulnStoreConfig{
 		Client: datastoreClient,

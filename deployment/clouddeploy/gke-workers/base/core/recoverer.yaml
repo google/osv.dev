@@ -33,6 +33,14 @@ spec:
         env:
           - name: GITTER_HOST
             value: http://gitter-service:8888
+          # Soft memory limit for the Go runtime, ~90% of limits.memory, so the GC
+          # works harder before the container gets OOM-killed.
+          # Keep in sync with limits.memory below.
+          - name: GOMEMLIMIT
+            value: "460MiB"
+        ports:
+        - name: metrics
+          containerPort: 9090
         resources:
           requests:
             cpu: "10m"

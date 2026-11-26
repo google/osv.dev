@@ -47,6 +47,56 @@ func TestSyncRepoOnDiskAndLoadRepo(t *testing.T) {
 	}
 }
 
+func TestFetchRepo_SyncsTagsAndBranches(t *testing.T) {
+	ctx := t.Context()
+	upstream := t.TempDir()
+	clone := filepath.Join(t.TempDir(), "clone")
+	revParse := func(dir, ref string) (string, bool) {
+		out, err := runCmd(ctx, dir, nil, "git", "rev-parse", "--verify", "--quiet", ref)
+		return strings.TrimSpace(string(out)), err == nil
+	}
+
+	runGit(t, upstream, "init", "-b", "main")
+	runGit(t, upstream, "config", "user.email", "test@test.com")
+	runGit(t, upstream, "config", "user.name", "Test Name")
+	runGit(t, upstream, "commit", "--allow-empty", "-m", "initial commit")
+	runGit(t, upstream, "tag", "-a", "v1.0.0", "-m", "v1.0.0")
+	runGit(t, upstream, "tag", "-a", "v1.1.0", "-m", "v1.1.0")
+	runGit(t, upstream, "branch", "old")
+	if err := cloneRepo(ctx, upstream, clone); err != nil {
+		t.Fatalf("cloneRepo failed: %v", err)
+	}
+
+	// Tag a release on a commit that no branch contains, as php-src does.
+	runGit(t, upstream, "checkout", "-b", "release")
+	runGit(t, upstream, "commit", "--allow-empty", "-m", "release commit")
+	runGit(t, upstream, "tag", "-a", "v1.0.1", "-m", "v1.0.1")
+	runGit(t, upstream, "checkout", "main")
+	runGit(t, upstream, "branch", "-D", "release")
+	// Move a tag, delete a tag and delete a branch.
+	runGit(t, upstream, "commit", "--allow-empty", "-m", "second commit")
+	runGit(t, upstream, "tag", "-f", "-a", "v1.1.0", "-m", "v1.1.0")
+	runGit(t, upstream, "tag", "-d", "v1.0.0")
+	runGit(t, upstream, "branch", "-D", "old")
+
+	if err := fetchRepo(ctx, clone); err != nil {
+		t.Fatalf("fetchRepo failed: %v", err)
+	}
+	if _, ok := revParse(clone, "refs/tags/v1.0.1"); !ok {
+		t.Errorf("tag v1.0.1 was not fetched")
+	}
+	got, _ := revParse(clone, "refs/tags/v1.1.0^{commit}")
+	if want, _ := revParse(upstream, "main"); got != want {
+		t.Errorf("tag v1.1.0 points to %s, want %s", got, want)
+	}
+	if _, ok := revParse(clone, "refs/tags/v1.0.0"); ok {
+		t.Errorf("tag v1.0.0 was deleted upstream but not pruned")
+	}
+	if _, ok := revParse(clone, "refs/remotes/origin/old"); ok {
+		t.Errorf("branch old was deleted upstream but not pruned")
+	}
+}
+
 func TestRefreshRepo_DontRecloneOnRemoteError(t *testing.T) {
 	setupTest(t)
 	ctx := t.Context()

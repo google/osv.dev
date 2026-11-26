@@ -88,6 +88,7 @@ func (c *GCSClient) ReadObjectAttrs(ctx context.Context, path string) (*Attrs, e
 
 	return &Attrs{
 		Generation: attrs.Generation,
+		Size:       attrs.Size,
 		CustomTime: attrs.CustomTime,
 		CRC32C:     attrs.CRC32C,
 		Updated:    attrs.Updated,
@@ -207,7 +208,13 @@ func (c *GCSClient) Close() error {
 
 func (c *GCSClient) Objects(ctx context.Context, prefix string) iter.Seq2[*Object, error] {
 	return func(yield func(*Object, error) bool) {
-		it := c.bucket.Objects(ctx, &storage.Query{Prefix: prefix})
+		query := &storage.Query{Prefix: prefix}
+		// Only fetch the attributes we return, which makes large listings much cheaper.
+		if err := query.SetAttrSelection([]string{"Name", "Generation", "Size", "CustomTime", "CRC32C", "Updated"}); err != nil {
+			yield(nil, err)
+			return
+		}
+		it := c.bucket.Objects(ctx, query)
 		for {
 			attrs, err := it.Next()
 			if err != nil {
@@ -221,6 +228,7 @@ func (c *GCSClient) Objects(ctx context.Context, prefix string) iter.Seq2[*Objec
 				Name: attrs.Name,
 				Attrs: Attrs{
 					Generation: attrs.Generation,
+					Size:       attrs.Size,
 					CustomTime: attrs.CustomTime,
 					CRC32C:     attrs.CRC32C,
 					Updated:    attrs.Updated,
@@ -231,6 +239,29 @@ func (c *GCSClient) Objects(ctx context.Context, prefix string) iter.Seq2[*Objec
 			}
 		}
 	}
+}
+
+func (c *GCSClient) DeleteObject(ctx context.Context, path string, opts *DeleteOptions) error {
+	obj := c.bucket.Object(path)
+	if opts != nil && opts.IfGenerationMatches != nil {
+		// Generation-conditioned deletes are idempotent, so the storage library
+		// retries them on transient errors by default.
+		obj = obj.If(storage.Conditions{GenerationMatch: *opts.IfGenerationMatches})
+	}
+
+	err := obj.Delete(ctx)
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, storage.ErrObjectNotExist) {
+		return ErrNotFound
+	}
+	var apiErr *googleapi.Error
+	if errors.As(err, &apiErr) && apiErr.Code == 412 {
+		return ErrPreconditionFailed
+	}
+
+	return err
 }
 
 func (c *GCSClient) Bucket() *storage.BucketHandle {

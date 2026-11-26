@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pg-tunnel-read-pool
+spec:
+  template:
+    spec:
+      containers:
+      - name: direct
+        env:
+        - name: POSTGRES_HOST
+          value: "10.25.1.7"
+      - name: pooler
+        env:
+        - name: POSTGRES_HOST
+          value: "10.25.1.7"

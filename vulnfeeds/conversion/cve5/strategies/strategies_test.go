@@ -3,6 +3,7 @@ package strategies
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 )
@@ -407,6 +408,29 @@ func TestStrategies(t *testing.T) {
 		events1 := ranges[1].Range.GetEvents()
 		if events1[0].GetIntroduced() != "1.2.3" || events1[1].GetLastAffected() != "1.2.3" {
 			t.Errorf("unexpected events[1]: %+v", events1)
+		}
+	})
+
+	t.Run("CurlPreset", func(t *testing.T) {
+		t.Parallel()
+		curlPipeline := Curl()
+		if len(curlPipeline) == 0 {
+			t.Fatalf("expected non-empty pipeline for Curl preset")
+		}
+		names := make([]string, 0, len(curlPipeline))
+		for _, s := range curlPipeline {
+			names = append(names, s.Name())
+		}
+		expectedNames := []string{
+			"ChangesAt",
+			"StandardRange",
+			"StringRangeExpression",
+			"GitCommit",
+			"CPEVersionString",
+			"StandaloneSingleVersion",
+		}
+		if diff := cmp.Diff(expectedNames, names); diff != "" {
+			t.Errorf("Curl preset strategies mismatch (-want +got):\n%s", diff)
 		}
 	})
 }

@@ -1,0 +1,376 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Plutono --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Landing page and directory for all OSV.dev infrastructure, ingestion pipeline, data quality, and feed conversion dashboards.",
+  "editable": false,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": null,
+      "gridPos": {
+        "h": 10,
+        "w": 16,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "content": "## Welcome to OSV.dev Observability\n\nChoose the dashboard below that best matches what you are investigating:\n\n| Dashboard | Best For / Questions Answered | Key Signals |\n| :--- | :--- | :--- |\n| **[1. Executive Overview & SLAs](/d/osv-exec-overview)** | **Overall health & SLO status** — *Are the Website & API meeting 99.9% availability (7d) and per-endpoint P50/P90/P95 latency SLOs? Are advisories ingested within our 2-hour pipeline target?* | Website & API 99.9% availability (7d) & P50/P90/P95 latency SLOs (`GET /v1/vulns/{id}`, `POST /v1/query`, `POST /v1/querybatch`), worker success rate, importer-to-available pipeline latency |\n| **[2. Ingestion & Worker Pipeline Operations](/d/osv-pipeline-ingestion-ops)** | **On-call pipeline triage** — *Is Pub/Sub backed up? Are worker pools scaling and draining fast enough? Which tasks recently failed?* | Queue depth (`default` / `reimport` / `cves`), intake vs. drain rate, error log triage links, reconciler & deleter safety limits |\n| **[3. Vulnerability Data Quality & Ecosystem Health](/d/osv-data-quality-drift)** | **Dataset integrity & feed freshness** — *Are Datastore and GCS out of sync? Which upstream feeds are stale or triggering linter errors?* | `recordchecker` drift, `osv-linter` findings by source/rule, feed staleness, `all.zip` export sizes, Gitter commit scan & error rate |\n| **4. CVE & Feed Conversions *(Planned)*** | **`vulnfeeds/` & CNA conversion quality** — *Why are CVEs failing to convert? How are CVEListV5, NVD, Debian, and Alpine converters running?* | Conversion funnel & outcomes, range extraction sources, Assigner CNA scorecards, `vulnfeeds/` CronJob status |\n\n---\n**Planned Deep-Dive Dashboards (Upcoming):** *5. API Serving & Analytics* · *6. Gitter & Recoverer Deep-Dive* · *7. CronJobs & Storage Capacity*\n\n*Tip: Click the **Plutono** icon, **Home**, or **Observability Directory** in the top navigation from any dashboard to return to this directory.*",
+        "mode": "markdown"
+      },
+      "pluginVersion": "7.5.52",
+      "title": "Where Should I Start?",
+      "type": "text"
+    },
+    {
+      "datasource": null,
+      "description": "Automatically lists every provisioned dashboard tagged with 'osv'. New dashboards appear here automatically.",
+      "gridPos": {
+        "h": 10,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "id": 2,
+      "options": {
+        "includeVars": false,
+        "keepTime": false,
+        "maxItems": 20,
+        "query": "",
+        "showHeadings": false,
+        "showRecentlyViewed": false,
+        "showSearch": true,
+        "showStarred": false,
+        "tags": [
+          "osv"
+        ]
+      },
+      "pluginVersion": "7.5.52",
+      "title": "All OSV Dashboards (Auto-Updated)",
+      "type": "dashlist"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "id": 100,
+      "panels": [],
+      "title": "At-a-Glance System Pulse (Click any card to open its dashboard)",
+      "type": "row"
+    },
+    {
+      "datasource": "GMP (Prometheus)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 99.5
+              },
+              {
+                "color": "green",
+                "value": 99.9
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 2,
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "Open 1. Executive Overview & SLAs",
+              "url": "/d/osv-exec-overview"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 11
+      },
+      "id": 10,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.52",
+      "targets": [
+        {
+          "expr": "(1 - ((sum(rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\", response_code_class=\"5xx\", monitored_resource=\"cloud_run_revision\"}[7d])) or vector(0)) / sum(rate(run_googleapis_com:request_count{service_name=\"osv-grpc-v1\", monitored_resource=\"cloud_run_revision\"}[7d])))) * 100",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "title": "1. Public API Availability (7d)",
+      "type": "stat",
+      "description": "7-day rolling Cloud Run availability for osv-grpc-v1 (SLO: 99.9%). Click to open Dashboard 1."
+    },
+    {
+      "datasource": "GMP (Prometheus)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 5000
+              },
+              {
+                "color": "red",
+                "value": 20000
+              }
+            ]
+          },
+          "unit": "short",
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "Open 2. Ingestion & Worker Pipeline Operations",
+              "url": "/d/osv-pipeline-ingestion-ops"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 11
+      },
+      "id": 11,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.52",
+      "targets": [
+        {
+          "expr": "sum(pubsub_googleapis_com:subscription_num_undelivered_messages{subscription_id=\"default\"}) or vector(0)",
+          "refId": "A"
+        }
+      ],
+      "title": "2. Worker Queue Backlog (default)",
+      "type": "stat",
+      "description": "Undelivered Pub/Sub messages waiting in the primary worker subscription. Click to open Dashboard 2 (Ingestion & Worker Pipeline Operations)."
+    },
+    {
+      "datasource": "GMP (Prometheus)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "unit": "short",
+          "links": [
+            {
+              "targetBlank": false,
+              "title": "Open 3. Vulnerability Data Quality & Ecosystem Health",
+              "url": "/d/osv-data-quality-drift"
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 11
+      },
+      "id": 12,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.52",
+      "targets": [
+        {
+          "expr": "sum(max by (type) (osv_recordchecker_drift)) or vector(0)",
+          "refId": "A"
+        }
+      ],
+      "title": "3. Datastore vs. GCS Drift",
+      "type": "stat",
+      "description": "Missing or stale GCS vulnerability blobs relative to Datastore detected by recordchecker. Click to open Dashboard 3 (Data Quality & Ecosystem Health)."
+    },
+    {
+      "datasource": "GMP (Prometheus)",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "#5794F2",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 30
+              },
+              {
+                "color": "green",
+                "value": 60
+              }
+            ]
+          },
+          "unit": "percent",
+          "decimals": 1,
+          "links": [],
+          "noValue": "Coming soon"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 11
+      },
+      "id": 13,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.52",
+      "targets": [
+        {
+          "expr": "100 * sum(max without (instance, pod) (osv_cve_conversion_outcomes{outcome=\"Successful\"})) / clamp_min(sum(max without (instance, pod) (osv_cve_conversion_outcomes{outcome!~\"Rejected|NoSoftware\"})), 1)",
+          "refId": "A",
+          "instant": true
+        }
+      ],
+      "title": "4. Actionable CVE Conversion Rate",
+      "type": "stat",
+      "description": "Percentage of actionable CVEs successfully converted into OSV records across vulnfeeds/ (Planned — Dashboard 4 upcoming)."
+    }
+  ],
+  "refresh": "1m",
+  "schemaVersion": 27,
+  "style": "dark",
+  "tags": [
+    "directory",
+    "home"
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {
+    "hidden": true
+  },
+  "timezone": "browser",
+  "title": "OSV.dev Observability Directory",
+  "uid": "osv-home",
+  "version": 1
+}

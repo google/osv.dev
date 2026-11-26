@@ -1,17 +1,32 @@
 package main
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"sort"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/google/osv.dev/vulnfeeds/models"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+func mustParseDBSpecific(t *testing.T, jsonStr string) *structpb.Struct {
+	t.Helper()
+	var s structpb.Struct
+	if err := protojson.Unmarshal([]byte(jsonStr), &s); err != nil {
+		t.Fatalf("failed to unmarshal database_specific JSON: %v", err)
+	}
+
+	return &s
+}
 
 func TestPickAffectedInformation(t *testing.T) {
 	repoA := "https://example.com/repo/a"
@@ -384,11 +399,7 @@ func TestPickAffectedInformation(t *testing.T) {
 								{Introduced: "0"},
 								{Fixed: "1.0.1"},
 							},
-							DatabaseSpecific: &structpb.Struct{
-								Fields: map[string]*structpb.Value{
-									"source": structpb.NewStringValue("CPE_RANGE"),
-								},
-							},
+							DatabaseSpecific: mustParseDBSpecific(t, `{"source": "CPE_RANGE"}`),
 						},
 					},
 				},
@@ -403,11 +414,7 @@ func TestPickAffectedInformation(t *testing.T) {
 								{Introduced: "0"},
 								{Fixed: "1.0.1"},
 							},
-							DatabaseSpecific: &structpb.Struct{
-								Fields: map[string]*structpb.Value{
-									"source": structpb.NewStringValue("CPE_RANGE"),
-								},
-							},
+							DatabaseSpecific: mustParseDBSpecific(t, `{"source": "CPE_RANGE"}`),
 						},
 					},
 				},
@@ -439,16 +446,7 @@ func TestPickAffectedInformation(t *testing.T) {
 								{Introduced: "0"},
 								{Fixed: "1.0.1"},
 							},
-							DatabaseSpecific: &structpb.Struct{
-								Fields: map[string]*structpb.Value{
-									"source": structpb.NewListValue(&structpb.ListValue{
-										Values: []*structpb.Value{
-											structpb.NewStringValue("CPE_RANGE"),
-											structpb.NewStringValue("REFERENCES"),
-										},
-									}),
-								},
-							},
+							DatabaseSpecific: mustParseDBSpecific(t, `{"source": ["CPE_RANGE", "REFERENCES"]}`),
 						},
 					},
 				},
@@ -463,16 +461,7 @@ func TestPickAffectedInformation(t *testing.T) {
 								{Introduced: "0"},
 								{Fixed: "1.0.1"},
 							},
-							DatabaseSpecific: &structpb.Struct{
-								Fields: map[string]*structpb.Value{
-									"source": structpb.NewListValue(&structpb.ListValue{
-										Values: []*structpb.Value{
-											structpb.NewStringValue("CPE_RANGE"),
-											structpb.NewStringValue("REFERENCES"),
-										},
-									}),
-								},
-							},
+							DatabaseSpecific: mustParseDBSpecific(t, `{"source": ["CPE_RANGE", "REFERENCES"]}`),
 						},
 					},
 				},
@@ -521,11 +510,7 @@ func TestPickAffectedInformation(t *testing.T) {
 								{Introduced: "1.0.0"},
 								{LastAffected: "1.0.1"},
 							},
-							DatabaseSpecific: &structpb.Struct{
-								Fields: map[string]*structpb.Value{
-									"source": structpb.NewStringValue("AFFECTED_FIELD"),
-								},
-							},
+							DatabaseSpecific: mustParseDBSpecific(t, `{"source": "AFFECTED_FIELD"}`),
 						},
 					},
 				},
@@ -540,11 +525,7 @@ func TestPickAffectedInformation(t *testing.T) {
 								{Introduced: "0"},
 								{Fixed: "2c1762b85acb"},
 							},
-							DatabaseSpecific: &structpb.Struct{
-								Fields: map[string]*structpb.Value{
-									"source": structpb.NewStringValue("REFERENCES"),
-								},
-							},
+							DatabaseSpecific: mustParseDBSpecific(t, `{"source": "REFERENCES"}`),
 						},
 					},
 				},
@@ -559,16 +540,64 @@ func TestPickAffectedInformation(t *testing.T) {
 								{Introduced: "1.0.0"},
 								{Fixed: "2c1762b85acb"},
 							},
-							DatabaseSpecific: &structpb.Struct{
-								Fields: map[string]*structpb.Value{
-									"source": structpb.NewListValue(&structpb.ListValue{
-										Values: []*structpb.Value{
-											structpb.NewStringValue("AFFECTED_FIELD"),
-											structpb.NewStringValue("REFERENCES"),
-										},
-									}),
-								},
+							DatabaseSpecific: mustParseDBSpecific(t, `{"source": ["AFFECTED_FIELD", "REFERENCES"]}`),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Merge references-only range with extracted_events source with CVE range",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{LastAffected: "1.0.1"},
 							},
+							DatabaseSpecific: mustParseDBSpecific(t, `{"source": "AFFECTED_FIELD"}`),
+						},
+					},
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "2c1762b85acb"},
+							},
+							DatabaseSpecific: mustParseDBSpecific(t, `{
+								"extracted_events": [
+									{"source": "REFERENCES"}
+								]
+							}`),
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_GIT,
+							Repo: repoA,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "2c1762b85acb"},
+							},
+							DatabaseSpecific: mustParseDBSpecific(t, `{
+								"source": "AFFECTED_FIELD",
+								"extracted_events": [
+									{"source": "REFERENCES"}
+								]
+							}`),
 						},
 					},
 				},
@@ -586,11 +615,7 @@ func TestPickAffectedInformation(t *testing.T) {
 								{Introduced: "0"},
 								{Fixed: "e4dd3fa3182d0fd382e229e0c25d1bfd8b77a711"},
 							},
-							DatabaseSpecific: &structpb.Struct{
-								Fields: map[string]*structpb.Value{
-									"source": structpb.NewStringValue("AFFECTED_FIELD"),
-								},
-							},
+							DatabaseSpecific: mustParseDBSpecific(t, `{"source": "AFFECTED_FIELD"}`),
 						},
 					},
 				},
@@ -604,11 +629,7 @@ func TestPickAffectedInformation(t *testing.T) {
 							Events: []*osvschema.Event{
 								{Fixed: "83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8"},
 							},
-							DatabaseSpecific: &structpb.Struct{
-								Fields: map[string]*structpb.Value{
-									"source": structpb.NewStringValue("REFERENCES"),
-								},
-							},
+							DatabaseSpecific: mustParseDBSpecific(t, `{"source": "REFERENCES"}`),
 						},
 					},
 				},
@@ -623,16 +644,7 @@ func TestPickAffectedInformation(t *testing.T) {
 								{Introduced: "0"},
 								{Fixed: "83b3e91e0c1e84873a6d3ca3c5887eb5b4f5a3d8"},
 							},
-							DatabaseSpecific: &structpb.Struct{
-								Fields: map[string]*structpb.Value{
-									"source": structpb.NewListValue(&structpb.ListValue{
-										Values: []*structpb.Value{
-											structpb.NewStringValue("AFFECTED_FIELD"),
-											structpb.NewStringValue("REFERENCES"),
-										},
-									}),
-								},
-							},
+							DatabaseSpecific: mustParseDBSpecific(t, `{"source": ["AFFECTED_FIELD", "REFERENCES"]}`),
 						},
 					},
 				},
@@ -1187,5 +1199,80 @@ func TestCombineTwoOSVRecords_ReferencesDeterminism(t *testing.T) {
 		if diff := cmp.Diff(firstResult.GetReferences(), got.GetReferences(), protocmp.Transform()); diff != "" {
 			t.Fatalf("Iteration %d produced different references result:\n%s", i, diff)
 		}
+	}
+}
+
+func TestReadAndCombineWorker_Withdrawn(t *testing.T) {
+	dir := t.TempDir()
+	writeVulnFile := func(sub, name string, v *osvschema.Vulnerability) string {
+		t.Helper()
+		subDir := filepath.Join(dir, sub)
+		if err := os.MkdirAll(subDir, 0755); err != nil {
+			t.Fatalf("failed to mkdir %s: %v", subDir, err)
+		}
+		b, err := protojson.Marshal(v)
+		if err != nil {
+			t.Fatalf("failed to marshal %s: %v", name, err)
+		}
+		p := filepath.Join(subDir, name+".json")
+		if err := os.WriteFile(p, b, 0600); err != nil {
+			t.Fatalf("failed to write %s: %v", p, err)
+		}
+
+		return p
+	}
+
+	withdrawnAt := timestamppb.New(time.Date(2026, 11, 4, 18, 21, 29, 0, time.UTC))
+
+	cve1CVE5 := writeVulnFile("cve5", "CVE-2026-0001", &osvschema.Vulnerability{Id: "CVE-2026-0001", Details: "Valid CVE5"})
+	cve1NVD := writeVulnFile("nvd", "CVE-2026-0001", &osvschema.Vulnerability{Id: "CVE-2026-0001", Details: "Valid NVD"})
+
+	cve2CVE5 := writeVulnFile("cve5", "CVE-2026-0002", &osvschema.Vulnerability{Id: "CVE-2026-0002", Withdrawn: withdrawnAt})
+	cve2NVD := writeVulnFile("nvd", "CVE-2026-0002", &osvschema.Vulnerability{Id: "CVE-2026-0002", Details: "Stale NVD"})
+
+	cve3CVE5 := writeVulnFile("cve5", "CVE-2026-0003", &osvschema.Vulnerability{Id: "CVE-2026-0003", Details: "Stale CVE5"})
+	cve3NVD := writeVulnFile("nvd", "CVE-2026-0003", &osvschema.Vulnerability{Id: "CVE-2026-0003", Withdrawn: withdrawnAt})
+
+	cve4CVE5 := writeVulnFile("cve5", "CVE-2026-0004", &osvschema.Vulnerability{Id: "CVE-2026-0004", Withdrawn: withdrawnAt})
+
+	workItems := []*CVEWorkItem{
+		{ID: models.CVEID("CVE-2026-0001"), CVE5Path: cve1CVE5, NVDPath: cve1NVD},
+		{ID: models.CVEID("CVE-2026-0002"), CVE5Path: cve2CVE5, NVDPath: cve2NVD},
+		{ID: models.CVEID("CVE-2026-0003"), CVE5Path: cve3CVE5, NVDPath: cve3NVD},
+		{ID: models.CVEID("CVE-2026-0004"), CVE5Path: cve4CVE5},
+		{ID: models.CVEID("CVE-2026-0005"), CVE5Path: filepath.Join(dir, "missing.json")},
+	}
+
+	workChan := make(chan *CVEWorkItem, len(workItems))
+	vulnChan := make(chan *osvschema.Vulnerability, len(workItems))
+	withdrawnChan := make(chan string, len(workItems))
+
+	for _, item := range workItems {
+		workChan <- item
+	}
+	close(workChan)
+
+	readAndCombineWorker(context.Background(), nil, workChan, vulnChan, withdrawnChan)
+	close(vulnChan)
+	close(withdrawnChan)
+
+	var gotValid []string
+	for v := range vulnChan {
+		gotValid = append(gotValid, v.GetId())
+	}
+
+	var gotWithdrawn []string
+	for id := range withdrawnChan {
+		gotWithdrawn = append(gotWithdrawn, id)
+	}
+
+	wantValid := []string{"CVE-2026-0001"}
+	if diff := cmp.Diff(wantValid, gotValid, cmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
+		t.Errorf("valid IDs mismatch (-want +got):\n%s", diff)
+	}
+
+	wantWithdrawn := []string{"CVE-2026-0002", "CVE-2026-0003", "CVE-2026-0004"}
+	if diff := cmp.Diff(wantWithdrawn, gotWithdrawn, cmpopts.SortSlices(func(a, b string) bool { return a < b })); diff != "" {
+		t.Errorf("withdrawn IDs mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -19,6 +19,7 @@ import os
 import unittest
 from unittest import mock
 
+from cloudevents.http import CloudEvent
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ec import ECDSA
 from cryptography.hazmat.primitives.hashes import SHA256
@@ -33,6 +34,23 @@ def _load_test_data(name):
   """Load test data."""
   with open(os.path.join('testdata', name), 'rb') as f:
     return f.read()
+
+
+def _make_cloud_event(payload):
+  """Create a Pub/Sub CloudEvent for testing."""
+  return CloudEvent(
+      {
+          'type':
+              'google.cloud.pubsub.topic.v1.messagePublished',
+          'source':
+              '//pubsub.googleapis.com/projects/oss-vdb/topics/pypi-bridge',
+      },
+      {
+          'message': {
+              'data': base64.b64encode(payload).decode(),
+          },
+      },
+  )
 
 
 _TEST_VULN = _load_test_data("test_vuln.json")
@@ -69,11 +87,7 @@ class PublishPyPiTest(unittest.TestCase):
 
   def test_publish(self):
     """Test publishing."""
-    event = {
-        'data': base64.b64encode(_TEST_VULN),
-    }
-
-    main.publish(event, None)
+    main.publish(_make_cloud_event(_TEST_VULN))
     self.mock_post.assert_called_once_with(
         'https://pypi.org/_/vulnerabilities/osv/report',
         data=b'[{"id": "PYSEC-2021-63", "project": "cryptography", '
@@ -97,11 +111,7 @@ class PublishPyPiTest(unittest.TestCase):
 
   def test_publish_withdrawn(self):
     """Test publishing withdrawn vulnerability."""
-    event = {
-        'data': base64.b64encode(_TEST_VULN_WITHDRAWN),
-    }
-
-    main.publish(event, None)
+    main.publish(_make_cloud_event(_TEST_VULN_WITHDRAWN))
     self.mock_post.assert_called_once_with(
         'https://pypi.org/_/vulnerabilities/osv/report',
         data=b'[{"id": "PYSEC-2021-63", "project": "cryptography", '

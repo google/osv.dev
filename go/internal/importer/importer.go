@@ -3,6 +3,7 @@ package importer
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -12,32 +13,24 @@ import (
 	"log/slog"
 	"net/http"
 	"slices"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"cloud.google.com/go/pubsub/v2"
 	"github.com/google/osv.dev/go/internal/gitter"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/osvutil/schema"
+	"github.com/google/osv.dev/go/internal/worker/taskmsg"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/hashicorp/go-retryablehttp"
-	"github.com/klauspost/compress/zstd"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 	"k8s.io/apimachinery/pkg/util/yaml"
-)
-
-const (
-	maxPubSubMessageSize = 10_000_000
 )
 
 type Config struct {
@@ -551,6 +544,8 @@ type WorkItem struct {
 	SourceRepository       string
 	SourcePath             string
 	IDPrefixes             []string
+	KnownID                string
+	KnownModified          time.Time
 	Format                 RecordFormat
 	KeyPath                string
 	Strict                 bool
@@ -606,6 +601,25 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 	sourceRepoName := item.SourceRepository
 	sourcePath := item.SourcePath
 	strict := config.StrictValidation && item.Strict
+
+	if !item.IsReimport && item.CompareAgainstDatabase && item.Action == ActionImport &&
+		item.KnownID != "" && !item.KnownModified.IsZero() {
+		dbModified, err := config.VulnerabilityStore.GetSourceModified(ctx, item.KnownID)
+		if err != nil && !errors.Is(err, models.ErrNotFound) {
+			logger.ErrorContext(ctx, "Failed to get source modified",
+				slog.Any("error", err),
+				slog.String("source", sourceRepoName),
+				slog.String("path", sourcePath),
+				slog.String("id", item.KnownID))
+
+			return
+		}
+		// Compare at whole-second granularity so sub-second timestamps in a REST index
+		// do not trigger redundant fetches when the individual record truncates to seconds.
+		if err == nil && !item.KnownModified.Truncate(time.Second).After(dbModified.Truncate(time.Second)) {
+			return
+		}
+	}
 
 	unmarshalOptions := protojson.UnmarshalOptions{
 		DiscardUnknown: !strict,
@@ -763,7 +777,7 @@ func processUpdate(ctx context.Context, config Config, item WorkItem) {
 			}
 		}
 	}
-	if err := sendToWorker(ctx, config, item, hash, modified, &vulnProto); err != nil {
+	if err := sendToWorker(ctx, config, item, hash, modified, data); err != nil {
 		logger.ErrorContext(ctx, "Failed to send to worker",
 			slog.Any("error", err),
 			slog.String("source", sourceRepoName),
@@ -783,107 +797,59 @@ func computeHash(data []byte) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func sendToWorker(ctx context.Context, config Config, item WorkItem, hash string, modifiedTime time.Time, vuln *osvschema.Vulnerability) error {
+func sendToWorker(ctx context.Context, config Config, item WorkItem, hash string, modifiedTime time.Time, rawJSON []byte) error {
 	var srcTimestamp *time.Time
 	if !item.IsReimport {
 		// Only track the update latency if we're not doing a reimport of the data
 		srcTimestamp = &modifiedTime
 	}
 
-	args := publishArgs{
-		source:       item.SourceRepository,
-		path:         item.SourcePath,
-		hash:         hash,
-		deleted:      false,
-		srcTimestamp: srcTimestamp,
-		workPool:     item.WorkPool,
+	var gitCommit string
+	var gcsGeneration *int64
+	switch sr := item.SourceRecord.(type) {
+	case gitSourceRecord:
+		gitCommit = sr.commit
+	case bucketSourceRecord:
+		if sr.generation != 0 {
+			gen := sr.generation
+			gcsGeneration = &gen
+		}
 	}
 
-	return publishUpdate(ctx, config, args, vuln)
+	return publishUpdate(ctx, config, taskmsg.UpdateParams{
+		Source:         item.SourceRepository,
+		Path:           item.SourcePath,
+		OriginalSHA256: hash,
+		SrcTimestamp:   srcTimestamp,
+		WorkPool:       item.WorkPool,
+		GitCommit:      gitCommit,
+		GCSGeneration:  gcsGeneration,
+		RawJSON:        rawJSON,
+	})
 }
 
 func sendDeletionToWorker(ctx context.Context, config Config, item WorkItem) error {
-	args := publishArgs{
-		source:       item.SourceRepository,
-		path:         item.SourcePath,
-		hash:         "",
-		deleted:      true,
-		srcTimestamp: nil,
-		workPool:     item.WorkPool,
-	}
-
-	return publishUpdate(ctx, config, args, nil)
+	return publishUpdate(ctx, config, taskmsg.UpdateParams{
+		Source:   item.SourceRepository,
+		Path:     item.SourcePath,
+		Deleted:  true,
+		WorkPool: item.WorkPool,
+	})
 }
 
-type publishArgs struct {
-	source       string
-	path         string
-	hash         string
-	deleted      bool
-	srcTimestamp *time.Time
-	workPool     string
-}
-
-func publishUpdate(ctx context.Context, config Config, args publishArgs, vuln *osvschema.Vulnerability) error {
+func publishUpdate(ctx context.Context, config Config, params taskmsg.UpdateParams) error {
 	if config.DryRun {
 		logger.DebugContext(ctx, "Running in dry-run mode, skipping publish",
-			slog.String("source", args.source),
-			slog.String("path", args.path),
-			slog.String("hash", args.hash),
-			slog.Bool("deleted", args.deleted))
+			slog.String("source", params.Source),
+			slog.String("path", params.Path),
+			slog.String("hash", params.OriginalSHA256),
+			slog.Bool("deleted", params.Deleted))
 
 		return nil
 	}
 
-	// Send the vulnerability proto in the message data
-	var data []byte
-	contentEncoding := ""
-	if vuln != nil {
-		var err error
-		data, err = proto.Marshal(vuln)
-		if err != nil {
-			return err
-		}
-		// make sure we have enough capacity for the compressed data
-		// to avoid reallocations
-		buf := make([]byte, 0, len(data))
-		data = zstd.EncodeTo(buf, data)
-		contentEncoding = "zstd"
-		if len(data) > maxPubSubMessageSize {
-			logger.WarnContext(ctx, "Vulnerability proto is too large",
-				slog.String("source", args.source),
-				slog.String("path", args.path),
-				slog.Int("size", len(data)))
-
-			// Set data to nil and let worker decided what to do about it
-			data = nil
-			contentEncoding = ""
-		}
-	}
-	pool := args.workPool
-	if pool == "" {
-		pool = config.DefaultTaskPool
-	}
-	msg := &pubsub.Message{
-		Data: data,
-		Attributes: map[string]string{
-			"type":             "update",
-			"source":           args.source,
-			"path":             args.path,
-			"original_sha256":  args.hash,
-			"deleted":          strconv.FormatBool(args.deleted),
-			"req_timestamp":    strconv.FormatInt(time.Now().Unix(), 10),
-			"content_encoding": contentEncoding,
-			"work_pool":        pool,
-		},
-	}
-	if args.srcTimestamp != nil {
-		msg.Attributes["src_timestamp"] = strconv.FormatInt(args.srcTimestamp.Unix(), 10)
-	} else {
-		msg.Attributes["src_timestamp"] = ""
-	}
-	// Inject the current trace into the message
-	otel.GetTextMapPropagator().Inject(ctx, propagation.MapCarrier(msg.Attributes))
+	params.WorkPool = cmp.Or(params.WorkPool, config.DefaultTaskPool)
+	msg := taskmsg.NewUpdateMessage(ctx, params)
 
 	result := config.Publisher.Publish(ctx, msg)
 	_, err := result.Get(ctx)

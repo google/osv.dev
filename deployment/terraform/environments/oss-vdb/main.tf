@@ -29,9 +29,14 @@ locals {
 module "osv_pipeline" {
   source = "../../modules/osv_pipeline"
 
-  project_id                                     = "oss-vdb"
-  deployment_service_account_email               = "${google_service_account.deployment_service.account_id}@${google_service_account.deployment_service.project}.iam.gserviceaccount.com"
+  project_id                       = "oss-vdb"
+  deployment_service_account_email = "${google_service_account.deployment_service.account_id}@${google_service_account.deployment_service.project}.iam.gserviceaccount.com"
+  migrator_deployer_service_account_emails = compact([
+    "${google_service_account.deployment_service.account_id}@${google_service_account.deployment_service.project}.iam.gserviceaccount.com",
+    var.terraform_service_account_email,
+  ])
   vulnerabilities_export_bucket                  = "osv-vulnerabilities"
+  public_export_bucket                           = true
   affected_commits_backups_bucket                = "osv-affected-commits"
   affected_commits_backups_bucket_retention_days = 3
   logs_bucket                                    = "osv-logs"
@@ -43,7 +48,7 @@ module "osv_pipeline" {
 
   create_oss_fuzz_subnet = true
 
-  postgres_tier              = "db-perf-optimized-N-4"
+  postgres_tier              = "db-perf-optimized-N-8"
   postgres_availability_type = "ZONAL"
 }
 
@@ -74,6 +79,7 @@ module "osv" {
 
   indexer_configs_bucket = "osv-indexer-configs"
   indexer_repos_bucket   = "osv-indexer-repos"
+  public_buckets         = true
 }
 
 module "osv_api" {
@@ -119,36 +125,6 @@ resource "google_project_iam_member" "deployment_service" {
   project = "oss-vdb"
   role    = "roles/editor"
   member  = "serviceAccount:${google_service_account.deployment_service.email}"
-}
-
-# Legacy Default Compute SA bindings (to be removed once prod Cloud Run and OSS-Fuzz migrate off Default Compute SA)
-data "google_compute_default_service_account" "default" {
-  project = "oss-vdb"
-}
-
-resource "google_project_iam_member" "compute_service" {
-  project = "oss-vdb"
-  role    = "roles/editor"
-  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
-}
-
-resource "google_project_iam_member" "compute_service_datastore" {
-  project = "oss-vdb"
-  role    = "roles/datastore.importExportAdmin"
-  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
-}
-
-resource "google_project_iam_member" "website_secret_accessor" {
-  project = "oss-vdb"
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${data.google_compute_default_service_account.default.email}"
-}
-
-resource "google_secret_manager_secret_iam_member" "legacy_compute_readonly_secret_access" {
-  project   = "oss-vdb"
-  secret_id = "osv-db-readonly-password"
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${data.google_compute_default_service_account.default.email}"
 }
 
 # Cloud Router and NAT in us-central1 for private OSS-Fuzz workers cluster
@@ -255,7 +231,7 @@ terraform {
 
 variable "terraform_service_account_email" {
   type        = string
-  description = "Service account used to apply Terraform changes (granted actAs on the frontend service account)."
+  description = "Service account used to apply Terraform changes (granted actAs on the frontend and migrator service accounts)."
   default     = "terraform-apply@oss-vdb.iam.gserviceaccount.com"
 }
 

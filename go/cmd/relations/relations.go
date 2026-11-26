@@ -27,9 +27,12 @@ import (
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/pubsub/v2"
 	"cloud.google.com/go/storage"
+	"github.com/google/osv.dev/go/internal/database/postgres"
+	domainmodels "github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/internal/sharding"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/api/option"
 )
@@ -38,6 +41,7 @@ type gClients struct {
 	datastoreClient *datastore.Client
 	gcsClient       *clients.GCSClient
 	publisher       clients.Publisher
+	pgVulnStore     domainmodels.VulnerabilityStore
 	closeAll        func()
 }
 
@@ -61,7 +65,7 @@ func main() {
 	}
 	defer gc.closeAll()
 
-	updater := NewUpdater(ctx, gc.datastoreClient, gc.gcsClient, gc.publisher)
+	updater := NewUpdaterWithPostgres(ctx, gc.datastoreClient, gc.gcsClient, gc.publisher, gc.pgVulnStore)
 
 	tr := otel.Tracer("relations")
 	var wg sync.WaitGroup
@@ -125,16 +129,38 @@ func setupClients(ctx context.Context) (gClients, error) {
 		return gClients{}, fmt.Errorf("failed to create pubsub client: %w", err)
 	}
 	publisher := &clients.GCPPublisher{Publisher: pubsubClient.Publisher(topicName)}
+
+	var pgPool *pgxpool.Pool
+	var pgVulnStore domainmodels.VulnerabilityStore
+	if os.Getenv("POSTGRES_HOST") != "" {
+		pgPool, err = postgres.NewPoolFromEnv(ctx)
+		if err != nil {
+			dsClient.Close()
+			gcsClient.Close()
+			pubsubClient.Close()
+
+			return gClients{}, fmt.Errorf("failed to create postgres pool: %w", err)
+		}
+		pgVulnStore = postgres.NewVulnerabilityStore(postgres.VulnStoreConfig{
+			DB: pgPool,
+		})
+		logger.InfoContext(ctx, "Enabled PostgreSQL dual-write for relations updater")
+	}
+
 	closeAll := func() {
 		dsClient.Close()
 		gcsClient.Close()
 		pubsubClient.Close()
+		if pgPool != nil {
+			pgPool.Close()
+		}
 	}
 
 	return gClients{
 		datastoreClient: dsClient,
 		gcsClient:       gcsClient,
 		publisher:       publisher,
+		pgVulnStore:     pgVulnStore,
 		closeAll:        closeAll,
 	}, nil
 }

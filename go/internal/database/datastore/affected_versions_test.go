@@ -430,3 +430,63 @@ func TestComputeAffectedVersions_MatchName(t *testing.T) {
 		}
 	}
 }
+
+func TestComputeAffectedVersions_Linux(t *testing.T) {
+	vuln := &osvschema.Vulnerability{
+		Id: "CVE-2022-49034",
+		Affected: []*osvschema.Affected{
+			{
+				Package: &osvschema.Package{
+					Name:      "Kernel",
+					Ecosystem: "Linux",
+				},
+				Ranges: []*osvschema.Range{
+					{
+						Type: osvschema.Range_ECOSYSTEM,
+						Events: []*osvschema.Event{
+							{Introduced: "5.16.0"},
+							{Fixed: "6.1.120"},
+						},
+					},
+					{
+						Type: osvschema.Range_ECOSYSTEM,
+						Events: []*osvschema.Event{
+							{Introduced: "6.2.0"},
+							{Fixed: "6.6.64"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	got := computeAffectedVersions(vuln)
+	want := []AffectedVersions{
+		{
+			VulnID:    "CVE-2022-49034",
+			Ecosystem: "Linux",
+			Name:      "Kernel",
+			Events: []AffectedEvent{
+				{Type: "introduced", Value: "5.16.0"},
+				{Type: "fixed", Value: "6.1.120"},
+			},
+			CoarseMin: "00:00000005.00000016.00000000",
+			CoarseMax: "00:00000006.00000001.00000120",
+		},
+		{
+			VulnID:    "CVE-2022-49034",
+			Ecosystem: "Linux",
+			Name:      "Kernel",
+			Events: []AffectedEvent{
+				{Type: "introduced", Value: "6.2.0"},
+				{Type: "fixed", Value: "6.6.64"},
+			},
+			CoarseMin: "00:00000006.00000002.00000000",
+			CoarseMax: "00:00000006.00000006.00000064",
+		},
+	}
+
+	if diff := gocmp.Diff(want, got, cmpopts.EquateEmpty()); diff != "" {
+		t.Errorf("computeAffectedVersions(Linux) mismatch (-want +got):\n%s", diff)
+	}
+}

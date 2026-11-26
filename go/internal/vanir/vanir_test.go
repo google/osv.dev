@@ -448,10 +448,13 @@ func TestRunner_GlobalBatching(t *testing.T) {
 func TestPythonGenerator_GenerateBatch(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
+	t.Setenv("POSTGRES_PASSWORD", "super-secret")
 
 	scriptPath := filepath.Join(tempDir, "mock_vanir.py")
 	scriptContent := `#!/usr/bin/env python3
-import argparse, json
+import argparse, json, os, sys
+if any(k.startswith('POSTGRES_') for k in os.environ):
+    sys.exit('POSTGRES_* env leaked to subprocess')
 parser = argparse.ArgumentParser()
 parser.add_argument('--input', required=True)
 parser.add_argument('--output', required=True)

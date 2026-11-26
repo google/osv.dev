@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"log/slog"
@@ -14,12 +15,27 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
+const defaultMaxDecodedPayloadBytes = 128 << 20 // 128 MiB
+
+var defaultZstdDecoder = newZstdDecoder(defaultMaxDecodedPayloadBytes)
+
+func newZstdDecoder(maxMemory uint64) *zstd.Decoder {
+	dec, err := zstd.NewReader(nil, zstd.WithDecoderMaxMemory(maxMemory))
+	if err != nil {
+		panic(fmt.Sprintf("failed to initialize zstd decoder: %v", err))
+	}
+
+	return dec
+}
+
 type Subscriber struct {
-	Engine    Engine
-	PubSubSub *pubsub.Subscriber
+	Engine      Engine
+	PubSubSub   *pubsub.Subscriber
+	zstdDecoder *zstd.Decoder // defaults to defaultZstdDecoder when nil
 }
 
 func (s *Subscriber) Run(ctx context.Context) error {
@@ -59,7 +75,7 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 	}
 
 	var err error
-	task.Vuln, err = s.parseVuln(m)
+	task.Vuln, task.RawJSON, err = s.parseVuln(m)
 	if err != nil {
 		logger.ErrorContext(taskCtx, "Failed to parse vulnerability", append(logInfo, slog.Any("error", err))...)
 		metrics.RecordWorkerTask(metrics.TaskStatusError, metrics.TaskActionUnknown, workPool)
@@ -94,9 +110,14 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 		}
 	}
 
-	skipHash, ok := m.Attributes["skip_hash_check"]
-	if !ok || skipHash != "true" {
-		task.SHA256 = m.Attributes["original_sha256"]
+	task.SHA256 = m.Attributes["original_sha256"]
+	task.GitCommitHash = m.Attributes["git_commit"]
+	if genStr := m.Attributes["gcs_generation"]; genStr != "" {
+		if gen, err := strconv.ParseInt(genStr, 10, 64); err == nil {
+			task.GCSGeneration = &gen
+		} else {
+			logger.ErrorContext(taskCtx, "Failed to parse gcs_generation attribute, ignoring", append(logInfo, slog.Any("error", err))...)
+		}
 	}
 
 	if err := s.Engine.RunTask(taskCtx, task); err != nil {
@@ -115,33 +136,39 @@ func (s *Subscriber) handleMessage(ctx context.Context, m *pubsub.Message) {
 	}
 }
 
-func (s *Subscriber) parseVuln(m *pubsub.Message) (*osvschema.Vulnerability, error) {
+func (s *Subscriber) parseVuln(m *pubsub.Message) (*osvschema.Vulnerability, []byte, error) {
 	if len(m.Data) == 0 {
-		//nolint:nilnil // this is expected for delete requests
-		return nil, nil
+		return nil, nil, nil
 	}
 	var data []byte
 	switch m.Attributes["content_encoding"] {
 	case "":
 		data = m.Data
 	case "zstd":
-		// TODO: try to extract the actual uncompressed size from the zstd frame.
-		data = make([]byte, 0, len(m.Data)*3)
 		var err error
-		data, err = zstd.DecodeTo(data, m.Data)
+		data, err = cmp.Or(s.zstdDecoder, defaultZstdDecoder).DecodeAll(m.Data, nil)
 		if err != nil {
-			return nil, fmt.Errorf("failed to decompress vulnerability: %w", err)
+			return nil, nil, fmt.Errorf("failed to decompress vulnerability: %w", err)
 		}
 	default:
-		return nil, fmt.Errorf("unrecognized content encoding: %s", m.Attributes["content_encoding"])
+		return nil, nil, fmt.Errorf("unrecognized content encoding: %s", m.Attributes["content_encoding"])
 	}
 
 	v := &osvschema.Vulnerability{}
-	if err := proto.Unmarshal(data, v); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal vulnerability: %w", err)
+	if m.Attributes["format"] == "json" {
+		unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
+		if err := unmarshaler.Unmarshal(data, v); err != nil {
+			return nil, nil, fmt.Errorf("failed to unmarshal JSON vulnerability: %w", err)
+		}
+
+		return v, data, nil
 	}
 
-	return v, nil
+	if err := proto.Unmarshal(data, v); err != nil {
+		return nil, nil, fmt.Errorf("failed to unmarshal vulnerability: %w", err)
+	}
+
+	return v, nil, nil
 }
 
 func (s *Subscriber) timeFromUnixSeconds(tsString string) (*time.Time, error) {

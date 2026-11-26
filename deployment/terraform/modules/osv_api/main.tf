@@ -164,6 +164,15 @@ resource "google_cloud_run_service" "api" {
   }
 }
 
+# Allow unauthenticated public API requests through the ESPv2 proxy
+resource "google_cloud_run_service_iam_member" "api_public_invoker" {
+  project  = var.project_id
+  location = google_cloud_run_service.api.location
+  service  = google_cloud_run_service.api.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
 resource "google_cloud_run_domain_mapping" "api" {
   project  = var.project_id
   name     = var.api_url

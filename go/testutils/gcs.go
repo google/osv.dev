@@ -44,7 +44,11 @@ func NewMockStorage() *MockStorage {
 	}
 }
 
-func (c *MockStorage) ReadObject(_ context.Context, path string) ([]byte, error) {
+func (c *MockStorage) ReadObject(ctx context.Context, path string) ([]byte, error) {
+	return c.ReadObjectGeneration(ctx, path, 0)
+}
+
+func (c *MockStorage) ReadObjectGeneration(_ context.Context, path string, generation int64) ([]byte, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -53,7 +57,7 @@ func (c *MockStorage) ReadObject(_ context.Context, path string) ([]byte, error)
 	}
 
 	obj, ok := c.objects[path]
-	if !ok {
+	if !ok || (generation > 0 && obj.generation != generation) {
 		return nil, clients.ErrNotFound
 	}
 

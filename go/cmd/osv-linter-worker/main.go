@@ -14,11 +14,19 @@
 //	work-dir: Working directory
 //	local-data: Path to local all.zip or directory containing OSV data
 //	linter-bin: Path to osv-linter binary
+//	suppressions-file: Optional path to custom linter suppressions YAML
 //	dry-run: Dry run mode (no GCS upload or Datastore writes)
+//	project: GCP project ID (overrides GOOGLE_CLOUD_PROJECT)
+//	datastore-database: Datastore database ID (overrides DATASTORE_DATABASE_ID)
+//	vuln-bucket: GCS bucket containing vulnerability exports (overrides OSV_VULNERABILITIES_BUCKET)
+//	linter-bucket: GCS bucket for linter results (overrides OSV_LINTER_BUCKET)
 //
 // Environment variables:
 //
-//	GCP_PROJECT: GCP project ID
+//	GOOGLE_CLOUD_PROJECT: GCP project ID (falls back to GCP_PROJECT or "oss-vdb-test")
+//	DATASTORE_DATABASE_ID: Datastore database ID (defaults to "" for default database)
+//	OSV_VULNERABILITIES_BUCKET: GCS bucket containing vulnerability exports (defaults to "osv-test-vulnerabilities")
+//	OSV_LINTER_BUCKET: GCS bucket for linter results (defaults to "osv-test-public-import-logs")
 package main
 
 import (
@@ -36,9 +44,8 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"time"
-
 	"sync/atomic"
+	"time"
 
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/storage"
@@ -50,13 +57,13 @@ import (
 )
 
 const (
-	vulnBucket         = "osv-test-vulnerabilities"
-	zipFilePath        = "all.zip"
-	linterExportBucket = "osv-test-public-import-logs"
-	linterResultDir    = "linter-result"
-	gcpProject         = "oss-vdb-test"
-	maxConcurrency     = 32 // Adjust based on machine limits
-	batchSize          = 500
+	defaultGCPProject         = "oss-vdb-test"
+	defaultVulnBucket         = "osv-test-vulnerabilities"
+	defaultLinterExportBucket = "osv-test-public-import-logs"
+	zipFilePath               = "all.zip"
+	linterResultDir           = "linter-result"
+	maxConcurrency            = 32 // Adjust based on machine limits
+	batchSize                 = 500
 )
 
 var errorCodeMapping = map[string]internalmodels.ImportFindings{
@@ -78,7 +85,37 @@ var (
 	linterBinary     = flag.String("linter-bin", "osv-linter", "Path to osv-linter binary")
 	suppressionsFile = flag.String("suppressions-file", "", "Optional path to custom linter suppressions YAML (defaults to embedded rules)")
 	dryRun           = flag.Bool("dry-run", true, "Dry run mode (no GCS upload or Datastore writes)")
+	projectFlag      = flag.String("project", "", "GCP project ID (defaults to GOOGLE_CLOUD_PROJECT or \"oss-vdb-test\")")
+	datastoreDBFlag  = flag.String("datastore-database", "", "Datastore database ID (defaults to DATASTORE_DATABASE_ID or \"\")")
+	vulnBucketFlag   = flag.String("vuln-bucket", "", "GCS bucket containing all.zip (defaults to OSV_VULNERABILITIES_BUCKET or \"osv-test-vulnerabilities\")")
+	linterBucketFlag = flag.String("linter-bucket", "", "GCS bucket for linter results (defaults to OSV_LINTER_BUCKET or \"osv-test-public-import-logs\")")
 )
+
+type workerConfig struct {
+	gcpProject         string
+	datastoreDB        string
+	vulnBucket         string
+	linterExportBucket string
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
+		}
+	}
+
+	return ""
+}
+
+func resolveConfig(projectOverride, datastoreDBOverride, vulnBucketOverride, linterBucketOverride string) workerConfig {
+	return workerConfig{
+		gcpProject:         firstNonEmpty(projectOverride, os.Getenv("GOOGLE_CLOUD_PROJECT"), os.Getenv("GCP_PROJECT"), defaultGCPProject),
+		datastoreDB:        firstNonEmpty(datastoreDBOverride, os.Getenv("DATASTORE_DATABASE_ID")),
+		vulnBucket:         firstNonEmpty(vulnBucketOverride, os.Getenv("OSV_VULNERABILITIES_BUCKET"), defaultVulnBucket),
+		linterExportBucket: firstNonEmpty(linterBucketOverride, os.Getenv("OSV_LINTER_BUCKET"), defaultLinterExportBucket),
+	}
+}
 
 func main() {
 	logger.InitGlobalLogger()
@@ -91,7 +128,16 @@ func main() {
 
 func run() error {
 	ctx := context.Background()
-	dsClient, err := datastore.NewClient(ctx, gcpProject)
+	cfg := resolveConfig(*projectFlag, *datastoreDBFlag, *vulnBucketFlag, *linterBucketFlag)
+	logger.Info("Starting osv-linter-worker",
+		slog.String("gcpProject", cfg.gcpProject),
+		slog.String("datastoreDB", cfg.datastoreDB),
+		slog.String("vulnBucket", cfg.vulnBucket),
+		slog.String("linterExportBucket", cfg.linterExportBucket),
+		slog.Bool("dryRun", *dryRun),
+	)
+
+	dsClient, err := datastore.NewClientWithDatabase(ctx, cfg.gcpProject, cfg.datastoreDB)
 	if err != nil {
 		return fmt.Errorf("failed to create datastore client: %w", err)
 	}
@@ -104,7 +150,7 @@ func run() error {
 	defer storageClient.Close()
 
 	sourceRepoStore := db.NewSourceRepositoryStore(dsClient)
-	importFindingsStore := db.NewImportFindingsStore(dsClient, storageClient, linterExportBucket, linterResultDir)
+	importFindingsStore := db.NewImportFindingsStore(dsClient, storageClient, cfg.linterExportBucket, linterResultDir)
 
 	suppressions := linter.DefaultRegistry()
 	if *suppressionsFile != "" {
@@ -125,7 +171,7 @@ func run() error {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	dataDir, err := prepareData(ctx, tmpDir, *localData)
+	dataDir, err := prepareData(ctx, tmpDir, *localData, cfg.vulnBucket)
 	if err != nil {
 		return fmt.Errorf("failed to prepare data: %w", err)
 	}
@@ -156,7 +202,7 @@ func constructPrefixToSourceMap(ctx context.Context, store internalmodels.Source
 	return prefixToSource, nil
 }
 
-func prepareData(ctx context.Context, tmpDir string, localData string) (string, error) {
+func prepareData(ctx context.Context, tmpDir, localData, vulnBucket string) (string, error) {
 	if localData != "" {
 		info, err := os.Stat(localData)
 		if err != nil {

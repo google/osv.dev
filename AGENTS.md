@@ -12,7 +12,7 @@ This repository (`google/osv.dev`) contains the backend services, database model
 - **Cloud Platform**: The entire system runs on **Google Cloud Platform (GCP)**.
 - **Database (Indexes)**: We currently use **Google Cloud Datastore** to store and query indexes.
 - **Database (Full Records)**: Full vulnerability records are stored as **protocol buffers (protos) in Google Cloud Storage (GCS)**.
-- *Future Architecture*: A migration of the database backend to **PostgreSQL** (Cloud SQL) is in progress. Cloud SQL instances are provisioned via Terraform, and the API currently serves reads from Datastore/GCS while shadow-reading PostgreSQL (see `dualread/` below); the details are still evolving. **Rule**: Any new Go code interacting with the database must be abstracted behind interfaces to facilitate this migration. Much of this abstraction is already in place—refer to the shared domain interfaces defined under [`go/internal/models/`](go/internal/models/).
+- *Future Architecture*: A migration of the database backend to **PostgreSQL** (Cloud SQL) is in progress. Cloud SQL instances are provisioned via Terraform, and services currently read/write via Datastore/GCS while shadow-reading and dual-writing PostgreSQL (see `dualread/` and `dualwrite/` below); the details are still evolving. **Rule**: Any new Go code interacting with the database must be abstracted behind interfaces to facilitate this migration. Much of this abstraction is already in place—refer to the shared domain interfaces defined under [`go/internal/models/`](go/internal/models/).
 
 ### Monorepo Structure
 It is structured as a multi-language monorepo:
@@ -108,7 +108,7 @@ The project uses `poetry` for Python dependency management, `pnpm` for website f
   make build-protos
   ```
 - **PostgreSQL Codegen (`sqlc`)**:
-  If you modify [`go/internal/database/postgres/queries.sql`](go/internal/database/postgres/queries.sql) or [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/), regenerate the Go query code (`go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest` if not installed):
+  If you modify [`go/internal/database/postgres/queries/`](go/internal/database/postgres/queries/) or [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/), regenerate the Go query code (`go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest` if not installed):
   ```bash
   cd go/internal/database/postgres && sqlc generate
   ```
@@ -169,7 +169,7 @@ Always format and lint your code before proposing changes. The repository provid
 ### Pull Request (PR) Guidelines
 - **PR Description**: Follow the [pull request template](.github/PULL_REQUEST_TEMPLATE/pull_request_template.md) (Overview, Details, Testing), and clearly state if the PR is AI-assisted (see [`CONTRIBUTING.md`](CONTRIBUTING.md)).
 - **PR Metadata**: Feel free to append metadata, tracking notes, or categories inside hidden HTML comments at the very end of your PR descriptions (for example, `<!-- AI-PR -->` or other tags). This keeps the rendered description page clean while preserving useful context in the raw markdown.
-- **Generated Code**: Some generated files are regenerated automatically by CI bots, which open their own PRs: `go generate ./...` in `go/` (`.github/workflows/go-generate.yml`), `make build-protos` (`.github/workflows/generate-protos.yml`), and nightly API snapshot updates (`.github/workflows/snapshots.yml`). Still regenerate files your change affects, but never hand-edit generated files (`*_pb2.py`, `*.pb.go`, `queries.sql.go`, `schema_generated.json`).
+- **Generated Code**: Some generated files are regenerated automatically by CI bots, which open their own PRs: `go generate ./...` in `go/` (`.github/workflows/go-generate.yml`), `make build-protos` (`.github/workflows/generate-protos.yml`), and nightly API snapshot updates (`.github/workflows/snapshots.yml`). Still regenerate files your change affects, but never hand-edit generated files (`*_pb2.py`, `*.pb.go`, `*.sql.go`, `schema_generated.json`).
 
 ---
 
@@ -245,7 +245,7 @@ Many tests use expected outputs saved directly in the source tree:
   ```bash
   make run-api-server
   ```
-- To run it against the staging (`oss-vdb-test`) project with PostgreSQL shadow reads enabled, use `make run-api-server-test`. This expects a PostgreSQL connection on `127.0.0.1:5432` by default; override with the `POSTGRES_*` environment variables (see the target in the [`Makefile`](Makefile)).
+- To run it against the staging (`oss-vdb-test`) project with PostgreSQL shadow reads enabled, first open a private-IP tunnel with `make run-pg-tunnel-staging` in another terminal, then run `make run-api-server-test`. This expects a PostgreSQL connection on `127.0.0.1:5432` by default (using `gcloud sql generate-login-token` over TLS); override with the `POSTGRES_*` environment variables (see the target in the [`Makefile`](Makefile)).
 - Notable API environment variables: `OSV_NORMALIZE_MATCH_NAMES` (case-insensitive package name matching for ecosystems such as NuGet and crates.io), `POSTGRES_SHADOW_RATE` (fraction of requests shadow-read from PostgreSQL), and `POSTGRES_HOST/PORT/USER/PASSWORD/DB/SSLMODE`.
 
 ### Local Monitoring Development
@@ -363,13 +363,14 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
 - **`osvutil/`**: Small shared utilities: request `batcher/`, OSV schema validation (`schema/`), `safe/` helpers, and event helpers.
 - **`metrics/`**: Shared Prometheus metric definitions and HTTP `/metrics` exposition server for OSV services (`worker`, `recoverer`, `gitter`, `custommetrics`).
 - **`vanir/`**: Orchestration, filtering, and domain mutation logic for Vanir signature generation.
-- **`database/`**: Shared database clients and repository store implementations (`datastore/`, `postgres/`, `dualread/`, `jsonstore/`).
+- **`database/`**: Shared database clients and repository store implementations (`datastore/`, `postgres/`, `dualread/`, `dualwrite/`, `jsonstore/`).
   - **`datastore/`**: Cloud Datastore + GCS implementation of the domain interfaces ([`go/internal/database/datastore/`](go/internal/database/datastore/)).
     - *Design Pattern*: Models here are the primary Datastore definitions. Kinds still used by Python code are kept in sync with the legacy Python models in [`osv/models.py`](osv/models.py).
     - *Consistency Testing*: To prevent synchronization drift between Go and Python database models, a database validation test is maintained under [`go/internal/database/datastore/internal/validate/`](go/internal/database/datastore/internal/validate/) (run via `run_validate.sh`).
     - *Schema Quirks (Crucial for Agents)*: In the Datastore database, the legacy term `bug` was used for vulnerabilities. Consequently, many Datastore fields still use names like `bug_id` or `bug_ids`. In the Go codebase, these are mapped to Go struct fields like `VulnID` or `VulnIDs` (e.g., `AffectedCommits` has `VulnID string datastore:"bug_id"`). Pay close attention to the `datastore:` tag when writing queries or defining new fields!
-  - **`postgres/`**: PostgreSQL implementation of the domain interfaces using `sqlc` and `pgx/v5` ([`go/internal/database/postgres/`](go/internal/database/postgres/)). Schema migrations are managed with `goose` under [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/) and applied automatically in CI/CD via `gcr.io/oss-vdb/goose` ([`docker/goose/`](docker/goose/)). `queries.sql.go` and `models.go` are generated by `sqlc generate` (see *Setup Commands*) and must not be edited by hand.
+  - **`postgres/`**: PostgreSQL implementation of the domain interfaces using `sqlc` and `pgx/v5` ([`go/internal/database/postgres/`](go/internal/database/postgres/)). Schema migrations are managed with `goose` under [`go/internal/database/postgres/migrations/`](go/internal/database/postgres/migrations/) and applied automatically in CI/CD via the private `osv-db-migrate` Cloud Run Job (`gcr.io/oss-vdb/goose-migrations`, built from [`docker/goose/`](docker/goose/)). `*.sql.go` and `models.go` are generated by `sqlc generate` (see *Setup Commands*) and must not be edited by hand.
   - **`dualread/`**: Shadow dual-reader wrapper ([`go/internal/database/dualread/`](go/internal/database/dualread/)) that serves primary reads from Datastore/GCS while probabilistically shadowing queries (`POSTGRES_SHADOW_RATE`) to PostgreSQL in the background to compare results and latency.
+  - **`dualwrite/`**: Dual-writer wrapper ([`go/internal/database/dualwrite/`](go/internal/database/dualwrite/)) that serves reads from Datastore/GCS and executes writes and mutations (`Write`, `Mutate`) on PostgreSQL first before writing Datastore/GCS (propagating secondary errors so retries don't early-exit on already-updated primary state, except `models.ErrNotFound` on `Mutate` prior to backfill completion).
   - **`jsonstore/`**: Local JSON-file-backed store used by local tooling (e.g. `ubuntubinarymapper -output-json`).
 - **`gitter/`**: Client logic to interface with the Gitter caching service.
 
@@ -420,6 +421,7 @@ An independent Go module containing mirrors and converters that turn upstream ad
 - Overview and per-tool docs: [`vulnfeeds/README.md`](vulnfeeds/README.md), plus READMEs under `vulnfeeds/cmd/converters/*/` and `vulnfeeds/cmd/mirrors/*/`.
 - CVE5 conversion and the per-CNA extractor / strategy pattern: [`vulnfeeds/conversion/cve5/README.md`](vulnfeeds/conversion/cve5/README.md).
 - Combining NVD/CVE5 output into final records: [`vulnfeeds/cmd/combine-to-osv/DESIGN.md`](vulnfeeds/cmd/combine-to-osv/DESIGN.md).
+- Docker builds: All vulnfeeds container images share a unified multi-target [`vulnfeeds/Dockerfile`](vulnfeeds/Dockerfile) (built via `docker build --target <service> -f Dockerfile .` from `vulnfeeds/`).
 - Tests: `make vulnfeed-tests` (snapshot tests use go-snaps; see *Managing Test Expectations & Snapshots*).
 
 ---
@@ -427,9 +429,10 @@ An independent Go module containing mirrors and converters that turn upstream ad
 ## Infrastructure & Deployment (`deployment/`)
 See [`deployment/README.md`](deployment/README.md) for full details.
 - **Environments / GCP projects**: `oss-vdb` (production), `oss-vdb-test` (staging/test), and `private-osv` (private instance). Terraform for each lives in `deployment/terraform/environments/<project>/`, built from modules in `deployment/terraform/modules/` (`osv_pipeline`, `osv_api`, `osv`, `oss_fuzz`, `k8s_cron_alert`).
+- **PR `terraform-plan` least-privilege IAM**: The PR `terraform-plan` Cloud Build trigger (`deployment/terraform/cloudbuild-tf-plan.yaml`) runs as `terraform-plan@oss-vdb.iam.gserviceaccount.com` using a tightly scoped custom role (`terraformPlanReader`, control-plane `.get`/`.getIamPolicy` permissions only — no `roles/viewer`, no data-plane reads or exports) plus prefix-restricted read access to `oss-vdb/` and `oss-vdb-test/` in `gs://oss-vdb-tf`. **When introducing a new GCP resource type or data source in Terraform**, update `google_project_iam_custom_role.terraform_plan_reader` in `deployment/terraform/environments/oss-vdb/ci_iam.tf` and sync the live `terraformPlanReader` role in both `oss-vdb` and `oss-vdb-test` (see [`deployment/README.md`](deployment/README.md#pr-terraform-plan-service-account-terraformplanreader)).
 - **Staging**: Pushes to `master` trigger [`deployment/build-and-stage.yaml`](deployment/build-and-stage.yaml), which builds images, applies Terraform to `oss-vdb-test`, and creates Cloud Deploy releases to staging.
 - **Production**: Releases are promoted via [`deployment/deploy-prod.yaml`](deployment/deploy-prod.yaml) (triggered by release tags, see `deployment/deploy.sh`), which also promotes to the private instance.
-- **Adding a new service or job**: Typically requires a new target in `go/Dockerfile`, build/tag steps and a staging release in `build-and-stage.yaml`, a promotion entry in `deploy-prod.yaml` if it is a new pipeline, and manifests under `deployment/clouddeploy/` (for GKE, `gke-workers/base/` plus environment overlays). Remember to update this file's *Executables* list too.
+- **Adding a new service or job**: Typically requires a new target in `go/Dockerfile`, build/tag steps and a staging release in `build-and-stage.yaml`, a promotion entry in `deploy-prod.yaml` if it is a new pipeline, and manifests under `deployment/clouddeploy/` (for GKE, `gke-workers/base/` plus environment overlays). In `deploy-prod.yaml`, the `tag-release-images` step automatically attaches the release tag (`$TAG_NAME`) to every image in the existing Cloud Deploy pipelines; if you add a **new pipeline** or a **non-Cloud-Deploy image** (e.g. a shared base image or standalone Cloud Run Job), add it to `pipelines` or `images` in `tag-release-images` so Artifact Registry cleanup policies preserve released versions. Remember to update this file's *Executables* list too.
 - **Monitoring**: Metrics are defined in `go/internal/metrics/` and scraped by Google Managed Prometheus; dashboards are served by Plutono (a Grafana 7.5 fork) and provisioned from `deployment/clouddeploy/gke-workers/environments/oss-vdb-test/monitoring/` (currently only in `oss-vdb-test`). See the [monitoring README](deployment/clouddeploy/gke-workers/environments/oss-vdb-test/monitoring/README.md).
 
 ---

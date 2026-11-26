@@ -33,6 +33,53 @@ type AffectedVersionRow struct {
 	EventsJSON    []byte
 }
 
+func affectedVersionSortKey(vulnID, name, baseEcosystem string, ecosystems []string, coarseMin, coarseMax string, versions []string, eventsJSON []byte) string {
+	var b strings.Builder
+	b.WriteString(vulnID)
+	b.WriteString("\x1f")
+	b.WriteString(name)
+	b.WriteString("\x1f")
+	b.WriteString(baseEcosystem)
+	b.WriteString("\x1f")
+	b.WriteString(strings.Join(ecosystems, "\x1e"))
+	b.WriteString("\x1f")
+	b.WriteString(coarseMin)
+	b.WriteString("\x1f")
+	b.WriteString(coarseMax)
+	b.WriteString("\x1f")
+	if versions == nil {
+		b.WriteString("\x00")
+	} else {
+		sortedVersions := slices.Clone(versions)
+		slices.Sort(sortedVersions)
+		b.WriteString(strings.Join(sortedVersions, "\x1e"))
+	}
+	b.WriteString("\x1f")
+	if len(eventsJSON) > 0 {
+		var events []AffectedEvent
+		if err := json.Unmarshal(eventsJSON, &events); err == nil {
+			for _, e := range events {
+				b.WriteString(e.Type)
+				b.WriteString(":")
+				b.WriteString(e.Value)
+				b.WriteString("\x1e")
+			}
+		} else {
+			b.Write(eventsJSON)
+		}
+	}
+
+	return b.String()
+}
+
+func (av AffectedVersionRow) sortKey() string {
+	return affectedVersionSortKey(av.VulnID, av.Name, av.BaseEcosystem, av.Ecosystems, av.CoarseMin, av.CoarseMax, av.Versions, av.EventsJSON)
+}
+
+func (av AffectedVersion) sortKey() string {
+	return affectedVersionSortKey(av.VulnID, av.Name, av.BaseEcosystem, av.Ecosystems, av.CoarseMin, av.CoarseMax, av.Versions, av.Events)
+}
+
 var ubuntuReplacer = strings.NewReplacer(":Pro", "", ":LTS", "")
 
 func removeVariants(eco string) string {

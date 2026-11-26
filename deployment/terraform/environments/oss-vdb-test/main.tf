@@ -45,7 +45,8 @@ module "osv_pipeline" {
     "cves",
   ]
 
-  cluster_location = "us-west2-b"
+  cluster_location         = "us-west2-b"
+  enable_workload_identity = true
 
   postgres_tier              = "db-perf-optimized-N-4"
   postgres_availability_type = "ZONAL"
@@ -56,6 +57,8 @@ module "osv_test" {
 
   project_id                       = "oss-vdb-test"
   worker_service_account_email     = module.osv_pipeline.worker_service_account_email
+  workload_identity_pool           = module.osv_pipeline.workload_identity_pool
+  backup_service_account_email     = module.osv_pipeline.backup_service_account_email
   deployment_service_account_email = var.deployment_service_account_email
   frontend_deployer_service_account_emails = compact([
     var.deployment_service_account_email,

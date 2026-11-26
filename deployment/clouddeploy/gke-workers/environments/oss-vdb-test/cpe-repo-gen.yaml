@@ -7,6 +7,7 @@ spec:
     spec:
       template:
         spec:
+          serviceAccountName: osv-vulnfeeds
           containers:
           - name: cpe-repo-gen
             env:

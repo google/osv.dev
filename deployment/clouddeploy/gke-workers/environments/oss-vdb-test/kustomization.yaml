@@ -1,5 +1,6 @@
 resources:
 - ../../base
+- service-accounts.yaml
 - staging-api-test.yaml
 - osv-linter.yaml
 - monitoring

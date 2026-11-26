@@ -12,6 +12,7 @@ spec:
     spec:
       template:
         spec:
+          serviceAccountName: osv-worker
           containers:
           - name: osv-linter
             image: osv-linter

@@ -65,6 +65,18 @@ variable "deployment_service_account_email" {
   default     = ""
 }
 
+variable "enable_workload_identity" {
+  type        = bool
+  description = "Phase 1 opt-in: enables the GKE Workload Identity pool on the workers cluster and provisions dedicated per-role Workload Identity service accounts and IAM bindings."
+  default     = false
+}
+
+variable "enable_gke_metadata" {
+  type        = bool
+  description = "Phase 2 opt-in (requires enable_workload_identity = true and annotated K8s ServiceAccounts deployed first): enables GKE_METADATA on worker node pools."
+  default     = false
+}
+
 variable "migrator_deployer_service_account_emails" {
   type        = list(string)
   description = "Service account emails allowed to actAs the database migrations service account (roles/iam.serviceAccountUser) when updating/executing the osv-db-migrate Cloud Run Job."

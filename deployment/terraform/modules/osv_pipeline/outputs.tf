@@ -104,3 +104,13 @@ output "datastore_database_id" {
   description = "The ID of the Datastore database"
 }
 
+output "workload_identity_pool" {
+  value       = local.workload_identity_pool
+  description = "The GKE Workload Identity pool (empty when enable_workload_identity is false)"
+}
+
+output "backup_service_account_email" {
+  value       = var.enable_workload_identity ? google_service_account.backup_sa[0].email : ""
+  description = "The email of the GKE backup Workload Identity service account (empty when disabled)"
+}
+

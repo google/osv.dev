@@ -112,3 +112,15 @@ variable "public_buckets" {
   default     = false
 }
 
+variable "workload_identity_pool" {
+  type        = string
+  description = "Optional GKE Workload Identity pool (e.g. oss-vdb-test.svc.id.goog). When non-empty, provisions OSV-specific Workload Identity service accounts (osv-vulnfeeds)."
+  default     = ""
+}
+
+variable "backup_service_account_email" {
+  type        = string
+  description = "Optional email of the backup Workload Identity service account to grant access to the Datastore backups bucket."
+  default     = ""
+}
+

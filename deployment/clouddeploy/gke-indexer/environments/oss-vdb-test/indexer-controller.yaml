@@ -21,6 +21,7 @@ spec:
     spec:
       template:
         spec:
+          serviceAccountName: osv-worker
           containers:
           - name: indexer
             args: [

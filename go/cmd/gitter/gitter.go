@@ -153,18 +153,6 @@ type AffectedWalkOptions struct {
 	ResolveTagSpurMaxLength int
 }
 
-// LogValue formats AffectedWalkOptions as a structured slog group for Cloud Logging.
-func (o AffectedWalkOptions) LogValue() slog.Value {
-	return slog.GroupValue(
-		slog.Bool("cherrypickIntroduced", o.CherrypickIntroduced),
-		slog.Bool("cherrypickFixed", o.CherrypickFixed),
-		slog.Bool("resolveTagSpurIntroduced", o.ResolveTagSpurIntroduced),
-		slog.Bool("resolveTagSpurFixed", o.ResolveTagSpurFixed),
-		slog.Bool("resolveTagSpurLastAffected", o.ResolveTagSpurLastAffected),
-		slog.Int("resolveTagSpurMaxLength", o.ResolveTagSpurMaxLength),
-	)
-}
-
 func parseAffectedWalkOptions(body *pb.AffectedCommitsRequest) (AffectedWalkOptions, error) {
 	maxLength := int(body.GetResolveTagSpurMaxLength())
 	if maxLength < 0 || maxLength > maxResolveTagSpurLength {

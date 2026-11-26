@@ -50,8 +50,7 @@ type Repository struct {
 	// Store tags to commit index
 	tagToCommit map[string]int
 	// Commit indices pointed to by at least one non-tag ref (e.g. origin/main, HEAD).
-	// Used by tag-spur resolution to tell a short continuing branch apart from a dead-end RC spur,
-	// since a real branch carries a branch ref while a tag-only spur has none.
+	// Used by isTagOnlyChain to avoid mistaking a short continuing branch for a throwaway RC branch.
 	branchHeads map[int]struct{}
 	// For cherry-pick detection: PatchID -> []commit indexes
 	patchIDToCommits map[SHA1][]int
@@ -633,12 +632,9 @@ func (r *Repository) findAncestorRoots(from []int) []int {
 
 // findTagSpurFork walks backward along first parents from a tagged leaf commit (up to
 // maxLength steps) to find where the release spur branched off its parent branch.
-// Returns (forkIdx, spurEntry, true), where forkIdx is the commit on the parent branch and
-// spurEntry is the first commit of the spur itself.
-//
-// Note: intentionally ignores branchHeads while climbing the spur. Some repos leave retired
-// per-release branch refs (e.g. origin/PHP-8.2.35) on the tag commit or its parent; treating
-// those as active branches would stop the climb early and fail to reach the real parent branch.
+// Returns (forkIdx, spurEntry, true), where forkIdx is the parent-branch commit and
+// spurEntry is the first commit of the spur. Ignores branchHeads while climbing so retired
+// per-release refs (e.g. origin/PHP-8.2.35) on the spur itself don't stop the climb early.
 func (r *Repository) findTagSpurFork(commitIdx, maxLength int) (int, int, bool) {
 	if maxLength <= 0 || commitIdx < 0 || commitIdx >= len(r.commits) || commitIdx >= len(r.commitGraph) {
 		return 0, 0, false
@@ -680,7 +676,8 @@ func (r *Repository) findTagSpurFork(commitIdx, maxLength int) (int, int, bool) 
 func (r *Repository) isTagOnlyChain(idx, maxLength int) bool {
 	curr := idx
 	for range maxLength {
-		// Commit carries a branch ref (e.g. origin/main), so it belongs to a branch, not a tag-only chain.
+		// Conservatively treat any sibling carrying a branch ref (e.g. origin/main) as a real
+		// branch so active branches that happen to be short aren't skipped as throwaway RC chains.
 		if _, ok := r.branchHeads[curr]; ok {
 			return false
 		}

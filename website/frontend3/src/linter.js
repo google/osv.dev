@@ -63,6 +63,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const activeChipsEl = document.getElementById("active-filter-chips");
   const syncStatusEl = document.getElementById("timestamps-sync-status");
+  const includeSuppressedCheckbox = document.getElementById("include-suppressed-checkbox");
+  const suppressedToggleText = document.getElementById("suppressed-toggle-text");
   const resultsSummaryEl = document.getElementById("results-summary");
   const pageSizeSelect = document.getElementById("page-size-select");
 
@@ -72,6 +74,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let selectedCategories = new Set();
   let ruleMode = "include";
   let selectedSince = "";
+  let includeSuppressed = false;
   let latestFacets = {};
 
   function splitCSV(val) {
@@ -92,6 +95,9 @@ document.addEventListener("DOMContentLoaded", function () {
     selectedCategories = new Set(splitCSV(params.get("cat") || params.get("category")).map((c) => c.toUpperCase()));
     ruleMode = params.get("rule_mode") === "exclude" ? "exclude" : "include";
     selectedSince = params.get("since") || "";
+    const incSupp = (params.get("include_suppressed") || "").toLowerCase();
+    includeSuppressed = incSupp === "1" || incSupp === "true" || incSupp === "yes";
+    if (includeSuppressedCheckbox) includeSuppressedCheckbox.checked = includeSuppressed;
     searchInput.value = params.get("q") || "";
 
     const sort = params.get("sort");
@@ -116,6 +122,7 @@ document.addEventListener("DOMContentLoaded", function () {
       params.set("rule_mode", "exclude");
     }
     if (selectedSince) params.set("since", selectedSince);
+    if (includeSuppressed) params.set("include_suppressed", "true");
     if (searchInput.value.trim()) params.set("q", searchInput.value.trim());
     if (sortField !== "last_attempt") params.set("sort", sortField);
     if (sortDirection !== "desc") params.set("order", sortDirection);
@@ -177,6 +184,12 @@ document.addEventListener("DOMContentLoaded", function () {
         updateURL();
       }
       latestFacets = data.facets || {};
+      if (suppressedToggleText) {
+        const suppIssues = data.suppressed_issues || 0;
+        suppressedToggleText.textContent = suppIssues > 0
+          ? `Show suppressed (${suppIssues.toLocaleString()})`
+          : "Show suppressed";
+      }
 
       if (data.timestamps_ready) {
         syncStatusEl.hidden = true;
@@ -261,6 +274,13 @@ document.addEventListener("DOMContentLoaded", function () {
       issuesPerPage = parseInt(pageSizeSelect.value, 10) || 25;
       resetAndFetch();
     });
+
+    if (includeSuppressedCheckbox) {
+      includeSuppressedCheckbox.addEventListener("change", () => {
+        includeSuppressed = includeSuppressedCheckbox.checked;
+        resetAndFetch();
+      });
+    }
 
     tabBarContainer.addEventListener("click", handleTabClick);
 
@@ -441,6 +461,16 @@ document.addEventListener("DOMContentLoaded", function () {
         },
       });
     }
+    if (includeSuppressed) {
+      chips.push({
+        label: "Showing suppressed",
+        remove: () => {
+          includeSuppressed = false;
+          if (includeSuppressedCheckbox) includeSuppressedCheckbox.checked = false;
+          resetAndFetch();
+        },
+      });
+    }
     if (searchInput.value.trim()) {
       chips.push({
         label: `Search: "${searchInput.value.trim()}"`,
@@ -475,6 +505,8 @@ document.addEventListener("DOMContentLoaded", function () {
         sourceMode = "include";
         ruleMode = "include";
         selectedSince = "";
+        includeSuppressed = false;
+        if (includeSuppressedCheckbox) includeSuppressedCheckbox.checked = false;
         searchInput.value = "";
         sinceFilterSelected.textContent = SINCE_LABELS[""];
         syncModeButtons();
@@ -497,10 +529,15 @@ document.addEventListener("DOMContentLoaded", function () {
       tableBody.innerHTML = '<tr><td colspan="5">No issues found.</td></tr>';
     } else {
       paginatedIssues.forEach((issue) => {
+        const details = issue.details || [];
+        const allSuppressed = details.length > 0 && details.every((d) => d.Suppressed);
         const row = tableBody.insertRow();
         row.classList.add("clickable");
+        if (allSuppressed) {
+          row.classList.add("suppressed-issue-row");
+        }
         row.addEventListener("click", () => {
-          openCombinedView(issue.bug_id, issue.details || []);
+          openCombinedView(issue.bug_id, details);
         });
 
         const cell1 = row.insertCell();
@@ -514,7 +551,7 @@ document.addEventListener("DOMContentLoaded", function () {
         bugLink.textContent = issue.bug_id;
         bugLink.addEventListener("click", (e) => {
           e.stopPropagation();
-          openCombinedView(issue.bug_id, issue.details || []);
+          openCombinedView(issue.bug_id, details);
           e.preventDefault();
         });
         cell1.appendChild(bugLink);
@@ -523,9 +560,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const findingsContainer = document.createElement("div");
         (issue.codes || []).forEach((code) => {
+          const matchingDetails = details.filter((d) => d.Code === code);
+          const isCodeSuppressed = matchingDetails.length > 0 && matchingDetails.every((d) => d.Suppressed);
           const findingSpan = document.createElement("span");
           findingSpan.textContent = code;
-          findingSpan.className = "finding-tag";
+          findingSpan.className = isCodeSuppressed
+            ? "finding-tag finding-tag-suppressed"
+            : "finding-tag";
+          if (isCodeSuppressed && matchingDetails[0].SuppressedReason) {
+            findingSpan.title = `Suppressed: ${matchingDetails[0].SuppressedReason}`;
+          }
           findingsContainer.appendChild(findingSpan);
         });
         cell3.appendChild(findingsContainer);
@@ -586,6 +630,17 @@ document.addEventListener("DOMContentLoaded", function () {
     return bugId.replace(/[^a-zA-Z0-9-:]/g, "");
   }
 
+  function renderFindingsInto(findingsEl, details, bugId) {
+    if (!findingsEl) return;
+    findingsEl.textContent = "";
+    if (details.length > 0) {
+      findingsEl.appendChild(formatFindings(details, bugId));
+    } else {
+      findingsEl.textContent =
+        "No linter findings available for this vulnerability.";
+    }
+  }
+
   /**
    * Opens a detailed tab view split into Vulnerability JSON and Linter Findings columns.
    * Fetches full vulnerability record JSON from the same-origin endpoint and renders the interactive JSON tree.
@@ -594,10 +649,12 @@ document.addEventListener("DOMContentLoaded", function () {
    */
   function openCombinedView(bugId, details = []) {
     const safeBugId = sanitiseBugId(bugId);
+    const findingsJsonId = `findings-json-${safeBugId}`;
 
     const tabId = `details-${safeBugId}`;
     const existingTab = tabBarContainer.querySelector(`[data-tab="${tabId}"]`);
     if (existingTab) {
+      renderFindingsInto(document.getElementById(findingsJsonId), details, bugId);
       setActiveTab(tabId);
       return;
     }
@@ -620,7 +677,6 @@ document.addEventListener("DOMContentLoaded", function () {
     tabSwitch.appendChild(tabButton);
 
     const vulnJsonId = `vuln-json-${safeBugId}`;
-    const findingsJsonId = `findings-json-${safeBugId}`;
     const copyButtonId = `copy-json-${safeBugId}`;
 
     const tabContent = document.createElement("div");
@@ -702,16 +758,7 @@ document.addEventListener("DOMContentLoaded", function () {
         ).textContent = `Error: ${err.message}`;
       });
 
-    const findingsEl = document.getElementById(findingsJsonId);
-    if (findingsEl) {
-      if (details.length > 0) {
-        findingsEl.textContent = "";
-        findingsEl.appendChild(formatFindings(details, bugId));
-      } else {
-        findingsEl.textContent =
-          "No linter findings available for this vulnerability.";
-      }
-    }
+    renderFindingsInto(document.getElementById(findingsJsonId), details, bugId);
   }
 
   /**
@@ -748,9 +795,27 @@ document.addEventListener("DOMContentLoaded", function () {
     const tbody = table.createTBody();
     details.forEach((finding) => {
       const row = tbody.insertRow();
-      row.className = 'clickable-finding-row';
-      row.insertCell().textContent = finding.Code || '';
-      row.insertCell().textContent = finding.Message || '';
+      row.className = finding.Suppressed
+        ? 'clickable-finding-row suppressed-finding-row'
+        : 'clickable-finding-row';
+
+      const codeCell = row.insertCell();
+      codeCell.appendChild(document.createTextNode(finding.Code || ''));
+      if (finding.Suppressed) {
+        const badge = document.createElement('span');
+        badge.className = 'suppressed-badge';
+        badge.textContent = 'Suppressed';
+        codeCell.appendChild(badge);
+      }
+
+      const messageCell = row.insertCell();
+      messageCell.appendChild(document.createTextNode(finding.Message || ''));
+      if (finding.Suppressed && finding.SuppressedReason) {
+        const reasonEl = document.createElement('div');
+        reasonEl.className = 'suppressed-reason';
+        reasonEl.textContent = finding.SuppressedReason;
+        messageCell.appendChild(reasonEl);
+      }
       
       const actionCell = row.insertCell();
       actionCell.className = 'action-cell';

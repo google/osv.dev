@@ -16,6 +16,7 @@ import (
 	"time"
 	"unique"
 
+	"github.com/google/osv.dev/go/internal/linter"
 	"github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
 	"golang.org/x/sync/errgroup"
@@ -65,8 +66,10 @@ var knownCategoryLabels = map[string]string{
 
 // LinterFindingDetail represents an individual linter rule violation on a vulnerability record.
 type LinterFindingDetail struct {
-	Code    string `json:"Code"`
-	Message string `json:"Message"`
+	Code             string `json:"Code"`
+	Message          string `json:"Message"`
+	Suppressed       bool   `json:"Suppressed,omitempty"`
+	SuppressedReason string `json:"SuppressedReason,omitempty"`
 }
 
 // LinterIssueSummary represents a single vulnerability row in paginated linter query results.
@@ -111,34 +114,39 @@ type LinterFacets struct {
 
 // LinterQueryResponse is the JSON payload returned by GET /linter-findings/query.
 type LinterQueryResponse struct {
-	Issues          []LinterIssueSummary `json:"issues"`
-	Total           int                  `json:"total"`
-	Page            int                  `json:"page"`
-	PageSize        int                  `json:"page_size"`
-	TimestampsReady bool                 `json:"timestamps_ready"`
-	Facets          LinterFacets         `json:"facets"`
+	Issues             []LinterIssueSummary `json:"issues"`
+	Total              int                  `json:"total"`
+	Page               int                  `json:"page"`
+	PageSize           int                  `json:"page_size"`
+	TimestampsReady    bool                 `json:"timestamps_ready"`
+	SuppressedFindings int                  `json:"suppressed_findings"`
+	SuppressedIssues   int                  `json:"suppressed_issues"`
+	Facets             LinterFacets         `json:"facets"`
 }
 
 type linterQueryParams struct {
-	Sources    []string
-	SourceMode string // "include" (default) or "exclude"
-	Codes      []string
-	Categories []string
-	RuleMode   string // "include" (default) or "exclude"
-	Query      string
-	Since      string // "", "24h", "7d", "30d", "90d", or "YYYY-MM-DD"
-	Sort       string // "last_attempt" (default), "first_seen", "bug_id", "finding_count"
-	Order      string // "desc" (default) or "asc"
-	Page       int
-	PageSize   int
+	Sources           []string
+	SourceMode        string // "include" (default) or "exclude"
+	Codes             []string
+	Categories        []string
+	RuleMode          string // "include" (default) or "exclude"
+	Query             string
+	Since             string // "", "24h", "7d", "30d", "90d", or "YYYY-MM-DD"
+	Sort              string // "last_attempt" (default), "first_seen", "bug_id", "finding_count"
+	Order             string // "desc" (default) or "asc"
+	Page              int
+	PageSize          int
+	IncludeSuppressed bool
 }
 
 // cachedFinding stores canonical string handles directly so Go's GC keeps the
 // interned string boxes alive across refreshes while avoiding per-query lowercase allocations.
 type cachedFinding struct {
-	code         unique.Handle[string]
-	message      unique.Handle[string]
-	messageLower unique.Handle[string]
+	code             unique.Handle[string]
+	message          unique.Handle[string]
+	messageLower     unique.Handle[string]
+	suppressed       bool
+	suppressedReason unique.Handle[string]
 }
 
 type linterIssue struct {
@@ -151,14 +159,21 @@ type linterIssue struct {
 	findings    []cachedFinding
 }
 
+type linterView struct {
+	rules         []unique.Handle[string]
+	issues        []linterIssue // Pre-sorted by (lastAttempt DESC, bugID ASC)
+	ascOrder      []int32       // Pre-computed indices for (lastAttempt ASC, bugID ASC)
+	defaultFacets LinterFacets
+}
+
 type linterSnapshot struct {
-	loadedAt        time.Time
-	timestampsReady bool
-	sources         []unique.Handle[string]
-	rules           []unique.Handle[string]
-	issues          []linterIssue // Pre-sorted by (lastAttempt DESC, bugID ASC)
-	ascOrder        []int32       // Pre-computed indices for (lastAttempt ASC, bugID ASC)
-	defaultFacets   LinterFacets
+	loadedAt           time.Time
+	timestampsReady    bool
+	sources            []unique.Handle[string]
+	suppressedFindings int
+	suppressedIssues   int
+	activeView         linterView
+	allView            linterView
 }
 
 type cachedSourceFindings struct {
@@ -171,6 +186,7 @@ type linterIndex struct {
 	linterStore         models.LinterStore
 	sourceRepoStore     models.SourceRepositoryStore
 	importFindingsStore models.ImportFindingsStore
+	suppressions        *linter.Registry
 	cacheTTL            time.Duration
 
 	stopOnce sync.Once
@@ -192,15 +208,20 @@ func newLinterIndex(
 	sourceRepoStore models.SourceRepositoryStore,
 	importFindingsStore models.ImportFindingsStore,
 	cacheTTL time.Duration,
+	suppressions *linter.Registry,
 ) *linterIndex {
 	if cacheTTL <= 0 {
 		cacheTTL = defaultLinterCacheTTL
+	}
+	if suppressions == nil {
+		suppressions = linter.DefaultRegistry()
 	}
 
 	return &linterIndex{
 		linterStore:         linterStore,
 		sourceRepoStore:     sourceRepoStore,
 		importFindingsStore: importFindingsStore,
+		suppressions:        suppressions,
 		cacheTTL:            cacheTTL,
 		stopCh:              make(chan struct{}),
 		sourceCache:         make(map[string]cachedSourceFindings),
@@ -312,7 +333,7 @@ func (idx *linterIndex) getSnapshot(ctx context.Context) (*linterSnapshot, error
 	}
 }
 
-func parseSourceResultJSON(data []byte) (map[string][]cachedFinding, error) {
+func parseSourceResultJSON(source string, data []byte, suppressions *linter.Registry) (map[string][]cachedFinding, error) {
 	var raw map[string][]LinterFindingDetail
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return nil, err
@@ -331,10 +352,24 @@ func parseSourceResultJSON(data []byte) (map[string][]cachedFinding, error) {
 		interned := make([]cachedFinding, len(list))
 		for i, f := range list {
 			code := cmp.Or(f.Code, "UNKNOWN")
+			suppressed := f.Suppressed
+			reason := f.SuppressedReason
+			if !suppressed && suppressions != nil {
+				if matchedReason, ok := suppressions.Match(source, bugID, code, f.Message); ok {
+					suppressed = true
+					reason = matchedReason
+				}
+			}
+			var reasonHandle unique.Handle[string]
+			if reason != "" {
+				reasonHandle = unique.Make(reason)
+			}
 			interned[i] = cachedFinding{
-				code:         unique.Make(code),
-				message:      unique.Make(f.Message),
-				messageLower: unique.Make(strings.ToLower(f.Message)),
+				code:             unique.Make(code),
+				message:          unique.Make(f.Message),
+				messageLower:     unique.Make(strings.ToLower(f.Message)),
+				suppressed:       suppressed,
+				suppressedReason: reasonHandle,
 			}
 		}
 		id := strings.Clone(bugID)
@@ -423,7 +458,7 @@ func (idx *linterIndex) refresh(ctx context.Context) (*linterSnapshot, error) {
 
 					return nil
 				}
-				bugs, parseErr := parseSourceResultJSON(raw)
+				bugs, parseErr := parseSourceResultJSON(info.Source, raw, idx.suppressions)
 				if parseErr != nil {
 					logger.WarnContext(gCtx, "linter index: failed parsing source findings JSON",
 						slog.String("source", info.Source), slog.Any("error", parseErr))
@@ -529,25 +564,28 @@ func addRuleAndCategoryCounts(
 	}
 }
 
-func buildLinterSnapshot(
-	knownSources []string,
+func buildLinterView(
+	sources []unique.Handle[string],
+	sortedSources []string,
 	sourceCache map[string]cachedSourceFindings,
 	timestamps map[string]int64,
 	firstSeen map[string]int64,
-	timestampsReady bool,
-) *linterSnapshot {
-	sources := make([]unique.Handle[string], len(knownSources))
-	for i, s := range knownSources {
-		sources[i] = unique.Make(s)
-	}
-
+	includeSuppressed bool,
+) linterView {
 	codeSet := make(map[unique.Handle[string]]struct{}, 16)
 	totalBugs := 0
 	for _, srcData := range sourceCache {
-		totalBugs += len(srcData.bugs)
 		for _, list := range srcData.bugs {
+			hasVisible := false
 			for _, f := range list {
+				if !includeSuppressed && f.suppressed {
+					continue
+				}
 				codeSet[f.code] = struct{}{}
+				hasVisible = true
+			}
+			if hasVisible {
+				totalBugs++
 			}
 		}
 	}
@@ -561,7 +599,7 @@ func buildLinterSnapshot(
 	catCounts := make(map[string]int, 8)
 	issues := make([]linterIssue, 0, totalBugs)
 
-	for _, srcName := range slices.Sorted(maps.Keys(sourceCache)) {
+	for _, srcName := range sortedSources {
 		srcData := sourceCache[srcName]
 		srcHandle := unique.Make(srcName)
 		var fallbackUnix int64
@@ -570,8 +608,30 @@ func buildLinterSnapshot(
 		}
 
 		for bugID, list := range srcData.bugs {
-			seenCodes := make([]unique.Handle[string], 0, len(list))
-			for _, f := range list {
+			visible := list
+			if !includeSuppressed {
+				activeCount := 0
+				for _, f := range list {
+					if !f.suppressed {
+						activeCount++
+					}
+				}
+				if activeCount == 0 {
+					continue
+				}
+				if activeCount < len(list) {
+					filtered := make([]cachedFinding, 0, activeCount)
+					for _, f := range list {
+						if !f.suppressed {
+							filtered = append(filtered, f)
+						}
+					}
+					visible = filtered
+				}
+			}
+
+			seenCodes := make([]unique.Handle[string], 0, len(visible))
+			for _, f := range visible {
 				if !slices.Contains(seenCodes, f.code) {
 					seenCodes = append(seenCodes, f.code)
 				}
@@ -595,7 +655,7 @@ func buildLinterSnapshot(
 				codes:       seenCodes,
 				firstSeen:   firstSeen[bugID],
 				lastAttempt: laUnix,
-				findings:    list,
+				findings:    visible,
 			})
 		}
 	}
@@ -625,14 +685,62 @@ func buildLinterSnapshot(
 
 	defaultFacets := buildFacets(sources, rules, sourceCounts, ruleCounts, catCounts, len(issues), len(issues))
 
+	return linterView{
+		rules:         rules,
+		issues:        issues,
+		ascOrder:      ascOrder,
+		defaultFacets: defaultFacets,
+	}
+}
+
+func buildLinterSnapshot(
+	knownSources []string,
+	sourceCache map[string]cachedSourceFindings,
+	timestamps map[string]int64,
+	firstSeen map[string]int64,
+	timestampsReady bool,
+) *linterSnapshot {
+	sources := make([]unique.Handle[string], len(knownSources))
+	for i, s := range knownSources {
+		sources[i] = unique.Make(s)
+	}
+
+	sortedSources := slices.Sorted(maps.Keys(sourceCache))
+
+	var suppressedFindings, suppressedIssues int
+	for _, srcData := range sourceCache {
+		for _, list := range srcData.bugs {
+			bugHasSuppressed := false
+			for _, f := range list {
+				if f.suppressed {
+					suppressedFindings++
+					bugHasSuppressed = true
+				}
+			}
+			if bugHasSuppressed {
+				suppressedIssues++
+			}
+		}
+	}
+
+	// Pre-build the default view (excluding suppressed findings) so default queries
+	// keep the O(pageSize) fast path and precomputed facets. Build a second allView
+	// (including suppressed findings for the "Show suppressed" toggle) only when at
+	// least one suppressed finding exists; otherwise both views are identical.
+	activeView := buildLinterView(sources, sortedSources, sourceCache, timestamps, firstSeen, false)
+	allView := activeView
+	if suppressedFindings > 0 {
+		allView = buildLinterView(sources, sortedSources, sourceCache, timestamps, firstSeen, true)
+	}
+
 	return &linterSnapshot{
-		loadedAt:        time.Now(),
-		timestampsReady: timestampsReady,
-		sources:         sources,
-		rules:           rules,
-		issues:          issues,
-		ascOrder:        ascOrder,
-		defaultFacets:   defaultFacets,
+		loadedAt:           time.Now(),
+		timestampsReady:    timestampsReady,
+		sources:            sources,
+		suppressedFindings: suppressedFindings,
+		suppressedIssues:   suppressedIssues,
+		activeView:         activeView,
+		allView:            allView,
 	}
 }
 
@@ -689,9 +797,15 @@ func issueToSummary(issue *linterIssue) LinterIssueSummary {
 	}
 	details := make([]LinterFindingDetail, len(issue.findings))
 	for i, f := range issue.findings {
+		var reason string
+		if f.suppressedReason != (unique.Handle[string]{}) {
+			reason = f.suppressedReason.Value()
+		}
 		details[i] = LinterFindingDetail{
-			Code:    f.code.Value(),
-			Message: f.message.Value(),
+			Code:             f.code.Value(),
+			Message:          f.message.Value(),
+			Suppressed:       f.suppressed,
+			SuppressedReason: reason,
 		}
 	}
 
@@ -825,6 +939,11 @@ func compareIssuesBySort(a, b *linterIssue, sortField string, asc bool) int {
 }
 
 func (snap *linterSnapshot) query(params linterQueryParams) LinterQueryResponse {
+	view := &snap.activeView
+	if params.IncludeSuppressed {
+		view = &snap.allView
+	}
+
 	pageSize := params.PageSize
 	if pageSize <= 0 {
 		pageSize = defaultLinterPageSize
@@ -855,7 +974,7 @@ func (snap *linterSnapshot) query(params linterQueryParams) LinterQueryResponse 
 
 	// O(pageSize) fast path when no filters or custom sort fields are active.
 	if !hasAnyFilter && sortField == "last_attempt" {
-		total := len(snap.issues)
+		total := len(view.issues)
 		page = min(page, max((total+pageSize-1)/pageSize, 1))
 		start := (page - 1) * pageSize
 		end := min(start+pageSize, total)
@@ -864,35 +983,37 @@ func (snap *linterSnapshot) query(params linterQueryParams) LinterQueryResponse 
 		for i := start; i < end; i++ {
 			idx := i
 			if isAsc {
-				idx = int(snap.ascOrder[i])
+				idx = int(view.ascOrder[i])
 			}
-			pageIssues = append(pageIssues, issueToSummary(&snap.issues[idx]))
+			pageIssues = append(pageIssues, issueToSummary(&view.issues[idx]))
 		}
 
 		return LinterQueryResponse{
-			Issues:          pageIssues,
-			Total:           total,
-			Page:            page,
-			PageSize:        pageSize,
-			TimestampsReady: snap.timestampsReady,
-			Facets:          snap.defaultFacets,
+			Issues:             pageIssues,
+			Total:              total,
+			Page:               page,
+			PageSize:           pageSize,
+			TimestampsReady:    snap.timestampsReady,
+			SuppressedFindings: snap.suppressedFindings,
+			SuppressedIssues:   snap.suppressedIssues,
+			Facets:             view.defaultFacets,
 		}
 	}
 
 	var matched []int
 	var facets LinterFacets
 	if !hasAnyFilter {
-		matched = make([]int, 0, len(snap.issues))
-		for i := range snap.issues {
+		matched = make([]int, 0, len(view.issues))
+		for i := range view.issues {
 			matched = append(matched, i)
 		}
-		facets = snap.defaultFacets
+		facets = view.defaultFacets
 	} else {
 		targetSources := resolveFilterSources(params.Sources, snap.sources)
-		targetCodes := resolveFilterCodes(params.Codes, params.Categories, snap.rules)
+		targetCodes := resolveFilterCodes(params.Codes, params.Categories, view.rules)
 
 		sourceCounts := make(map[unique.Handle[string]]int, len(snap.sources))
-		ruleCounts := make(map[unique.Handle[string]]int, len(snap.rules))
+		ruleCounts := make(map[unique.Handle[string]]int, len(view.rules))
 		catCounts := make(map[string]int, 8)
 		totalForSources := 0
 		totalForRules := 0
@@ -921,12 +1042,12 @@ func (snap *linterSnapshot) query(params linterQueryParams) LinterQueryResponse 
 		}
 
 		useAscOrder := sortField == "last_attempt" && isAsc
-		for step := range snap.issues {
+		for step := range view.issues {
 			idx := step
 			if useAscOrder {
-				idx = int(snap.ascOrder[step])
+				idx = int(view.ascOrder[step])
 			}
-			issue := &snap.issues[idx]
+			issue := &view.issues[idx]
 			ok, srcMatch, ruleMatch := matchesFilter(issue)
 			if !ok {
 				continue
@@ -945,12 +1066,12 @@ func (snap *linterSnapshot) query(params linterQueryParams) LinterQueryResponse 
 			}
 		}
 
-		facets = buildFacets(snap.sources, snap.rules, sourceCounts, ruleCounts, catCounts, totalForSources, totalForRules)
+		facets = buildFacets(snap.sources, view.rules, sourceCounts, ruleCounts, catCounts, totalForSources, totalForRules)
 	}
 
 	if sortField != "last_attempt" {
 		slices.SortFunc(matched, func(ia, ib int) int {
-			return compareIssuesBySort(&snap.issues[ia], &snap.issues[ib], sortField, isAsc)
+			return compareIssuesBySort(&view.issues[ia], &view.issues[ib], sortField, isAsc)
 		})
 	}
 
@@ -961,15 +1082,17 @@ func (snap *linterSnapshot) query(params linterQueryParams) LinterQueryResponse 
 
 	pageIssues := make([]LinterIssueSummary, 0, defaultLinterPageSize)
 	for _, idx := range matched[start:end] {
-		pageIssues = append(pageIssues, issueToSummary(&snap.issues[idx]))
+		pageIssues = append(pageIssues, issueToSummary(&view.issues[idx]))
 	}
 
 	return LinterQueryResponse{
-		Issues:          pageIssues,
-		Total:           total,
-		Page:            page,
-		PageSize:        pageSize,
-		TimestampsReady: snap.timestampsReady,
-		Facets:          facets,
+		Issues:             pageIssues,
+		Total:              total,
+		Page:               page,
+		PageSize:           pageSize,
+		TimestampsReady:    snap.timestampsReady,
+		SuppressedFindings: snap.suppressedFindings,
+		SuppressedIssues:   snap.suppressedIssues,
+		Facets:             facets,
 	}
 }

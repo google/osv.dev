@@ -343,7 +343,7 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
    - `repo-allowlist-sync`: Synchronizes the repository allowlist YAML files (`repo_allowlist.yaml` for prod, `repo_allowlist_test.yaml` for staging) to `RepoAllowList` entities in Datastore. Runs automatically via Cloud Build when those files change on `master`, so changing per-repo Git enumeration behavior is normally just a YAML PR. See its [README](go/cmd/tools/repo-allowlist-sync/README.md).
 
 15. **Other jobs and utilities**:
-   - `osv-linter-worker`: Runs the OSV linter over the exported data and writes findings to GCS and Datastore (`ImportFinding`).
+   - `osv-linter-worker`: Runs the OSV linter over the exported data, applies provider-specific suppressions (`go/internal/linter/suppressions.yaml`), and writes findings to GCS (`Suppressed: true` retained for UI inspection) and Datastore (`ImportFinding`, excluding suppressed findings).
    - `generatesitemap`: Generates the website sitemaps from exported vulnerability data.
    - `recordchecker`: Checks that every `Vulnerability` in Datastore has an up-to-date GCS record.
    - `staging_api_test`: Load/performance tester that replays traffic against the staging API.
@@ -353,6 +353,7 @@ All Go microservices are compiled using a single, unified multi-target Dockerfil
 ### Internal Shared Libraries (`go/internal/`)
 - **`api/`**: Shared package containing the core gRPC public server implementation of the OSV API.
 - **`website/`**: Shared package implementing HTTP handlers, templates, routing, vulnerability search logic, and the in-memory cached linter findings index/query engine for the Go website frontend.
+- **`linter/`**: Shared provider-specific `osv-linter` suppression rules (`go/internal/linter/suppressions.yaml`) and matcher used by both `osv-linter-worker` and `website`.
 - **`worker/`**: Core engine and subscriber logic for the Go worker.
 - **`importer/`**: Core importer engine (Git, REST, and GCS bucket source handling, deletion detection, reconciliation) used by `cmd/importer`.
 - **`recoverer/`**: Core engine and handlers for the Go recoverer.

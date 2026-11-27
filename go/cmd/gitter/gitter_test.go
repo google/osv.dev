@@ -993,24 +993,28 @@ func TestAffectedCommitsHandler_ResolveTagSpur(t *testing.T) {
 
 	const repoURL = "https://example.com/example/spur-repo.git"
 	repo := NewRepository(repoURL)
-	// Main branch: main0 -> main1 -> main2 -> main3 (HEAD)
+	// Main branch: main0 -> main1 -> main2 -> main3 -> main4 (HEAD)
 	//                |        |        |        |
-	// Tag spurs:   tag0     tag1     tag2     tag3
-	main0, main1, main2, main3 := decodeSHA1("b0"), decodeSHA1("b1"), decodeSHA1("b2"), decodeSHA1("b3")
-	tag0, tag1, tag2, tag3 := decodeSHA1("10"), decodeSHA1("11"), decodeSHA1("12"), decodeSHA1("13")
+	// Tag spurs:   tag0     tag1     tag2     spur3
+	//                                           |
+	//                                         tag3
+	main0, main1, main2, main3, main4 := decodeSHA1("b0"), decodeSHA1("b1"), decodeSHA1("b2"), decodeSHA1("b3"), decodeSHA1("b4")
+	tag0, tag1, tag2, spur3, tag3 := decodeSHA1("10"), decodeSHA1("11"), decodeSHA1("12"), decodeSHA1("a3"), decodeSHA1("13")
 
 	repo.addEdgeForTest(main0, main1)
 	repo.addEdgeForTest(main1, main2)
 	repo.addEdgeForTest(main2, main3)
+	repo.addEdgeForTest(main3, main4)
 	repo.addEdgeForTest(main0, tag0)
 	repo.addEdgeForTest(main1, tag1)
 	repo.addEdgeForTest(main2, tag2)
-	repo.addEdgeForTest(main3, tag3)
+	repo.addEdgeForTest(main3, spur3)
+	repo.addEdgeForTest(spur3, tag3)
 	repo.addTagForTest(tag0, "v1.0.0")
 	repo.addTagForTest(tag1, "v1.0.1")
 	repo.addTagForTest(tag2, "v1.0.2")
 	repo.addTagForTest(tag3, "v1.0.3")
-	repo.markBranchHeadForTest(main3)
+	repo.markBranchHeadForTest(main4)
 
 	repoCache.SetWithTTL(repoURL, repo, 0, time.Hour)
 	repoCache.Wait()
@@ -1023,7 +1027,7 @@ func TestAffectedCommitsHandler_ResolveTagSpur(t *testing.T) {
 		wantTags    []string
 	}{
 		{
-			name: "BFS with tag spur resolution enabled (default max length = 1)",
+			name: "Enabled with default maxLength=1",
 			req: &pb.AffectedCommitsRequest{
 				Url: repoURL,
 				Events: []*pb.Event{
@@ -1039,7 +1043,7 @@ func TestAffectedCommitsHandler_ResolveTagSpur(t *testing.T) {
 			wantTags:    []string{"v1.0.0", "v1.0.1"},
 		},
 		{
-			name: "Tag spur resolution forces consider_all_branches even when unset",
+			name: "Forces consider_all_branches when unset",
 			req: &pb.AffectedCommitsRequest{
 				Url: repoURL,
 				Events: []*pb.Event{
@@ -1055,7 +1059,7 @@ func TestAffectedCommitsHandler_ResolveTagSpur(t *testing.T) {
 			wantTags:    []string{"v1.0.0", "v1.0.1"},
 		},
 		{
-			name: "LastAffected tag spur resolution keeps last_affected tag and stops before next release",
+			name: "LastAffected spur keeps tag and stops before next release",
 			req: &pb.AffectedCommitsRequest{
 				Url: repoURL,
 				Events: []*pb.Event{
@@ -1070,7 +1074,40 @@ func TestAffectedCommitsHandler_ResolveTagSpur(t *testing.T) {
 			wantTags:    []string{"v1.0.0", "v1.0.1", "v1.0.2"},
 		},
 		{
-			name: "Tag spur resolution disabled returns empty in single-branch mode", // Current default walking method
+			name: "Custom maxLength=2 resolves 2-commit spur",
+			req: &pb.AffectedCommitsRequest{
+				Url: repoURL,
+				Events: []*pb.Event{
+					{EventType: pb.EventType_INTRODUCED, Hash: encodeSHA1(tag0)},
+					{EventType: pb.EventType_FIXED, Hash: encodeSHA1(tag3)},
+				},
+				ResolveTagSpurIntroduced: true,
+				ResolveTagSpurFixed:      true,
+				ResolveTagSpurMaxLength:  2,
+			},
+			wantCode:    http.StatusOK,
+			wantCommits: []SHA1{main0, tag0, main1, tag1, main2, tag2, main3, spur3},
+			wantTags:    []string{"v1.0.0", "v1.0.1", "v1.0.2"},
+		},
+		{
+			name: "LIMIT ignores resolve_tag_spur flags",
+			req: &pb.AffectedCommitsRequest{
+				Url: repoURL,
+				Events: []*pb.Event{
+					{EventType: pb.EventType_INTRODUCED, Hash: encodeSHA1(main0)},
+					{EventType: pb.EventType_LIMIT, Hash: encodeSHA1(main2)},
+				},
+				ResolveTagSpurIntroduced:   true,
+				ResolveTagSpurFixed:        true,
+				ResolveTagSpurLastAffected: true,
+				ResolveTagSpurMaxLength:    2,
+			},
+			wantCode:    http.StatusOK,
+			wantCommits: []SHA1{main0, main1},
+			wantTags:    []string{},
+		},
+		{
+			name: "Disabled uses single-branch mode", // Current default walking method
 			req: &pb.AffectedCommitsRequest{
 				Url: repoURL,
 				Events: []*pb.Event{
@@ -1084,7 +1121,7 @@ func TestAffectedCommitsHandler_ResolveTagSpur(t *testing.T) {
 			wantTags:    []string{},
 		},
 		{
-			name: "Negative resolve_tag_spur_max_length returns 400",
+			name: "Negative max length returns 400",
 			req: &pb.AffectedCommitsRequest{
 				Url: repoURL,
 				Events: []*pb.Event{
@@ -1096,7 +1133,7 @@ func TestAffectedCommitsHandler_ResolveTagSpur(t *testing.T) {
 			wantCode: http.StatusBadRequest,
 		},
 		{
-			name: "resolve_tag_spur_max_length too big returns 400",
+			name: "Max length above limit returns 400",
 			req: &pb.AffectedCommitsRequest{
 				Url: repoURL,
 				Events: []*pb.Event{

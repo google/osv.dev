@@ -2367,7 +2367,7 @@ func TestAffected_ResolveTagSpur_SingleCommit(t *testing.T) {
 		expected []SHA1
 	}{
 		{
-			name: "Disabled: tag spur leaf cannot reach main branch (no regression)",
+			name: "Disabled: leaf tag cannot reach main branch",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(tag0)},
 				Fixed:      []string{encodeSHA1(tag2)},
@@ -2376,7 +2376,7 @@ func TestAffected_ResolveTagSpur_SingleCommit(t *testing.T) {
 			expected: []SHA1{tag0},
 		},
 		{
-			name: "Both enabled (default maxLength=1): anchors tag0 to main0 and stops at tag2 and main3",
+			name: "Introduced and fixed (default maxLength=1)",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(tag0)},
 				Fixed:      []string{encodeSHA1(tag2)},
@@ -2385,7 +2385,7 @@ func TestAffected_ResolveTagSpur_SingleCommit(t *testing.T) {
 			expected: []SHA1{main0, tag0, rc0, main1, tag1, main2},
 		},
 		{
-			name: "Both enabled (maxLength=5): branchHead on main3 prevents main3->tag3 from being skipped",
+			name: "branchHead on main3 prevents main3->tag3 from being skipped (maxLength=5)",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(tag0)},
 				Fixed:      []string{encodeSHA1(tag2)},
@@ -2394,7 +2394,7 @@ func TestAffected_ResolveTagSpur_SingleCommit(t *testing.T) {
 			expected: []SHA1{main0, tag0, rc0, main1, tag1, main2},
 		},
 		{
-			name: "Introduced only: walks main branch but tag2 does not block main3",
+			name: "Introduced only: tag2 does not block main3",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(tag0)},
 				Fixed:      []string{encodeSHA1(tag2)},
@@ -2403,7 +2403,7 @@ func TestAffected_ResolveTagSpur_SingleCommit(t *testing.T) {
 			expected: []SHA1{main0, tag0, rc0, main1, tag1, main2, main3, tag3},
 		},
 		{
-			name: "Fixed only with introduced=0: stops at tag2 and main3",
+			name: "Fixed only with introduced=0",
 			se: &SeparatedEvents{
 				Introduced: []string{"0"},
 				Fixed:      []string{encodeSHA1(tag2)},
@@ -2412,7 +2412,7 @@ func TestAffected_ResolveTagSpur_SingleCommit(t *testing.T) {
 			expected: []SHA1{main0, tag0, rc0, main1, tag1, main2},
 		},
 		{
-			name: "LastAffected only with introduced=0: keeps tag2 affected and stops at main3",
+			name: "LastAffected only with introduced=0",
 			se: &SeparatedEvents{
 				Introduced:   []string{"0"},
 				LastAffected: []string{encodeSHA1(tag2)},
@@ -2421,7 +2421,7 @@ func TestAffected_ResolveTagSpur_SingleCommit(t *testing.T) {
 			expected: []SHA1{main0, tag0, rc0, main1, tag1, main2, tag2},
 		},
 		{
-			name: "Introduced and LastAffected enabled: keeps tag2 affected and stops at main3",
+			name: "Introduced and LastAffected enabled",
 			se: &SeparatedEvents{
 				Introduced:   []string{encodeSHA1(tag0)},
 				LastAffected: []string{encodeSHA1(tag2)},
@@ -2430,7 +2430,7 @@ func TestAffected_ResolveTagSpur_SingleCommit(t *testing.T) {
 			expected: []SHA1{main0, tag0, rc0, main1, tag1, main2, tag2},
 		},
 		{
-			name: "Fixed flag alone does not resolve last_affected tag spur",
+			name: "Fixed flag alone does not resolve last_affected spur",
 			se: &SeparatedEvents{
 				Introduced:   []string{encodeSHA1(tag0)},
 				LastAffected: []string{encodeSHA1(tag2)},
@@ -2439,7 +2439,7 @@ func TestAffected_ResolveTagSpur_SingleCommit(t *testing.T) {
 			expected: []SHA1{main0, tag0, rc0, main1, tag1, main2, tag2, main3, tag3},
 		},
 		{
-			name: "Adjacent regression with last_affected (LAST_AFFECTED tag0, INTRODUCED tag1, LAST_AFFECTED tag2)",
+			name: "Adjacent regression spurs with last_affected",
 			se: &SeparatedEvents{
 				Introduced:   []string{"0", encodeSHA1(tag1)},
 				LastAffected: []string{encodeSHA1(tag0), encodeSHA1(tag2)},
@@ -2448,7 +2448,7 @@ func TestAffected_ResolveTagSpur_SingleCommit(t *testing.T) {
 			expected: []SHA1{main0, tag0, rc0, main1, tag1, main2, tag2},
 		},
 		{
-			name: "Same-fork introduced (rc0) and fixed (tag0): keeps main0 and rc0 affected",
+			name: "Same-fork introduced (rc0) and fixed (tag0)",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(rc0)},
 				Fixed:      []string{encodeSHA1(tag0)},
@@ -2457,7 +2457,7 @@ func TestAffected_ResolveTagSpur_SingleCommit(t *testing.T) {
 			expected: []SHA1{main0, rc0},
 		},
 		{
-			name: "Adjacent regression spurs (FIXED tag0, INTRODUCED tag1, FIXED tag2)",
+			name: "Adjacent regression spurs with fixed",
 			se: &SeparatedEvents{
 				Introduced: []string{"0", encodeSHA1(tag1)},
 				Fixed:      []string{encodeSHA1(tag0), encodeSHA1(tag2)},
@@ -2466,7 +2466,7 @@ func TestAffected_ResolveTagSpur_SingleCommit(t *testing.T) {
 			expected: []SHA1{main0, rc0, main1, tag1, main2},
 		},
 		{
-			name: "Adjacent on-branch regression (FIXED tag0, INTRODUCED main1, FIXED tag2)",
+			name: "Adjacent on-branch regression (FIXED tag0, INTRODUCED main1)",
 			se: &SeparatedEvents{
 				Introduced: []string{"0", encodeSHA1(main1)},
 				Fixed:      []string{encodeSHA1(tag0), encodeSHA1(tag2)},
@@ -2475,7 +2475,7 @@ func TestAffected_ResolveTagSpur_SingleCommit(t *testing.T) {
 			expected: []SHA1{main0, rc0, main1, tag1, main2},
 		},
 		{
-			name: "On-branch interior tagged commits (flags disabled)",
+			name: "Interior on-branch tags (flags disabled)",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(main0)},
 				Fixed:      []string{encodeSHA1(main2)},
@@ -2484,7 +2484,7 @@ func TestAffected_ResolveTagSpur_SingleCommit(t *testing.T) {
 			expected: []SHA1{main0, tag0, rc0, main1, tag1},
 		},
 		{
-			name: "On-branch interior tagged commits (flags enabled, unchanged)",
+			name: "Interior on-branch tags (flags enabled, unchanged)",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(main0)},
 				Fixed:      []string{encodeSHA1(main2)},
@@ -2514,11 +2514,11 @@ func TestAffected_ResolveTagSpur_MultiCommit(t *testing.T) {
 	repo := NewRepository("git://test-repo.git")
 
 	// Graph: (Parent -> Child)
-	// main0 -------------------> main1 -------------------> main2 [branchHead]
-	//      \                          \
-	//       -> spur0 -> tag0 [v1.0.0]  -> spur1 -> spur2 [branchHead] -> tag1 [v1.0.1]
-	//           \                          \
-	//            -> rc0a -> rc0 [v1.0.0RC7] -> rc1 [v1.0.1RC1]
+	// main0 ------------------------------> main1 -------------------> main2 [branchHead]
+	//      \                                     \
+	//       -> spur0 -> tag0 [v1.0.0]             -> spur1 -> spur2 [branchHead] -> tag1 [v1.0.1]
+	//           \                                     \
+	//            -> rc0a -> rc0 [v1.0.0RC7]            -> rc1 [v1.0.1RC1]
 
 	main0, main1, main2 := decodeSHA1("b0"), decodeSHA1("b1"), decodeSHA1("b2")
 	spur0, tag0, rc0a, rc0 := decodeSHA1("a0"), decodeSHA1("10"), decodeSHA1("c2"), decodeSHA1("c3")
@@ -2549,7 +2549,7 @@ func TestAffected_ResolveTagSpur_MultiCommit(t *testing.T) {
 		expected []SHA1
 	}{
 		{
-			name: "Default maxLength=1 stops at spur0 (2-commit rc0a->rc0 exceeds limit)",
+			name: "Default maxLength=1 stops at spur0 (rc0a->rc0 exceeds limit)",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(tag0)},
 				Fixed:      []string{encodeSHA1(tag1)},
@@ -2558,7 +2558,7 @@ func TestAffected_ResolveTagSpur_MultiCommit(t *testing.T) {
 			expected: []SHA1{spur0, tag0, rc0a, rc0},
 		},
 		{
-			name: "MaxLength=2: 2-commit spur0->tag0 resolves to main0, 3-commit spur1->spur2->tag1 does not",
+			name: "maxLength=2 resolves 2-commit tag0 but not 3-commit tag1",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(tag0)},
 				Fixed:      []string{encodeSHA1(tag1)},
@@ -2567,7 +2567,7 @@ func TestAffected_ResolveTagSpur_MultiCommit(t *testing.T) {
 			expected: []SHA1{main0, spur0, tag0, rc0a, rc0, main1, spur1, spur2, rc1, main2},
 		},
 		{
-			name: "MaxLength=3: 3-commit spur1->spur2->tag1 resolves to main1 and blocks main2",
+			name: "maxLength=3 resolves 3-commit tag1 and blocks main2",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(tag0)},
 				Fixed:      []string{encodeSHA1(tag1)},
@@ -2576,7 +2576,7 @@ func TestAffected_ResolveTagSpur_MultiCommit(t *testing.T) {
 			expected: []SHA1{main0, spur0, tag0, rc0a, rc0, main1, spur1, spur2, rc1},
 		},
 		{
-			name: "MaxLength=5: skips nested RC chains on both introduced and fixed spurs",
+			name: "maxLength=5 skips nested RC chains on both spurs",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(tag0)},
 				Fixed:      []string{encodeSHA1(tag1)},
@@ -2585,7 +2585,7 @@ func TestAffected_ResolveTagSpur_MultiCommit(t *testing.T) {
 			expected: []SHA1{main0, spur0, tag0, rc0a, rc0, main1, spur1, spur2, rc1},
 		},
 		{
-			name: "Shared patch spur (rc1 -> tag1) stays scoped to spur1 due to branchHead on spur2",
+			name: "Shared patch spur (rc1 -> tag1) stays scoped to spur1",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(rc1)},
 				Fixed:      []string{encodeSHA1(tag1)},
@@ -2594,7 +2594,7 @@ func TestAffected_ResolveTagSpur_MultiCommit(t *testing.T) {
 			expected: []SHA1{spur1, rc1, spur2},
 		},
 		{
-			name: "INTRODUCED == FIXED on the same tag spur returns empty",
+			name: "INTRODUCED == FIXED on same spur returns empty",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(tag0)},
 				Fixed:      []string{encodeSHA1(tag0)},
@@ -2603,7 +2603,7 @@ func TestAffected_ResolveTagSpur_MultiCommit(t *testing.T) {
 			expected: []SHA1{},
 		},
 		{
-			name: "FIXED on fork commit (main0) preserves child INTRODUCED tag spur (tag0)",
+			name: "FIXED on fork (main0) with INTRODUCED on child spur (tag0)",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(tag0)},
 				Fixed:      []string{encodeSHA1(main0)},
@@ -2612,7 +2612,16 @@ func TestAffected_ResolveTagSpur_MultiCommit(t *testing.T) {
 			expected: []SHA1{tag0},
 		},
 		{
-			name: "Multi-commit LAST_AFFECTED (tag1): keeps spur1..tag1 affected and blocks main2",
+			name: "LAST_AFFECTED on fork (main0) with INTRODUCED on child spur (tag0)",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(tag0)},
+				LastAffected: []string{encodeSHA1(main0)},
+			},
+			opts:     AffectedWalkOptions{ResolveTagSpurIntroduced: true, ResolveTagSpurLastAffected: true, ResolveTagSpurMaxLength: 5},
+			expected: []SHA1{tag0},
+		},
+		{
+			name: "Multi-commit LAST_AFFECTED (tag1) keeps spur affected and blocks main2",
 			se: &SeparatedEvents{
 				Introduced:   []string{encodeSHA1(tag0)},
 				LastAffected: []string{encodeSHA1(tag1)},
@@ -2621,7 +2630,7 @@ func TestAffected_ResolveTagSpur_MultiCommit(t *testing.T) {
 			expected: []SHA1{main0, spur0, tag0, rc0a, rc0, main1, spur1, spur2, rc1, tag1},
 		},
 		{
-			name: "INTRODUCED == LAST_AFFECTED on the same tag spur returns only tag0",
+			name: "INTRODUCED == LAST_AFFECTED on same spur returns only tag0",
 			se: &SeparatedEvents{
 				Introduced:   []string{encodeSHA1(tag0)},
 				LastAffected: []string{encodeSHA1(tag0)},
@@ -2630,7 +2639,7 @@ func TestAffected_ResolveTagSpur_MultiCommit(t *testing.T) {
 			expected: []SHA1{tag0},
 		},
 		{
-			name: "FIXED == LAST_AFFECTED on the same tag spur: fixed wins and blocks main1",
+			name: "FIXED == LAST_AFFECTED on same spur: fixed wins",
 			se: &SeparatedEvents{
 				Introduced:   []string{encodeSHA1(main0)},
 				Fixed:        []string{encodeSHA1(tag0)},
@@ -2702,7 +2711,7 @@ func TestAffected_ResolveTagSpur_MultiBranch(t *testing.T) {
 		expected []SHA1
 	}{
 		{
-			name: "Retired branch refs on leaves resolve, rel2 is blocked, upward Parents[1] merge into dev is not blocked",
+			name: "Retired branch refs resolve; rel2 blocked, upward dev merge unblocked",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(tag100)},
 				Fixed:      []string{encodeSHA1(tag101)},
@@ -2710,7 +2719,7 @@ func TestAffected_ResolveTagSpur_MultiBranch(t *testing.T) {
 			expected: []SHA1{rel0, tag100, rel1, spurMerge, dev1, dev2},
 		},
 		{
-			name: "Merge commit on spur follows Parents[0] to rel1 rather than Parents[1] prFix",
+			name: "Spur merge commit follows first parent (rel1) over prFix",
 			se: &SeparatedEvents{
 				Introduced: []string{encodeSHA1(tag101)},
 			},
@@ -2736,6 +2745,90 @@ func TestAffected_ResolveTagSpur_MultiBranch(t *testing.T) {
 
 			if diff := cmp.Diff(tt.expected, got, cmpSHA1Opts...); diff != "" {
 				t.Errorf("TestAffected_ResolveTagSpur_MultiBranch() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAffected_ResolveTagSpur_MergedSpur(t *testing.T) {
+	repo := NewRepository("git://test-repo.git")
+
+	// Graph: (Parent -> Child)
+	//       -> tag100 [v1.0.0]
+	//      /
+	// rel0 ---> rel1 ------------------> rel2 [Parents: rel1, spur1] -> rel3 [branchHead]
+	//             \                     / (Parents[1]: spur1 merged back into rel)
+	//              -> spur1 -----------+---> tag101 [v1.0.1]
+	//                   \ (Parents[1]: spur1 also merged upward into dev)
+	// dev0 -------------> dev1 -> dev2 [branchHead]
+
+	rel0, rel1, rel2, rel3 := decodeSHA1("b0"), decodeSHA1("b1"), decodeSHA1("b2"), decodeSHA1("b3")
+	tag100, spur1, tag101 := decodeSHA1("10"), decodeSHA1("a1"), decodeSHA1("11")
+	dev0, dev1, dev2 := decodeSHA1("d0"), decodeSHA1("d1"), decodeSHA1("d2")
+
+	repo.addEdgeForTest(rel0, rel1)
+	repo.addEdgeForTest(rel1, rel2)
+	repo.addEdgeForTest(rel2, rel3)
+	repo.addEdgeForTest(rel0, tag100)
+	repo.addEdgeForTest(rel1, spur1)
+	repo.addEdgeForTest(spur1, tag101)
+	// Add spur1 -> rel2 after rel1 -> rel2 so rel2 has Parents: [rel1, spur1].
+	repo.addEdgeForTest(spur1, rel2)
+	// Add spur1 -> dev1 after dev0 -> dev1 so dev1 has Parents: [dev0, spur1].
+	repo.addEdgeForTest(dev0, dev1)
+	repo.addEdgeForTest(spur1, dev1)
+	repo.addEdgeForTest(dev1, dev2)
+
+	repo.addTagForTest(tag100, "v1.0.0")
+	repo.addTagForTest(tag101, "v1.0.1")
+	repo.markBranchHeadForTest(rel3)
+	repo.markBranchHeadForTest(dev2)
+
+	tests := []struct {
+		name     string
+		se       *SeparatedEvents
+		opts     AffectedWalkOptions
+		expected []SHA1
+	}{
+		{
+			name: "FIXED climbs past merged spur1 to rel1 and blocks rel2..rel3",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(tag100)},
+				Fixed:      []string{encodeSHA1(tag101)},
+			},
+			opts:     AffectedWalkOptions{ResolveTagSpurIntroduced: true, ResolveTagSpurFixed: true, ResolveTagSpurMaxLength: 5},
+			expected: []SHA1{rel0, tag100, rel1, spur1, dev1, dev2},
+		},
+		{
+			name: "LAST_AFFECTED climbs past merged spur1 to rel1, keeping tag101",
+			se: &SeparatedEvents{
+				Introduced:   []string{encodeSHA1(tag100)},
+				LastAffected: []string{encodeSHA1(tag101)},
+			},
+			opts:     AffectedWalkOptions{ResolveTagSpurIntroduced: true, ResolveTagSpurLastAffected: true, ResolveTagSpurMaxLength: 5},
+			expected: []SHA1{rel0, tag100, rel1, spur1, tag101, dev1, dev2},
+		},
+		{
+			name: "INTRODUCED climbs past merged spur1 to rel1",
+			se: &SeparatedEvents{
+				Introduced: []string{encodeSHA1(tag101)},
+			},
+			opts:     AffectedWalkOptions{ResolveTagSpurIntroduced: true, ResolveTagSpurMaxLength: 5},
+			expected: []SHA1{rel1, spur1, tag101, rel2, rel3, dev1, dev2},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotCommits, _ := repo.Affected(t.Context(), tt.se, tt.opts)
+
+			var got []SHA1
+			for _, c := range gotCommits {
+				got = append(got, c.Hash)
+			}
+
+			if diff := cmp.Diff(tt.expected, got, cmpSHA1Opts...); diff != "" {
+				t.Errorf("TestAffected_ResolveTagSpur_MergedSpur() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

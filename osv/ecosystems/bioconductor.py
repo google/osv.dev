@@ -36,10 +36,14 @@ class Bioconductor(EnumerableEcosystem, SemverLike):
     get latest Bioconductor versions
     """
     response = requests.get(self._API_BIOC_VERSIONS_URL, timeout=60)
-    data = response.json()
     if response.status_code == 404:
       raise RuntimeError('Failed to get Bioconductor versions')
 
+    if response.status_code != 200:
+      raise RuntimeError(
+          f'Failed to get Bioconductor versions with: {response.text}')
+
+    data = response.json()
     return [bioc['bioc_version'] for bioc in data['bioc_versions']]
 
   def _enumerate_versions(self,

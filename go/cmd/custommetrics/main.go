@@ -84,6 +84,7 @@ func run() error {
 		JobData:        osvdatastore.NewJobDataStore(dsClient),
 		ImportFindings: osvdatastore.NewImportFindingsStore(dsClient, gcsClient, "", ""),
 		GCS:            clients.NewGCSClient(gcsClient, vulnBucket),
+		GCSProvider:    clients.NewGCSStorageProvider(gcsClient),
 	})
 
 	clusterLocation := getClusterLocation(ctx)

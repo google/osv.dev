@@ -63,6 +63,17 @@ message AffectedCommitsRequest {
     bool force_update = 6;
     bool consider_all_branches = 7;
     string ref_id = 8; // Optional reference ID for tracing
+    // Optional pre-walk tag spur resolution for repositories that tag releases on dead-end
+    // off-branch commits (e.g. php-src). Enabling any of these flags forces consider_all_branches = true.
+
+    // For an INTRODUCED release tag spur, additionally mark its parent-branch fork commit as INTRODUCED.
+    bool resolve_tag_spur_introduced = 9;
+    // For a FIXED release tag spur, additionally mark the continuation after its parent-branch fork commit as FIXED.
+    bool resolve_tag_spur_fixed = 10;
+    // For a LAST_AFFECTED release tag spur, additionally mark the continuation after its parent-branch fork commit as FIXED.
+    bool resolve_tag_spur_last_affected = 11;
+    // Max length (in commits) of a release tag spur in this repo. Defaults to 1; must be <= 100.
+    int32 resolve_tag_spur_max_length = 12;
 }
 
 message FileChange {

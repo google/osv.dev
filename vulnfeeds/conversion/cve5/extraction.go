@@ -22,6 +22,20 @@ func GetVersionExtractor(cna string) VersionExtractor {
 		return &LinuxVersionExtractor{
 			Strategies: strategies.Linux(),
 		}
+	case "wordfence":
+		return &WordPressExtractor{
+			Strategies: strategies.Wordfence(),
+		}
+	case "patchstack":
+		return &WordPressExtractor{
+			Handler:    &PatchstackHandler{},
+			Strategies: strategies.Patchstack(),
+		}
+	case "wpscan":
+		return &WordPressExtractor{
+			Handler:    &WPScanHandler{},
+			Strategies: strategies.WPScan(),
+		}
 	case "github_m", "github":
 		return &DefaultVersionExtractor{
 			Strategies: strategies.GitHub(),

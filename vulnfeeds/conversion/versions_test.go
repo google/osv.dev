@@ -907,6 +907,7 @@ func TestExtractVersionInfoRangeOrder(t *testing.T) {
 	cveWith := func(match models.CPEMatch) models.NVDCVE {
 		match.Vulnerable = true
 		match.Criteria = "cpe:2.3:a:example:example:*:*:*:*:*:*:*:*"
+
 		return models.NVDCVE{Configurations: []models.Config{{Nodes: []models.Node{{Operator: "OR", CPEMatch: []models.CPEMatch{match}}}}}}
 	}
 	validVersions := []string{"0.9", "1.0a1", "1.0b4", "1.0", "1.0.1", "1.1"}

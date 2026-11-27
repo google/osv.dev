@@ -185,23 +185,140 @@ func loadTestData2(cveName string) models.Vulnerability {
 }
 
 func TestExtractAliases(t *testing.T) {
-	// TODO: convert to table based test
-	cveItem := loadTestData2("CVE-2022-36037")
-	aliases, related := ExtractReferencedVulns(cveItem.CVE.ID, cveItem.CVE.ID, cveItem.CVE.References)
-	if !utility.SliceEqual(aliases, []string{"GHSA-3f89-869f-5w76"}) || !utility.SliceEqual(related, []string{}) {
-		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{"GHSA-3f89-869f-5w76"})
+	cve202236037 := loadTestData2("CVE-2022-36037")
+	cve202236749 := loadTestData2("CVE-2022-36749")
+	cve202447177 := loadTestData2("CVE-2024-47177")
+
+	tests := []struct {
+		name            string
+		id              models.CVEID
+		cveID           models.CVEID
+		refs            []models.Reference
+		expectedAliases []string
+		expectedRelated []string
+	}{
+		{
+			name:            "CVE-2022-36037 single GHSA alias",
+			id:              cve202236037.CVE.ID,
+			cveID:           cve202236037.CVE.ID,
+			refs:            cve202236037.CVE.References,
+			expectedAliases: []string{"GHSA-3f89-869f-5w76"},
+			expectedRelated: []string{},
+		},
+		{
+			name:            "CVE-2022-36749 no aliases",
+			id:              cve202236749.CVE.ID,
+			cveID:           cve202236749.CVE.ID,
+			refs:            cve202236749.CVE.References,
+			expectedAliases: []string{},
+			expectedRelated: []string{},
+		},
+		{
+			name:            "CVE-2024-47177 multiple GHSAs go to related",
+			id:              cve202447177.CVE.ID,
+			cveID:           cve202447177.CVE.ID,
+			refs:            cve202447177.CVE.References,
+			expectedAliases: []string{},
+			expectedRelated: []string{"GHSA-7xfx-47qg-grp6", "GHSA-p9rh-jxmq-gq47", "GHSA-rj88-6mr5-rcw8", "GHSA-w63j-6g73-wmg5"},
+		},
+		{
+			name:  "CVE-2020-7647 percent-encoded trailing commas rejected",
+			id:    "CVE-2020-7647",
+			cveID: "CVE-2020-7647",
+			refs: []models.Reference{
+				{URL: "https://snyk.io/vuln/SNYK-JAVA-IOJOOBY-568806%2C"},
+				{URL: "https://snyk.io/vuln/SNYK-JAVA-ORGJOOBY-568807%2C"},
+				{URL: "https://github.com/jooby-project/jooby/commit/34f526028e6cd0652125baa33936ffb6a8a4a009"},
+			},
+			expectedAliases: []string{},
+			expectedRelated: []string{},
+		},
+		{
+			name:  "Single Snyk URL with literal trailing comma rejected",
+			id:    "CVE-2020-7647",
+			cveID: "CVE-2020-7647",
+			refs: []models.Reference{
+				{URL: "https://snyk.io/vuln/SNYK-JAVA-IOJOOBY-568806,"},
+			},
+			expectedAliases: []string{},
+			expectedRelated: []string{},
+		},
+		{
+			name:  "Valid Snyk URL extracted as alias",
+			id:    "CVE-2020-7647",
+			cveID: "CVE-2020-7647",
+			refs: []models.Reference{
+				{URL: "https://snyk.io/vuln/SNYK-JAVA-IOJOOBY-568806"},
+			},
+			expectedAliases: []string{"SNYK-JAVA-IOJOOBY-568806"},
+			expectedRelated: []string{},
+		},
+		{
+			name:  "Mix of valid and malformed Snyk URLs keeps only valid ID",
+			id:    "CVE-2020-7647",
+			cveID: "CVE-2020-7647",
+			refs: []models.Reference{
+				{URL: "https://snyk.io/vuln/SNYK-JAVA-IOJOOBY-568806"},
+				{URL: "https://snyk.io/vuln/SNYK-JAVA-ORGJOOBY-568807%2C"},
+			},
+			expectedAliases: []string{"SNYK-JAVA-IOJOOBY-568806"},
+			expectedRelated: []string{},
+		},
+		{
+			name:  "Invalid characters in GHSA and Snyk URLs rejected",
+			id:    "CVE-2025-0001",
+			cveID: "CVE-2025-0001",
+			refs: []models.Reference{
+				{URL: "https://github.com/advisories/GHSA-fr26-qjc8-mvjx,"},
+				{URL: "https://github.com/advisories/GHSA-fr26-qjc8-mvjx%2C"},
+				{URL: "https://github.com/org/repo/security/advisories/GHSA-624f-cqvr-3qw4%20"},
+				{URL: "https://github.com/advisories/GHSA-fr26-qjc8-mvjx)"},
+				{URL: "https://snyk.io/vuln/SNYK-JAVA-IOJOOBY-568806;"},
+				{URL: "https://snyk.io/vuln/SNYK-JAVA-IOJOOBY-568806%0A"},
+				{URL: "https://snyk.io/vuln/SNYK-JAVA-IOJOOBY-568806%252C"},
+				{URL: "https://snyk.io/vuln/SNYK-JAVA-IOJOOBY-568806é"},
+			},
+			expectedAliases: []string{},
+			expectedRelated: []string{},
+		},
+		{
+			name:  "All permitted OSV ID characters accepted",
+			id:    "CVE-2025-0002",
+			cveID: "CVE-2025-0002",
+			refs: []models.Reference{
+				{URL: "https://snyk.io/vuln/SNYK-JAVA-io.jooby_1:2-568806"},
+			},
+			expectedAliases: []string{"SNYK-JAVA-io.jooby_1:2-568806"},
+			expectedRelated: []string{},
+		},
+		{
+			name:            "Distinct valid cveID added to aliases",
+			id:              "PYSEC-2025-1",
+			cveID:           "CVE-2025-0003",
+			refs:            nil,
+			expectedAliases: []string{"CVE-2025-0003"},
+			expectedRelated: []string{},
+		},
+		{
+			name:            "Distinct invalid cveID rejected from aliases",
+			id:              "PYSEC-2025-1",
+			cveID:           "CVE-2025-0003,",
+			refs:            nil,
+			expectedAliases: []string{},
+			expectedRelated: []string{},
+		},
 	}
-	cveItem = loadTestData2("CVE-2022-36749")
-	aliases, related = ExtractReferencedVulns(cveItem.CVE.ID, cveItem.CVE.ID, cveItem.CVE.References)
-	if !utility.SliceEqual(aliases, []string{}) || !utility.SliceEqual(related, []string{}) {
-		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{"GHSA-3f89-869f-5w76"})
-	}
-	cveItem = loadTestData2("CVE-2024-47177")
-	aliases, related = ExtractReferencedVulns(cveItem.CVE.ID, cveItem.CVE.ID, cveItem.CVE.References)
-	expectedRelated := []string{"GHSA-7xfx-47qg-grp6", "GHSA-p9rh-jxmq-gq47", "GHSA-rj88-6mr5-rcw8", "GHSA-w63j-6g73-wmg5"}
-	if !utility.SliceEqual(aliases, []string{}) || !utility.SliceEqualUnordered(related, expectedRelated) {
-		t.Errorf("Aliases not extracted, got %v, but expected %v.", aliases, []string{})
-		t.Errorf("Related not extracted, got %v, but expected %v.", related, expectedRelated)
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			aliases, related := ExtractReferencedVulns(tc.id, tc.cveID, tc.refs)
+			if !utility.SliceEqualUnordered(aliases, tc.expectedAliases) {
+				t.Errorf("Aliases mismatch, got %v, want %v", aliases, tc.expectedAliases)
+			}
+			if !utility.SliceEqualUnordered(related, tc.expectedRelated) {
+				t.Errorf("Related mismatch, got %v, want %v", related, tc.expectedRelated)
+			}
+		})
 	}
 }
 

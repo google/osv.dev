@@ -9,6 +9,7 @@ import (
 	"io"
 	"io/fs"
 	"log/slog"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -554,6 +555,8 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 	seenEcosystemPackages := make(map[packageKey]bool)
 
 	addNonRepoRanged := func(affectedList []*osvschema.Affected) {
+		sourceEcosystemPackages := make(map[packageKey]bool)
+		sourcePackageNames := make(map[string]bool)
 		for _, aff := range affectedList {
 			if aff.GetPackage() == nil {
 				continue
@@ -577,9 +580,9 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 			if seenEcosystemPackages[key] {
 				continue
 			}
-			seenEcosystemPackages[key] = true
+			sourceEcosystemPackages[key] = true
 			if key.name != "" {
-				seenPackageNames[key.name] = true
+				sourcePackageNames[key.name] = true
 			}
 
 			combinedAffected = append(combinedAffected, &osvschema.Affected{
@@ -590,6 +593,8 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 				DatabaseSpecific:  aff.GetDatabaseSpecific(),
 			})
 		}
+		maps.Copy(seenEcosystemPackages, sourceEcosystemPackages)
+		maps.Copy(seenPackageNames, sourcePackageNames)
 	}
 
 	addNonRepoRanged(cve5Affected)
@@ -627,7 +632,7 @@ func pickAffectedInformation(cve5Affected []*osvschema.Affected, nvdAffected []*
 	addRangelessPackages(nvdAffected)
 
 	// Sort the combinedAffected array: first entries with ranges, then by package name and ecosystem.
-	slices.SortFunc(combinedAffected, func(a, b *osvschema.Affected) int {
+	slices.SortStableFunc(combinedAffected, func(a, b *osvschema.Affected) int {
 		hasRangeA := len(a.GetRanges()) > 0
 		hasRangeB := len(b.GetRanges()) > 0
 		if hasRangeA != hasRangeB {

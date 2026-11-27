@@ -41,19 +41,19 @@ type wpURLMatcher struct {
 }
 
 var (
-	wpPluginOrgRegex = regexp.MustCompile(`wordpress\.org/plugins/([^/?#]+)`)
-	wpThemeOrgRegex  = regexp.MustCompile(`wordpress\.org/themes/([^/?#]+)`)
+	wpPluginOrgRegex = regexp.MustCompile(`(?i)(?:^|//)(?:(?:www|[a-z]{2,3}(?:-[a-z]{2,3})?)\.)?wordpress\.org/plugins/([^/?#]+)`)
+	wpThemeOrgRegex  = regexp.MustCompile(`(?i)(?:^|//)(?:(?:www|[a-z]{2,3}(?:-[a-z]{2,3})?)\.)?wordpress\.org/themes/([^/?#]+)`)
 
 	// wpURLMatchers defines the ordered priority table for extracting WordPress slugs from reference URLs.
 	wpURLMatchers = []wpURLMatcher{
 		{regexp.MustCompile(`plugins\.trac\.wordpress\.org/browser/([^/?#]+)`), wpEcosystemPlugin, tierTrac},
 		{regexp.MustCompile(`plugins\.trac\.wordpress\.org/log/([^/?#]+)`), wpEcosystemPlugin, tierTrac},
 		{regexp.MustCompile(`plugins\.trac\.wordpress\.org/changeset/\d+/([^/?#]+)`), wpEcosystemPlugin, tierTrac},
-		{regexp.MustCompile(`plugins\.trac\.wordpress\.org/changeset\?[^#]*(?:%40|@)([^/?#&%]+)`), wpEcosystemPlugin, tierTrac},
+		{regexp.MustCompile(`plugins\.trac\.wordpress\.org/changeset\?[^#]*(?:old|new)=\d*(?:%40|@)([^/?#&%]+)`), wpEcosystemPlugin, tierTrac},
 		{regexp.MustCompile(`themes\.trac\.wordpress\.org/browser/([^/?#]+)`), wpEcosystemTheme, tierTrac},
 		{regexp.MustCompile(`themes\.trac\.wordpress\.org/log/([^/?#]+)`), wpEcosystemTheme, tierTrac},
 		{regexp.MustCompile(`themes\.trac\.wordpress\.org/changeset/\d+/([^/?#]+)`), wpEcosystemTheme, tierTrac},
-		{regexp.MustCompile(`themes\.trac\.wordpress\.org/changeset\?[^#]*(?:%40|@)([^/?#&%]+)`), wpEcosystemTheme, tierTrac},
+		{regexp.MustCompile(`themes\.trac\.wordpress\.org/changeset\?[^#]*(?:old|new)=\d*(?:%40|@)([^/?#&%]+)`), wpEcosystemTheme, tierTrac},
 		{regexp.MustCompile(`plugins\.svn\.wordpress\.org/([^/?#]+)`), wpEcosystemPlugin, tierSVN},
 		{regexp.MustCompile(`themes\.svn\.wordpress\.org/([^/?#]+)`), wpEcosystemTheme, tierSVN},
 		{regexp.MustCompile(`(?i)wordfence\.com/threat-intel/vulnerabilities/wordpress-plugins/([^/?#]+)`), wpEcosystemPlugin, tierWordfence},
@@ -441,9 +441,10 @@ func (w *WordPressExtractor) extractWPBlockRanges(cveAff models.Affected, metric
 			remainingVersions = append(remainingVersions, vers)
 			continue
 		}
-		isWildcardAll := (vers.Version == "*" && vers.LessThan == "" && vers.LessThanOrEqual == "" && len(vers.Changes) == 0) ||
-			vers.LessThanOrEqual == "*" ||
-			vers.LessThan == "*"
+		isWildcardAll := len(vers.Changes) == 0 &&
+			((vers.Version == "*" && vers.LessThan == "" && vers.LessThanOrEqual == "") ||
+				vers.LessThanOrEqual == "*" ||
+				vers.LessThan == "*")
 
 		if isWildcardAll {
 			intro := "0"

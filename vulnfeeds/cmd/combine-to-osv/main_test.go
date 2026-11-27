@@ -1176,6 +1176,94 @@ func TestPickAffectedInformation(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Preserve multiple non-repo Affected blocks for the same (ecosystem, name) within CVE5 while still shadowing NVD",
+			cve5Affected: []*osvschema.Affected{
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Plugin",
+						Name:      "multi-branch-plugin",
+					},
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.2.0"},
+							},
+						},
+					},
+					EcosystemSpecific: mustParseDBSpecific(t, `{"branch": "1.x"}`),
+				},
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Plugin",
+						Name:      "multi-branch-plugin",
+					},
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "2.0.0"},
+								{Fixed: "2.1.0"},
+							},
+						},
+					},
+					EcosystemSpecific: mustParseDBSpecific(t, `{"branch": "2.x"}`),
+				},
+			},
+			nvdAffected: []*osvschema.Affected{
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Plugin",
+						Name:      "multi-branch-plugin",
+					},
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "0"},
+								{Fixed: "9.9.9"},
+							},
+						},
+					},
+				},
+			},
+			wantAffected: []*osvschema.Affected{
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Plugin",
+						Name:      "multi-branch-plugin",
+					},
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "1.0.0"},
+								{Fixed: "1.2.0"},
+							},
+						},
+					},
+					EcosystemSpecific: mustParseDBSpecific(t, `{"branch": "1.x"}`),
+				},
+				{
+					Package: &osvschema.Package{
+						Ecosystem: "WordPress:Plugin",
+						Name:      "multi-branch-plugin",
+					},
+					Ranges: []*osvschema.Range{
+						{
+							Type: osvschema.Range_ECOSYSTEM,
+							Events: []*osvschema.Event{
+								{Introduced: "2.0.0"},
+								{Fixed: "2.1.0"},
+							},
+						},
+					},
+					EcosystemSpecific: mustParseDBSpecific(t, `{"branch": "2.x"}`),
+				},
+			},
+		},
 	}
 
 	// Sorter for comparing slices of Affected, ignoring order.

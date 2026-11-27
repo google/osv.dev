@@ -1654,4 +1654,86 @@ func TestWordPressExtractor(t *testing.T) {
 			t.Errorf("CVE-2021-25118 mismatch (-want +got):\n%s", diff)
 		}
 	})
+
+	t.Run("Wildcard upper bound with unaffected change prefers fix version over open-ended range", func(t *testing.T) {
+		t.Parallel()
+		cve := models.CVE5{
+			Metadata: models.CVE5Metadata{CVEID: "CVE-2026-9001", AssignerShortName: "Wordfence"},
+		}
+		cve.Containers.CNA.Affected = []models.Affected{
+			{
+				Product: "Sample Plugin",
+				Versions: []models.Versions{
+					{
+						Status:          "affected",
+						Version:         "0",
+						LessThanOrEqual: "*",
+						Changes:         []models.Change{{At: "2.0.0", Status: "unaffected"}},
+					},
+				},
+			},
+		}
+		v := vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				Id:         "CVE-2026-9001",
+				References: vulns.ClassifyReferences([]models.Reference{{URL: "https://wordpress.org/plugins/sample-plugin/"}}),
+			},
+		}
+		GetVersionExtractor("Wordfence").ExtractVersions(cve, &v, &models.ConversionMetrics{}, nil, &git.InMemoryRepoTagsCache{}, nil)
+
+		want := []*osvschema.Affected{{
+			Package: &osvschema.Package{Ecosystem: "WordPress:Plugin", Name: "sample-plugin"},
+			Ranges: []*osvschema.Range{{
+				Type:   osvschema.Range_ECOSYSTEM,
+				Events: []*osvschema.Event{{Introduced: "0"}, {Fixed: "2.0.0"}},
+			}},
+		}}
+		if diff := cmp.Diff(want, v.Affected, protocmp.Transform()); diff != "" {
+			t.Errorf("Affected mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("Host-anchored wordpress.org regexes reject developer docs, accept locale subdomains, and anchor Trac changeset params", func(t *testing.T) {
+		t.Parallel()
+		// 1. developer.wordpress.org/plugins/security/... must NOT be extracted as plugin slug "security".
+		vDev := &vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				References: vulns.ClassifyReferences([]models.Reference{
+					{URL: "https://developer.wordpress.org/plugins/security/nonces/"},
+					{URL: "https://developer.wordpress.org/themes/basics/"},
+				}),
+			},
+		}
+		if got := extractWordPressPackages(models.CVE5{}, vDev); len(got) != 0 {
+			t.Errorf("expected developer.wordpress.org doc links to be ignored, got %+v", got)
+		}
+
+		// 2. Localized wordpress.org subdomains (e.g. en-gb., it.) must still extract valid slugs.
+		vLocale := &vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				References: vulns.ClassifyReferences([]models.Reference{
+					{URL: "https://en-gb.wordpress.org/plugins/custom-field-suite/"},
+					{URL: "https://it.wordpress.org/themes/meris/"},
+				}),
+			},
+		}
+		gotLocale := extractWordPressPackages(models.CVE5{}, vLocale)
+		if len(gotLocale) != 2 || gotLocale[0].slug != "custom-field-suite" || gotLocale[0].ecosystem != wpEcosystemPlugin || gotLocale[1].slug != "meris" || gotLocale[1].ecosystem != wpEcosystemTheme {
+			t.Errorf("unexpected localized wordpress.org targets: %+v", gotLocale)
+		}
+
+		// 3. Trac changeset query params with a trailing @ email must not capture the email domain.
+		vTrac := &vulns.Vulnerability{
+			Vulnerability: &osvschema.Vulnerability{
+				References: vulns.ClassifyReferences([]models.Reference{
+					{URL: "https://plugins.trac.wordpress.org/changeset?new=3316262%40business-reviews-wp%2Ftrunk&sfp_email=user@example.com"},
+					{URL: "https://themes.trac.wordpress.org/changeset?old=196757%40amela&sfp_email=user@example.com"},
+				}),
+			},
+		}
+		gotTrac := extractWordPressPackages(models.CVE5{}, vTrac)
+		if len(gotTrac) != 2 || gotTrac[0].slug != "business-reviews-wp" || gotTrac[0].ecosystem != wpEcosystemPlugin || gotTrac[1].slug != "amela" || gotTrac[1].ecosystem != wpEcosystemTheme {
+			t.Errorf("unexpected Trac changeset targets with trailing email param: %+v", gotTrac)
+		}
+	})
 }

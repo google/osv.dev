@@ -28,6 +28,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -626,12 +627,26 @@ func ClassifyReferenceLink(link string, tag string) osvschema.Reference_Type {
 	return osvschema.Reference_WEB
 }
 
+// validIDRegex matches identifiers containing only characters permitted by the OSV schema.
+// See https://ossf.github.io/osv-schema/#character-set-constraints.
+var validIDRegex = regexp.MustCompile(`^[a-zA-Z0-9:_.-]+$`)
+
+// isValidID reports whether id uses only characters permitted by the OSV schema
+// (^[a-zA-Z0-9:_.-]+$) and is not a relative path segment ("." or "..").
+func isValidID(id string) bool {
+	if id == "." || id == ".." {
+		return false
+	}
+
+	return validIDRegex.MatchString(id)
+}
+
 // ExtractReferencedVulns extracts other vulnerability IDs from a CVE's references
 // to place them into the aliases and related fields.
 func ExtractReferencedVulns(id models.CVEID, cveID models.CVEID, references []models.Reference) ([]string, []string) {
 	var aliases []string
 	var related []string
-	if id != cveID {
+	if id != cveID && isValidID(string(cveID)) {
 		aliases = append(aliases, string(cveID))
 	}
 
@@ -650,7 +665,7 @@ func ExtractReferencedVulns(id models.CVEID, cveID models.CVEID, references []mo
 					if pathParts[len(pathParts)-2] == "advisories" {
 						a := pathParts[len(pathParts)-1]
 
-						if string(id) != a && strings.HasPrefix(a, "GHSA-") {
+						if string(id) != a && strings.HasPrefix(a, "GHSA-") && isValidID(a) {
 							GHSAs = append(GHSAs, a)
 						}
 					}
@@ -660,7 +675,7 @@ func ExtractReferencedVulns(id models.CVEID, cveID models.CVEID, references []mo
 					//Example: https://snyk.io/vuln/SNYK-PYTHON-TRYTOND-1730329
 					if pathParts[1] == "vuln" {
 						a := pathParts[len(pathParts)-1]
-						if string(id) != a && strings.HasPrefix(a, "SNYK-") {
+						if string(id) != a && strings.HasPrefix(a, "SNYK-") && isValidID(a) {
 							SNYKs = append(SNYKs, a)
 						}
 					}

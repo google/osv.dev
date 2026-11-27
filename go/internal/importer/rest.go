@@ -15,6 +15,11 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+// restImportLookbackWindow overlaps incremental REST index scans with the previous
+// LastUpdated watermark so advisories published out of order or whose individual
+// record endpoint briefly lagged behind the index are still picked up.
+const restImportLookbackWindow = 12 * time.Hour
+
 type restSourceRecord struct {
 	cl      *http.Client
 	urlBase string
@@ -56,8 +61,10 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 	compiledIgnorePatterns := compileIgnorePatterns(sourceRepo)
 	hasUpdateTime := false
 	var lastUpdated time.Time
+	var cutoff time.Time
 	if !sourceRepo.REST.IgnoreLastImportTime && sourceRepo.REST.LastUpdated != nil {
 		lastUpdated = *sourceRepo.REST.LastUpdated
+		cutoff = lastUpdated.Add(-restImportLookbackWindow)
 		hasUpdateTime = true
 	}
 	timeOfRun := time.Now()
@@ -139,10 +146,15 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 		if mod.After(maxModified) {
 			maxModified = mod
 		}
-		if hasUpdateTime && (mod.Before(lastUpdated) || mod.Equal(lastUpdated)) {
+		if hasUpdateTime && !mod.After(cutoff) {
 			return true
 		}
 		if shouldIgnore(id.String(), sourceRepo.IDPrefixes, compiledIgnorePatterns) {
+			return true
+		}
+		if !isValidID(id.String()) {
+			logger.ErrorContext(ctx, "Invalid vulnerability id", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()))
+
 			return true
 		}
 		path := id.String() + sourceRepo.Extension
@@ -163,6 +175,9 @@ func handleImportREST(ctx context.Context, ch chan<- WorkItem, config Config, so
 			},
 			SourceRepository:       sourceRepo.Name,
 			SourcePath:             path,
+			IDPrefixes:             sourceRepo.IDPrefixes,
+			KnownID:                id.String(),
+			KnownModified:          mod,
 			CompareAgainstDatabase: hasUpdateTime,
 			Format:                 RecordFormatJSON,
 			KeyPath:                sourceRepo.KeyPath,
@@ -440,6 +455,11 @@ func handleReconcileREST(ctx context.Context, ch chan<- WorkItem, config Config,
 			return true
 		}
 		if shouldIgnore(id.String(), sourceRepo.IDPrefixes, compiledIgnorePatterns) {
+			return true
+		}
+		if !isValidID(id.String()) {
+			logger.ErrorContext(ctx, "Invalid vulnerability id in reconcile", slog.String("source", sourceRepo.Name), slog.String("url", sourceRepo.REST.URL), slog.String("id", id.String()))
+
 			return true
 		}
 

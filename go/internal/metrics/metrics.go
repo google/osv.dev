@@ -18,16 +18,15 @@ var (
 		[]string{"status", "action", "work_pool"},
 	)
 
-	// WorkerPublishedToAvailableSeconds tracks the lag between publication and availability.
-	WorkerPublishedToAvailableSeconds = promauto.NewHistogramVec(
+	// WorkerImporterToAvailableSeconds tracks the end-to-end pipeline latency from importer pickup to availability.
+	WorkerImporterToAvailableSeconds = promauto.NewHistogramVec(
 		prometheus.HistogramOpts{
-			Name: "osv_worker_published_to_available_seconds",
-			Help: "Lag between publication and availability in seconds.",
-			// 10s to 7d, with fine resolution around the 2-hour (7200s) E2E freshness SLO.
+			Name: "osv_worker_importer_to_available_seconds",
+			Help: "End-to-end pipeline latency in seconds from importer pickup (req_timestamp) to worker completion.",
+			// 1s to 24h, covering fast sub-10s ingestion through multi-hour queue backlogs around the 2-hour (7200s) KPI.
 			Buckets: []float64{
-				10, 30, 60, 180, 300, 600, 1200, 1800, 2700,
-				3600, 5400, 7200, 10800, 14400, 21600, 43200,
-				86400, 172800, 604800,
+				1, 2, 5, 10, 30, 60, 180, 300, 600, 1200, 1800, 2700,
+				3600, 5400, 7200, 10800, 14400, 21600, 43200, 86400,
 			},
 		},
 		[]string{"source"},
@@ -293,12 +292,15 @@ func RecordWorkerFailedTask(errType WorkerErrorType, recoverable bool) {
 	WorkerFailedTasksTotal.WithLabelValues(string(errType), recStr).Inc()
 }
 
-// RecordPublishedToAvailableLag records the lag between publication and availability.
-func RecordPublishedToAvailableLag(source string, lag time.Duration) {
+// RecordImporterToAvailableLag records the end-to-end pipeline latency from importer pickup to availability.
+func RecordImporterToAvailableLag(source string, lag time.Duration) {
 	if source == "" {
 		source = "unknown"
 	}
-	WorkerPublishedToAvailableSeconds.WithLabelValues(source).Observe(lag.Seconds())
+	if lag < 0 {
+		lag = 0
+	}
+	WorkerImporterToAvailableSeconds.WithLabelValues(source).Observe(lag.Seconds())
 }
 
 // RecordSourceRecordDiscovered increments the discovered record counter for an upstream source.

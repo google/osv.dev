@@ -83,7 +83,7 @@ func (c ConnConfig) ConnString() string {
 //   - POSTGRES_HOST (default: "127.0.0.1")
 //   - POSTGRES_PORT (default: 5432)
 //   - POSTGRES_USER (default: "postgres")
-//   - POSTGRES_PASSWORD (optional, e.g. omitted when using cloud-sql-proxy IAM auth)
+//   - POSTGRES_PASSWORD (optional; e.g. omitted for unauthenticated local DB or passed a token from `gcloud sql generate-login-token` for Cloud SQL IAM auth)
 //   - POSTGRES_DB (default: "osv")
 //   - POSTGRES_SSLMODE (default: "disable")
 func ConnConfigFromEnv() (ConnConfig, error) {

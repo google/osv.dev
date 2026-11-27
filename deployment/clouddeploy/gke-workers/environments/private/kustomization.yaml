@@ -3,10 +3,12 @@ kind: Kustomization
 
 resources:
 - ../../base/core
+- ../../base/ksm
 
 patches:
 - path: backup.yaml
 - path: exporter.yaml
+- path: exporter-deleter.yaml
 - path: gitter.yaml
 - path: importer.yaml
 - path: importer-deleter.yaml
@@ -15,3 +17,4 @@ patches:
 - path: recoverer.yaml
 - path: workers.yaml
 - path: scaler.yaml
+- path: pg-tunnel.yaml

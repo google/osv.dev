@@ -32,6 +32,10 @@ resource "google_container_cluster" "workers" {
       enabled = true
     }
   }
+
+  workload_identity_config {
+    workload_pool = "${var.project_id}.svc.id.goog"
+  }
 }
 
 resource "google_container_node_pool" "workers_pool" {
@@ -46,6 +50,20 @@ resource "google_container_node_pool" "workers_pool" {
     ]
   }
 
+  depends_on = [
+    google_project_iam_member.node_roles,
+    google_service_account_iam_member.node_deployer_act_as,
+    google_service_account_iam_member.workload_identity_user,
+    google_project_iam_member.workload_datastore_user,
+    google_project_iam_member.workload_log_writer,
+    google_pubsub_subscription_iam_member.worker_oss_fuzz_tasks_subscriber,
+    google_pubsub_topic_iam_member.importer_tasks_publisher,
+    google_storage_bucket_iam_member.importer_public_import_logs_object_user,
+    google_storage_bucket_iam_member.importer_oss_fuzz_export_object_user,
+    google_pubsub_topic_iam_member.process_results_tasks_publisher,
+    google_project_iam_member.metrics_adapter_monitoring_viewer,
+  ]
+
   autoscaling {
     min_node_count  = 1
     max_node_count  = 100
@@ -53,12 +71,17 @@ resource "google_container_node_pool" "workers_pool" {
   }
 
   node_config {
+    service_account = google_service_account.node_sa.email
     machine_type    = "n2-highmem-2"
     disk_type       = "pd-ssd"
     disk_size_gb    = 64
     local_ssd_count = 1
 
     oauth_scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+
+    workload_metadata_config {
+      mode = "GKE_METADATA"
+    }
   }
 }
 

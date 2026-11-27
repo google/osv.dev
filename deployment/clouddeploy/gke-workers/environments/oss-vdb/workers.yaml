@@ -14,3 +14,5 @@ spec:
             value: osv-vulnerabilities
           - name: NOTIFY_PYPI
             value: "true"
+          - name: POSTGRES_HOST
+            value: "10.25.1.3"

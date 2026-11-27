@@ -20,12 +20,6 @@ variable "_api_descriptor_file" {
   default   = "api/api_descriptor.pb"
 }
 
-variable "gcs_log_dir" {
-  type        = string
-  description = "GCS directory to store cloud build logs."
-  default     = ""
-}
-
 variable "postgres_primary_instance_name" {
   type        = string
   description = "Name of the primary Cloud SQL PostgreSQL instance to replicate from and create the read-only user on."
@@ -53,4 +47,15 @@ variable "postgres_read_pool_node_count" {
   type        = number
   description = "Number of nodes in the Cloud SQL read pool."
   default     = 1
+}
+
+variable "frontend_service_account_email" {
+  type        = string
+  description = "Email of the dedicated Cloud Run frontend service account granted backend invoker and read-only DB secret access."
+}
+
+variable "service_account_email" {
+  type        = string
+  description = "Optional service account email to attach to the API Cloud Run services."
+  default     = null
 }

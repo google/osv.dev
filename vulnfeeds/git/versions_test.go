@@ -3,7 +3,6 @@ package git
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -336,7 +335,6 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 		args              args
 		wantCanonicalLink string
 		wantErr           bool
-		skipOnCloudBuild  bool
 		disableExpiryDate time.Time // If test needs to be disabled due to known outage.
 	}{
 		{
@@ -371,9 +369,6 @@ func TestValidateAndCanonicalizeLink(t *testing.T) {
 
 			if time.Now().Before(tt.disableExpiryDate) {
 				t.Skipf("test %q has been skipped due to known outage and will be reenabled on %s.", tt.name, tt.disableExpiryDate)
-			}
-			if _, ok := os.LookupEnv("BUILD_ID"); ok && tt.skipOnCloudBuild {
-				t.Skipf("test %q: running on Cloud Build", tt.name)
 			}
 			gotCanonicalLink, err := ValidateAndCanonicalizeLink(tt.args.link, client)
 			if (err != nil) != tt.wantErr {

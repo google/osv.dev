@@ -77,7 +77,6 @@ ENISA
 Esri
 ExtremeNetworks
 F-SecureUS
-f5
 Fidelis
 flexera
 forcepoint

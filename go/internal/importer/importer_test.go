@@ -11,8 +11,7 @@ import (
 	"github.com/google/osv.dev/go/testutils"
 	"github.com/klauspost/compress/zstd"
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func TestSendToWorker(t *testing.T) {
@@ -28,12 +27,9 @@ func TestSendToWorker(t *testing.T) {
 	}
 	hash := "some-hash"
 	modifiedTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
-	vuln := &osvschema.Vulnerability{
-		Id:       "CVE-2023-1234",
-		Modified: timestamppb.New(modifiedTime),
-	}
+	rawJSON := []byte(`{"id":"CVE-2023-1234","modified":"2023-01-01T00:00:00Z"}`)
 
-	err := sendToWorker(ctx, config, item, hash, modifiedTime, vuln)
+	err := sendToWorker(ctx, config, item, hash, modifiedTime, rawJSON)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -67,6 +63,9 @@ func TestSendToWorker(t *testing.T) {
 	if msg.Attributes["content_encoding"] != "zstd" {
 		t.Errorf("Expected content_encoding=zstd, got %s", msg.Attributes["content_encoding"])
 	}
+	if msg.Attributes["format"] != "json" {
+		t.Errorf("Expected format=json, got %s", msg.Attributes["format"])
+	}
 	if len(msg.Data) == 0 {
 		t.Errorf("Expected vulnerability data to be present")
 	}
@@ -76,7 +75,7 @@ func TestSendToWorker(t *testing.T) {
 		t.Errorf("Failed to decode vulnerability: %v", err)
 	}
 	var parsedVuln osvschema.Vulnerability
-	if err := proto.Unmarshal(data, &parsedVuln); err != nil {
+	if err := protojson.Unmarshal(data, &parsedVuln); err != nil {
 		t.Errorf("Failed to unmarshal vulnerability: %v", err)
 	}
 	if parsedVuln.GetId() != "CVE-2023-1234" {
@@ -107,19 +106,16 @@ func TestSendToWorker_TooBig(t *testing.T) {
 		t.Fatalf("Failed to generate random data: %v", err)
 	}
 	var sb strings.Builder
+	sb.WriteString(`{"id":"CVE-2023-9999","modified":"2023-01-01T00:00:00Z","summary":"`)
 	enc := base64.NewEncoder(base64.StdEncoding, &sb)
 	if _, err := enc.Write(buf); err != nil {
 		t.Fatalf("Failed to encode data: %v", err)
 	}
 	enc.Close()
-	summary := sb.String()
-	vuln := &osvschema.Vulnerability{
-		Id:       "CVE-2023-9999",
-		Modified: timestamppb.New(modifiedTime),
-		Summary:  summary,
-	}
+	sb.WriteString(`"}`)
+	rawJSON := []byte(sb.String())
 
-	err := sendToWorker(ctx, config, item, hash, modifiedTime, vuln)
+	err := sendToWorker(ctx, config, item, hash, modifiedTime, rawJSON)
 	if err != nil {
 		t.Errorf("Expected no error, got %v", err)
 	}
@@ -285,7 +281,7 @@ func TestImporterWorker(t *testing.T) {
 		t.Fatalf("Failed to decode message 5: %v", err)
 	}
 	var vuln5 osvschema.Vulnerability
-	if err := proto.Unmarshal(decoded5, &vuln5); err != nil {
+	if err := protojson.Unmarshal(decoded5, &vuln5); err != nil {
 		t.Fatalf("Failed to unmarshal message 5: %v", err)
 	}
 	if vuln5.GetSummary() != "nul\uFFFDbyte" {
@@ -355,6 +351,75 @@ func TestIsReconcileOutdated(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := isReconcileOutdated(now, tt.modified, tt.dbMod); got != tt.want {
 				t.Errorf("isReconcileOutdated() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestProcessUpdate_KnownModifiedCheck(t *testing.T) {
+	baseTime := time.Date(2026, 1, 10, 12, 0, 0, 0, time.UTC)
+
+	tests := []struct {
+		name          string
+		dbMod         time.Time
+		knownModified time.Time
+		wantOpened    bool
+		wantPublished bool
+	}{
+		{
+			name:          "skips Open when KnownModified matches dbMod at whole-second precision",
+			dbMod:         baseTime,
+			knownModified: baseTime.Add(861 * time.Millisecond),
+			wantOpened:    false,
+			wantPublished: false,
+		},
+		{
+			name:          "opens and publishes when KnownModified is newer than dbMod",
+			dbMod:         baseTime,
+			knownModified: baseTime.Add(time.Second),
+			wantOpened:    true,
+			wantPublished: true,
+		},
+		{
+			name:          "opens and publishes when missing from database",
+			knownModified: baseTime,
+			wantOpened:    true,
+			wantPublished: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rawMods := map[string]time.Time{}
+			if !tt.dbMod.IsZero() {
+				rawMods["CGA-1234"] = tt.dbMod
+			}
+			pub := &testutils.MockPublisher{}
+			cfg := Config{
+				Publisher:          pub,
+				VulnerabilityStore: &mockVulnerabilityStore{RawMods: rawMods},
+			}
+
+			opened := false
+			processUpdate(t.Context(), cfg, WorkItem{
+				SourceRecord: mockSourceRecord{
+					DataToRead: []byte(`{"id": "CGA-1234", "modified": "2026-01-10T12:00:01Z"}`),
+					OnOpen:     func() { opened = true },
+				},
+				SourceRepository:       "chainguard",
+				SourcePath:             "CGA-1234.json",
+				KnownID:                "CGA-1234",
+				KnownModified:          tt.knownModified,
+				Format:                 RecordFormatJSON,
+				Action:                 ActionImport,
+				CompareAgainstDatabase: true,
+			})
+
+			if opened != tt.wantOpened {
+				t.Errorf("SourceRecord.Open called = %v, want %v", opened, tt.wantOpened)
+			}
+			if (len(pub.Messages) == 1) != tt.wantPublished {
+				t.Errorf("published %d messages, wantPublished %v", len(pub.Messages), tt.wantPublished)
 			}
 		})
 	}

@@ -16,7 +16,29 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "links": [],
+  "links": [
+    {
+      "icon": "external link",
+      "tags": [],
+      "targetBlank": false,
+      "title": "Observability Directory",
+      "tooltip": "Return to OSV.dev Observability Directory",
+      "type": "link",
+      "url": "/d/osv-home"
+    },
+    {
+      "asDropdown": true,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [
+        "osv"
+      ],
+      "targetBlank": false,
+      "title": "OSV Dashboards",
+      "type": "dashboards"
+    }
+  ],
   "panels": [
     {
       "collapsed": false,
@@ -27,6 +49,7 @@
         "y": 0
       },
       "id": 100,
+      "panels": [],
       "title": "Pub/Sub Queue Telemetry & Autoscaling Health",
       "type": "row"
     },
@@ -83,10 +106,9 @@
       "pluginVersion": "7.5.52",
       "targets": [
         {
-          "expr": "sum(pubsub_googleapis_com:subscription_num_undelivered_messages{subscription_id=~\"default|.*tasks.*\"}) or sum(pubsub_googleapis_com:subscription_num_undelivered_messages{subscription_id=\"default\"})",
+          "expr": "sum(pubsub_googleapis_com:subscription_num_undelivered_messages{subscription_id=\"default\"}) or vector(0)",
           "refId": "A",
-          "legendFormat": "Default Tasks Backlog",
-          "instant": true
+          "legendFormat": "Default Tasks Backlog"
         }
       ],
       "title": "Default Tasks Backlog",
@@ -145,10 +167,9 @@
       "pluginVersion": "7.5.52",
       "targets": [
         {
-          "expr": "sum(pubsub_googleapis_com:subscription_num_undelivered_messages{subscription_id=~\".*reimport.*\"})",
+          "expr": "sum(pubsub_googleapis_com:subscription_num_undelivered_messages{subscription_id=~\".*reimport.*\"}) or vector(0)",
           "refId": "A",
-          "legendFormat": "Reimport Backlog",
-          "instant": true
+          "legendFormat": "Reimport Backlog"
         }
       ],
       "title": "Reimport Queue Backlog",
@@ -156,7 +177,6 @@
     },
     {
       "datasource": "GMP (Prometheus)",
-      "description": "Current age of the single oldest unacknowledged message across Pub/Sub subscriptions (labeled with its subscription_id). Drops immediately once the message is acknowledged or expires.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -193,7 +213,7 @@
       "id": 3,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
@@ -215,7 +235,8 @@
         }
       ],
       "title": "Oldest Unacked Message Age",
-      "type": "stat"
+      "type": "stat",
+      "description": "Current age of the single oldest unacknowledged message across Pub/Sub subscriptions (labeled with its subscription_id). Drops immediately once the message is acknowledged or expires."
     },
     {
       "datasource": "GMP (Prometheus)",
@@ -262,10 +283,9 @@
       "pluginVersion": "7.5.52",
       "targets": [
         {
-          "expr": "sum(kube_deployment_status_replicas_available{deployment=~\"workers.*\"}) or sum(kube_deployment_status_replicas_available{deployment=\"workers\"})",
+          "expr": "sum(max by (namespace, deployment) (kube_deployment_status_replicas_available{deployment=~\"worker.*\"})) or vector(0)",
           "refId": "A",
-          "legendFormat": "Active Workers",
-          "instant": true
+          "legendFormat": "Active Workers"
         }
       ],
       "title": "Worker Pool Active Replicas",
@@ -280,6 +300,7 @@
         "y": 5
       },
       "id": 101,
+      "panels": [],
       "title": "Queue Velocity & Throughput",
       "type": "row"
     },
@@ -292,7 +313,7 @@
       "fill": 2,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
         "y": 6
@@ -301,7 +322,7 @@
       "id": 5,
       "legend": {
         "alignAsTable": true,
-        "avg": true,
+        "avg": false,
         "current": true,
         "max": true,
         "min": false,
@@ -321,7 +342,24 @@
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "alias": "/^default$/",
+          "color": "#5794F2"
+        },
+        {
+          "alias": "/.*reimport.*/",
+          "color": "#FF9830"
+        },
+        {
+          "alias": "/.*cves.*/",
+          "color": "#B877D9"
+        },
+        {
+          "alias": "/.*(failed|recover|dlq|dead).*/",
+          "color": "#F2495C"
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
@@ -336,7 +374,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Pub/Sub Queue Depth by Topic / Subscription",
+      "title": "Pub/Sub Queue Depth by Subscription",
       "tooltip": {
         "shared": true,
         "sort": 2,
@@ -374,7 +412,11 @@
       }
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "Intake Rate (Tasks In)": "#5794F2",
+        "Drain Rate (Worker Tasks Out)": "#73BF69",
+        "Net Drain Speed (Tasks/s)": "#B877D9"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
@@ -382,7 +424,7 @@
       "fill": 2,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
         "y": 6
@@ -393,7 +435,7 @@
         "alignAsTable": true,
         "avg": true,
         "current": true,
-        "max": true,
+        "max": false,
         "min": false,
         "rightSide": false,
         "show": true,
@@ -411,23 +453,31 @@
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "alias": "Net Drain Speed (Tasks/s)",
+          "dashes": true,
+          "dashLength": 10,
+          "spaceLength": 6,
+          "fill": 0
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(pubsub_googleapis_com:topic_send_message_operation_count{topic_id=~\"tasks|reimport|cves\"}[5m]))",
+          "expr": "sum(rate(pubsub_googleapis_com:topic_send_message_operation_count{topic_id=~\"tasks|reimport|cves\"}[5m])) or vector(0)",
           "refId": "A",
           "legendFormat": "Intake Rate (Tasks In)"
         },
         {
-          "expr": "sum(rate(osv_worker_tasks_processed_total[5m]))",
+          "expr": "sum(rate(osv_worker_tasks_processed_total[5m])) or vector(0)",
           "refId": "B",
           "legendFormat": "Drain Rate (Worker Tasks Out)"
         },
         {
-          "expr": "sum(rate(osv_worker_tasks_processed_total[5m])) - sum(rate(pubsub_googleapis_com:topic_send_message_operation_count{topic_id=~\"tasks|reimport|cves\"}[5m]))",
+          "expr": "(sum(rate(osv_worker_tasks_processed_total[5m])) or vector(0)) - (sum(rate(pubsub_googleapis_com:topic_send_message_operation_count{topic_id=~\"tasks|reimport|cves\"}[5m])) or vector(0))",
           "refId": "C",
           "legendFormat": "Net Drain Speed (Tasks/s)"
         }
@@ -479,31 +529,37 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 16
       },
       "id": 102,
+      "panels": [],
       "title": "Worker Latencies & Processing Performance",
       "type": "row"
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "p50 Latency": "#73BF69",
+        "p90 Latency": "#FADE2A",
+        "p95 Latency": "#FF9830",
+        "p99 Latency": "#F2495C"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
       "datasource": "GMP (Prometheus)",
-      "fill": 2,
+      "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 0,
-        "y": 15
+        "y": 17
       },
       "hiddenSeries": false,
       "id": 7,
       "legend": {
         "alignAsTable": true,
-        "avg": true,
+        "avg": false,
         "current": true,
         "max": true,
         "min": false,
@@ -606,7 +662,20 @@
       }
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "update (success)": "#73BF69",
+        "delete (success)": "#2F9E8F",
+        "unknown (success)": "#96D98D",
+        "update (skipped)": "#5794F2",
+        "delete (skipped)": "#3274D9",
+        "unknown (skipped)": "#8AB8FF",
+        "update (error)": "#F2495C",
+        "delete (error)": "#C4162A",
+        "unknown (error)": "#FF7383",
+        "update (unknown)": "#FF9830",
+        "delete (unknown)": "#FADE2A",
+        "unknown (unknown)": "#FFA657"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
@@ -614,23 +683,25 @@
       "fill": 2,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
+        "h": 10,
         "w": 12,
         "x": 12,
-        "y": 15
+        "y": 17
       },
       "hiddenSeries": false,
       "id": 8,
       "legend": {
         "alignAsTable": true,
-        "avg": true,
+        "avg": false,
         "current": true,
         "max": true,
         "min": false,
         "rightSide": false,
         "show": true,
         "total": false,
-        "values": true
+        "values": true,
+        "hideEmpty": true,
+        "hideZero": true
       },
       "lines": true,
       "linewidth": 2,
@@ -701,14 +772,30 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 23
+        "y": 27
       },
       "id": 103,
+      "panels": [],
       "title": "Pipeline Errors, Reconciler & Deleter Health",
       "type": "row"
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "commit_enumeration_error [unrecoverable]": "#F2495C",
+        "datastore_read_error [unrecoverable]": "#C4162A",
+        "delete_error [unrecoverable]": "#FF7383",
+        "enrich_error [unrecoverable]": "#E02F44",
+        "parse_error [unrecoverable]": "#B82837",
+        "source_repo_error [unrecoverable]": "#FF5263",
+        "write_error [unrecoverable]": "#D44A3A",
+        "commit_enumeration_error [recoverable]": "#FF9830",
+        "datastore_read_error [recoverable]": "#FADE2A",
+        "delete_error [recoverable]": "#FF780A",
+        "enrich_error [recoverable]": "#E0B400",
+        "parse_error [recoverable]": "#FFA657",
+        "source_repo_error [recoverable]": "#C68B00",
+        "write_error [recoverable]": "#FFE066"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
@@ -716,23 +803,27 @@
       "fill": 2,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
-        "w": 8,
+        "h": 11,
+        "w": 24,
         "x": 0,
-        "y": 24
+        "y": 28
       },
       "hiddenSeries": false,
       "id": 9,
       "legend": {
         "alignAsTable": true,
-        "avg": true,
+        "avg": false,
         "current": true,
         "max": true,
         "min": false,
-        "rightSide": false,
+        "rightSide": true,
         "show": true,
         "total": false,
-        "values": true
+        "values": true,
+        "hideEmpty": true,
+        "hideZero": true,
+        "sort": "max",
+        "sortDesc": true
       },
       "lines": true,
       "linewidth": 2,
@@ -745,15 +836,27 @@
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "alias": "/.*\\[recoverable\\]$/",
+          "dashes": true,
+          "dashLength": 8,
+          "spaceLength": 4
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by (error_type, recoverable) (rate(osv_worker_failed_tasks_total[5m]))",
+          "expr": "sum by (error_type) (rate(osv_worker_failed_tasks_total{recoverable=\"false\"}[5m]))",
           "refId": "A",
-          "legendFormat": "{{error_type}} (recoverable={{recoverable}})"
+          "legendFormat": "{{error_type}} [unrecoverable]"
+        },
+        {
+          "expr": "sum by (error_type) (rate(osv_worker_failed_tasks_total{recoverable=\"true\"}[5m]))",
+          "refId": "B",
+          "legendFormat": "{{error_type}} [recoverable]"
         }
       ],
       "thresholds": [],
@@ -798,7 +901,15 @@
       }
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "Reconciled: up_to_date": "#73BF69",
+        "Reconciled: outdated": "#FF9830",
+        "Reconciled: missing": "#F2495C",
+        "Reimport / s: success": "#2F9E8F",
+        "Reimport / s: skipped": "#5794F2",
+        "Reimport / s: error": "#C4162A",
+        "Reimport / s: unknown": "#FADE2A"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
@@ -806,23 +917,25 @@
       "fill": 2,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 8,
-        "y": 24
+        "h": 11,
+        "w": 12,
+        "x": 0,
+        "y": 39
       },
       "hiddenSeries": false,
       "id": 10,
       "legend": {
         "alignAsTable": true,
-        "avg": true,
+        "avg": false,
         "current": true,
         "max": true,
         "min": false,
         "rightSide": false,
         "show": true,
         "total": false,
-        "values": true
+        "values": true,
+        "hideEmpty": true,
+        "hideZero": true
       },
       "lines": true,
       "linewidth": 2,
@@ -835,20 +948,28 @@
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "alias": "/^Reimport \\/ s:.*/",
+          "yaxis": 2,
+          "dashes": true,
+          "dashLength": 8,
+          "spaceLength": 4
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by (status) (osv_reconciler_records_reconciled)",
+          "expr": "max by (status) (osv_reconciler_records_reconciled)",
           "refId": "A",
-          "legendFormat": "Reconciled ({{status}})"
+          "legendFormat": "Reconciled: {{status}}"
         },
         {
           "expr": "sum by (status) (rate(osv_worker_tasks_processed_total{work_pool=\"reimport\"}[5m]))",
           "refId": "B",
-          "legendFormat": "Reimport Pool / s ({{status}})"
+          "legendFormat": "Reimport / s: {{status}}"
         }
       ],
       "thresholds": [],
@@ -872,19 +993,19 @@
       "yaxes": [
         {
           "format": "short",
-          "label": null,
-          "logBase": 1,
+          "label": "Records",
+          "logBase": 10,
           "max": null,
           "min": 0,
           "show": true
         },
         {
-          "format": "short",
-          "label": null,
+          "format": "ops",
+          "label": "Reimport ops/s",
           "logBase": 1,
           "max": null,
-          "min": null,
-          "show": false
+          "min": 0,
+          "show": true
         }
       ],
       "yaxis": {
@@ -893,7 +1014,9 @@
       }
     },
     {
-      "aliasColors": {},
+      "aliasColors": {
+        "Safety Refusal: none": "#73BF69"
+      },
       "bars": false,
       "dashLength": 10,
       "dashes": false,
@@ -901,23 +1024,25 @@
       "fill": 2,
       "fillGradient": 0,
       "gridPos": {
-        "h": 8,
-        "w": 8,
-        "x": 16,
-        "y": 24
+        "h": 11,
+        "w": 12,
+        "x": 12,
+        "y": 39
       },
       "hiddenSeries": false,
       "id": 11,
       "legend": {
         "alignAsTable": true,
-        "avg": true,
+        "avg": false,
         "current": true,
         "max": true,
         "min": false,
         "rightSide": false,
         "show": true,
         "total": false,
-        "values": true
+        "values": true,
+        "hideEmpty": true,
+        "hideZero": false
       },
       "lines": true,
       "linewidth": 2,
@@ -930,20 +1055,30 @@
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
-      "seriesOverrides": [],
+      "seriesOverrides": [
+        {
+          "alias": "/^Withdrawal.*/",
+          "color": "#5794F2"
+        },
+        {
+          "alias": "/^Safety Refusal: (?!none$).*/",
+          "color": "#F2495C",
+          "linewidth": 3
+        }
+      ],
       "spaceLength": 10,
       "stack": false,
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by (source) (increase(osv_deleter_upstream_withdrawals_total[1h]))",
+          "expr": "sum by (source) (increase(osv_deleter_upstream_withdrawals_total[1h])) > 0",
           "refId": "A",
-          "legendFormat": "Withdrawals (1h): {{source}}"
+          "legendFormat": "Withdrawal (1h): {{source}}"
         },
         {
-          "expr": "sum by (source) (osv_deleter_refused_deletions)",
+          "expr": "max by (source) (osv_deleter_refused_deletions)",
           "refId": "B",
-          "legendFormat": "Safety Refusals: {{source}}"
+          "legendFormat": "Safety Refusal: {{source}}"
         }
       ],
       "thresholds": [],
@@ -993,23 +1128,24 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 32
+        "y": 50
       },
       "id": 104,
+      "panels": [],
       "title": "Failed Task & Pipeline Error Inspector (Cloud Logging)",
       "type": "row"
     },
     {
       "datasource": null,
       "gridPos": {
-        "h": 7,
+        "h": 8,
         "w": 24,
         "x": 0,
-        "y": 33
+        "y": 51
       },
       "id": 12,
       "options": {
-        "content": "### Cloud Logging Triage Links (`severity >= ERROR`)\nInline Cloud Logging panels require Grafana >= 8.5 (`googlecloud-logging-datasource`); use the pre-filtered Google Cloud Logs Explorer links below for live stack traces and `ref_id` inspection:\n\n- [**All Pipeline Error Logs** (`worker-*`, `recoverer`, `importer`, `importer-deleter`)](https://console.cloud.google.com/logs/query;query=resource.type%3D%22k8s_container%22%0Aresource.labels.container_name%3D~%22%5E%28worker-private%7Cworkers-reimport%7Cworkers-cves%7Crecoverer%7Cimporter%7Cimporter-deleter%29%24%22%0Aseverity%3E%3DERROR?project=oss-vdb-test)\n- [**Worker Pool Errors Only** (`worker-private`, `workers-reimport`, `workers-cves`)](https://console.cloud.google.com/logs/query;query=resource.type%3D%22k8s_container%22%0Aresource.labels.container_name%3D~%22%5E%28worker-private%7Cworkers-reimport%7Cworkers-cves%29%24%22%0Aseverity%3E%3DERROR?project=oss-vdb-test)\n- [**Importer & Deleter Errors** (`importer`, `importer-deleter`)](https://console.cloud.google.com/logs/query;query=resource.type%3D%22k8s_container%22%0Aresource.labels.container_name%3D~%22%5E%28importer%7Cimporter-deleter%29%24%22%0Aseverity%3E%3DERROR?project=oss-vdb-test)\n- [**Recoverer Errors** (`recoverer`)](https://console.cloud.google.com/logs/query;query=resource.type%3D%22k8s_container%22%0Aresource.labels.container_name%3D~%22%5E%28recoverer%29%24%22%0Aseverity%3E%3DERROR?project=oss-vdb-test)\n\n```text\nresource.type=\"k8s_container\"\nresource.labels.container_name=~\"^(worker-private|workers-reimport|workers-cves|recoverer|importer|importer-deleter)$\"\nseverity>=ERROR\n```",
+        "content": "### Cloud Logging Triage Links (`severity >= ERROR`)\nInline Cloud Logging panels require Grafana >= 8.5 (`googlecloud-logging-datasource`); use the pre-filtered Google Cloud Logs Explorer links below for live stack traces and `ref_id` inspection:\n\n- [**All Pipeline Error Logs** (`worker-*`, `recoverer`, `importer*`, `gitter`, `record-checker`, `exporter`)](https://console.cloud.google.com/logs/query;query=resource.type%3D%22k8s_container%22%0Aresource.labels.container_name%3D~%22%5E%28worker-private%7Cworkers-reimport%7Cworkers-cves%7Crecoverer%7Cimporter%7Cimporter-deleter%7Cgitter%7Crecord-checker%7Cexporter%29%24%22%0Aseverity%3E%3DERROR?project=oss-vdb-test)\n- [**Worker Pool Errors Only** (`worker-private`, `workers-reimport`, `workers-cves`)](https://console.cloud.google.com/logs/query;query=resource.type%3D%22k8s_container%22%0Aresource.labels.container_name%3D~%22%5E%28worker-private%7Cworkers-reimport%7Cworkers-cves%29%24%22%0Aseverity%3E%3DERROR?project=oss-vdb-test)\n- [**Importer & Deleter Errors** (`importer`, `importer-deleter`)](https://console.cloud.google.com/logs/query;query=resource.type%3D%22k8s_container%22%0Aresource.labels.container_name%3D~%22%5E%28importer%7Cimporter-deleter%29%24%22%0Aseverity%3E%3DERROR?project=oss-vdb-test)\n- [**Recoverer Errors** (`recoverer`)](https://console.cloud.google.com/logs/query;query=resource.type%3D%22k8s_container%22%0Aresource.labels.container_name%3D~%22%5E%28recoverer%29%24%22%0Aseverity%3E%3DERROR?project=oss-vdb-test)\n\n```text\nresource.type=\"k8s_container\"\nresource.labels.container_name=~\"^(worker-private|workers-reimport|workers-cves|recoverer|importer|importer-deleter|gitter|record-checker|exporter)$\"\nseverity>=ERROR\n```",
         "mode": "markdown"
       },
       "pluginVersion": "7.5.52",

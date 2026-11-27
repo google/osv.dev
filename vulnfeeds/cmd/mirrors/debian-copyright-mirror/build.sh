@@ -20,5 +20,5 @@ cd ../../..
 
 docker build \
   -t gcr.io/oss-vdb/debian-copyright-mirror:latest \
-  -f cmd/mirrors/debian-copyright-mirror/Dockerfile --pull . && \
+  --target debian-copyright-mirror -f Dockerfile --pull . && \
 gcloud docker -- push gcr.io/oss-vdb/debian-copyright-mirror:latest

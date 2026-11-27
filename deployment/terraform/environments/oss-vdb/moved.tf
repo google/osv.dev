@@ -104,3 +104,14 @@ moved {
   to   = module.osv_api.google_cloud_run_domain_mapping.api
 }
 
+# Production CI/CD deployment SA bindings moved out of shared modules
+moved {
+  from = module.osv.google_service_account.deployment_service
+  to   = google_service_account.deployment_service
+}
+
+moved {
+  from = module.osv.google_project_iam_member.deployment_service
+  to   = google_project_iam_member.deployment_service
+}
+

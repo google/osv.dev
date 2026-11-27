@@ -3,10 +3,10 @@ kind: CronJob
 metadata:
   name: osv-linter
   labels:
-    cronLastSuccessfulTimeMins: "2880"
+    cronLastSuccessfulTimeMins: "240"
 spec:
   timeZone: Australia/Sydney
-  schedule: "0 14 * * *"
+  schedule: "0 */2 * * *"
   concurrencyPolicy: Forbid
   jobTemplate:
     spec:
@@ -19,6 +19,10 @@ spec:
             env:
             - name: GOOGLE_CLOUD_PROJECT
               value: "oss-vdb-test"
+            - name: OSV_VULNERABILITIES_BUCKET
+              value: "osv-test-vulnerabilities"
+            - name: OSV_LINTER_BUCKET
+              value: "osv-test-public-import-logs"
             args:
             - "--dry-run=false"
             resources:

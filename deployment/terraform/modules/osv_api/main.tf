@@ -8,6 +8,7 @@ resource "google_cloud_run_service" "api_backend" {
 
   template {
     spec {
+      service_account_name = var.service_account_email
       containers {
         image = "us-docker.pkg.dev/cloudrun/container/hello:latest" # Placeholder image.
       }
@@ -35,6 +36,7 @@ resource "google_cloud_run_v2_service" "api_backend_batch" {
   location = "us-central1"
 
   template {
+    service_account = var.service_account_email
     containers {
       image = "us-docker.pkg.dev/cloudrun/container/hello:latest" # Placeholder image.
     }
@@ -50,6 +52,22 @@ resource "google_cloud_run_v2_service" "api_backend_batch" {
     ]
     prevent_destroy = true
   }
+}
+
+resource "google_cloud_run_service_iam_member" "frontend_api_backend_invoker" {
+  project  = var.project_id
+  location = google_cloud_run_service.api_backend.location
+  service  = google_cloud_run_service.api_backend.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${var.frontend_service_account_email}"
+}
+
+resource "google_cloud_run_service_iam_member" "frontend_api_backend_batch_invoker" {
+  project  = var.project_id
+  location = google_cloud_run_v2_service.api_backend_batch.location
+  service  = google_cloud_run_v2_service.api_backend_batch.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${var.frontend_service_account_email}"
 }
 
 resource "google_endpoints_service" "grpc_service" {
@@ -89,8 +107,7 @@ resource "null_resource" "grpc_proxy_image" {
         -s ${var.api_url} \
         -c ${google_endpoints_service.grpc_service.config_id} \
         -p ${var.project_id} \
-        -v ${var.esp_version} \
-        ${var.gcs_log_dir != "" ? format("-l %s", var.gcs_log_dir) : ""}
+        -v ${var.esp_version}
     EOS
   }
 }
@@ -114,6 +131,7 @@ resource "google_cloud_run_service" "api" {
 
   template {
     spec {
+      service_account_name = var.service_account_email
       containers {
         image = data.google_container_registry_image.api.image_url
         ports {
@@ -144,6 +162,15 @@ resource "google_cloud_run_service" "api" {
   lifecycle {
     prevent_destroy = true
   }
+}
+
+# Allow unauthenticated public API requests through the ESPv2 proxy
+resource "google_cloud_run_service_iam_member" "api_public_invoker" {
+  project  = var.project_id
+  location = google_cloud_run_service.api.location
+  service  = google_cloud_run_service.api.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
 }
 
 resource "google_cloud_run_domain_mapping" "api" {

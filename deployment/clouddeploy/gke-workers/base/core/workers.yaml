@@ -41,13 +41,34 @@ spec:
             value: failed-tasks
           - name: NOTIFY_PYPI
             value: "false"
+          - name: POSTGRES_PORT
+            value: "6432"
+          - name: POSTGRES_USER
+            value: "osv-worker"
+          - name: POSTGRES_DB
+            value: "osv"
+          - name: POSTGRES_SSLMODE
+            value: "require"
+          - name: POSTGRES_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: osv-db-worker-password
+                key: password
+          # Soft memory limit for the Go runtime, ~90% of limits.memory, so the GC
+          # works harder before the container gets OOM-killed.
+          # Keep in sync with limits.memory below.
+          - name: GOMEMLIMIT
+            value: "3060MiB"
         ports:
         - name: metrics
           containerPort: 9090
+        # limits.memory is sized so that 8 workers (the most that fit on an
+        # n4-standard-8 node by CPU request) should all be able to max out at 
+        # once without exceeding the node's allocatable memory.
         resources:
           requests:
-            cpu: 1
-            memory: "10G"
+            cpu: "0.9"
+            memory: "1.2Gi"
           limits:
-            cpu: 2
-            memory: "13G"
+            cpu: "2"
+            memory: "3400Mi"

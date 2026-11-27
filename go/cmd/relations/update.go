@@ -27,6 +27,7 @@ import (
 	"cloud.google.com/go/datastore"
 	"cloud.google.com/go/pubsub/v2"
 	osvdatastore "github.com/google/osv.dev/go/internal/database/datastore"
+	domainmodels "github.com/google/osv.dev/go/internal/models"
 	"github.com/google/osv.dev/go/logger"
 	"github.com/google/osv.dev/go/osv/clients"
 	"github.com/google/osv.dev/go/osv/models"
@@ -51,19 +52,25 @@ type Update struct {
 }
 
 type Updater struct {
-	Ch        chan Update
-	wg        sync.WaitGroup
-	dsClient  *datastore.Client
-	gcsClient clients.CloudStorage
-	publisher clients.Publisher
+	Ch          chan Update
+	wg          sync.WaitGroup
+	dsClient    *datastore.Client
+	gcsClient   clients.CloudStorage
+	publisher   clients.Publisher
+	pgVulnStore domainmodels.VulnerabilityStore
 }
 
 func NewUpdater(ctx context.Context, dsClient *datastore.Client, gcsClient clients.CloudStorage, publisher clients.Publisher) *Updater {
+	return NewUpdaterWithPostgres(ctx, dsClient, gcsClient, publisher, nil)
+}
+
+func NewUpdaterWithPostgres(ctx context.Context, dsClient *datastore.Client, gcsClient clients.CloudStorage, publisher clients.Publisher, pgVulnStore domainmodels.VulnerabilityStore) *Updater {
 	u := &Updater{
-		Ch:        make(chan Update),
-		dsClient:  dsClient,
-		gcsClient: gcsClient,
-		publisher: publisher,
+		Ch:          make(chan Update),
+		dsClient:    dsClient,
+		gcsClient:   gcsClient,
+		publisher:   publisher,
+		pgVulnStore: pgVulnStore,
 	}
 	u.wg.Go(func() {
 		u.run(ctx)
@@ -130,49 +137,12 @@ ConsumerLoop:
 			continue
 		}
 
-		hasUpdates := false
-		var modified time.Time
-		updatedFields := []string{}
-		for _, u := range updates {
-			switch u.Field {
-			case updateFieldAlias:
-				if slices.Compare(v.GetAliases(), u.Value) == 0 {
-					// No actual changes, do not update
-					continue
-				}
-				hasUpdates = true
-				v.Aliases = u.Value
-				updatedFields = append(updatedFields, "aliases")
-				if u.Timestamp.After(modified) {
-					modified = u.Timestamp
-				}
-			case updateFieldUpstream:
-				if slices.Compare(v.GetUpstream(), u.Value) == 0 {
-					continue
-				}
-				hasUpdates = true
-				v.Upstream = u.Value
-				updatedFields = append(updatedFields, "upstream")
-				if u.Timestamp.After(modified) {
-					modified = u.Timestamp
-				}
-			case updateFieldRelated:
-				if slices.Compare(v.GetRelated(), u.Value) == 0 {
-					continue
-				}
-				hasUpdates = true
-				v.Related = u.Value
-				updatedFields = append(updatedFields, "related")
-				if u.Timestamp.After(modified) {
-					modified = u.Timestamp
-				}
-			default:
-				logger.Error("unsupported update field", slog.Any("updateField", u.Field), slog.String("id", id))
-			}
-		}
-		if !hasUpdates {
+		updatedFields, modified := applyUpdates(v, id, updates)
+		if len(updatedFields) == 0 {
 			continue
 		}
+		now := time.Now().UTC().Truncate(time.Microsecond)
+		modified = nextModified(v.GetModified(), modified, now)
 		v.Modified = timestamppb.New(modified)
 
 		// Update Datastore
@@ -200,19 +170,47 @@ ConsumerLoop:
 
 			continue
 		}
-		listedVuln := osvdatastore.NewListedVulnerabilityFromProto(v)
 		listedKey := datastore.NameKey("ListedVulnerability", id, nil)
-		if _, err := tx.Put(listedKey, listedVuln); err != nil {
-			logger.Error("failed to put listed vuln to Datastore", slog.String("id", id), slog.Any("err", err))
-			if err := tx.Rollback(); err != nil {
-				logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
-			}
+		if vuln.IsWithdrawn || v.GetWithdrawn() != nil {
+			if err := tx.Delete(listedKey); err != nil && !errors.Is(err, datastore.ErrNoSuchEntity) {
+				logger.Error("failed to delete listed vuln from Datastore", slog.String("id", id), slog.Any("err", err))
+				if err := tx.Rollback(); err != nil {
+					logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
+				}
 
-			continue
+				continue
+			}
+		} else {
+			listedVuln := osvdatastore.NewListedVulnerabilityFromProto(v)
+			if _, err := tx.Put(listedKey, listedVuln); err != nil {
+				logger.Error("failed to put listed vuln to Datastore", slog.String("id", id), slog.Any("err", err))
+				if err := tx.Rollback(); err != nil {
+					logger.Error("failed to rollback transaction", slog.String("id", id), slog.Any("err", err))
+				}
+
+				continue
+			}
 		}
 		if _, err := tx.Commit(); err != nil {
 			logger.Error("failed to commit transaction", slog.String("id", id), slog.Any("err", err))
 			continue
+		}
+
+		// Update PostgreSQL regardless of whether the GCS write below hits a generation
+		// mismatch (which delegates GCS repair to recoverer), since PostgreSQL Mutate
+		// runs its own optimistic-concurrency retry loop.
+		if u.pgVulnStore != nil {
+			_, err := u.pgVulnStore.Mutate(ctx, id, func(pgVuln *osvschema.Vulnerability) (bool, error) {
+				if fields, _ := applyUpdates(pgVuln, id, updates); len(fields) == 0 {
+					return false, nil
+				}
+				pgVuln.Modified = timestamppb.New(nextModified(pgVuln.GetModified(), modified, now))
+
+				return true, nil
+			})
+			if err != nil && !errors.Is(err, domainmodels.ErrNotFound) {
+				logger.Error("failed to update vuln in postgres", slog.String("id", id), slog.Any("err", err))
+			}
 		}
 
 		// Update GCS
@@ -249,4 +247,47 @@ ConsumerLoop:
 func (u *Updater) Finish() {
 	close(u.Ch)
 	u.wg.Wait()
+}
+
+// nextModified returns a monotonic modified timestamp: candidate if it is newer
+// than current, otherwise now (or current if ahead of now).
+func nextModified(current *timestamppb.Timestamp, candidate, now time.Time) time.Time {
+	if current == nil || candidate.After(current.AsTime()) {
+		return candidate
+	}
+	if now.After(current.AsTime()) {
+		return now
+	}
+
+	return current.AsTime()
+}
+
+func applyUpdates(v *osvschema.Vulnerability, id string, updates []Update) ([]string, time.Time) {
+	var updatedFields []string
+	var modified time.Time
+	for _, upd := range updates {
+		var dst *[]string
+		var name string
+		switch upd.Field {
+		case updateFieldAlias:
+			dst, name = &v.Aliases, "aliases"
+		case updateFieldUpstream:
+			dst, name = &v.Upstream, "upstream"
+		case updateFieldRelated:
+			dst, name = &v.Related, "related"
+		default:
+			logger.Error("unsupported update field", slog.Any("updateField", upd.Field), slog.String("id", id))
+			continue
+		}
+		if slices.Equal(*dst, upd.Value) {
+			continue
+		}
+		*dst = upd.Value
+		updatedFields = append(updatedFields, name)
+		if upd.Timestamp.After(modified) {
+			modified = upd.Timestamp
+		}
+	}
+
+	return updatedFields, modified
 }

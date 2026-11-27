@@ -4,20 +4,14 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
@@ -32,10 +26,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -50,10 +41,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -68,10 +56,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -86,10 +71,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -104,10 +86,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -122,10 +101,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "stdlib",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "stdlib", "ecosystem": "Go" },
         "version": "1.21.7"
       },
       "vulns": [
@@ -451,6 +427,10 @@
         },
         {
           "id": "GO-2026-6809",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6859",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -465,10 +445,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "stdlib",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "stdlib", "ecosystem": "Go" },
         "version": "1.21.7"
       },
       "vulns": [
@@ -794,16 +771,17 @@
         },
         {
           "id": "GO-2026-6809",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6859",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "stdlib",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "stdlib", "ecosystem": "Go" },
         "version": "1.21.7"
       },
       "vulns": [
@@ -1129,6 +1107,10 @@
         },
         {
           "id": "GO-2026-6809",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6859",
           "modified": "<RFC3339 date with the year 2026>"
         }
       ]
@@ -1143,10 +1125,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "stdlib",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "stdlib", "ecosystem": "Go" },
         "version": "1.21.7"
       },
       "vulns": [
@@ -1473,6 +1452,10 @@
         {
           "id": "GO-2026-6809",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6859",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     }
@@ -1486,140 +1469,98 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.10-r0"
       },
       "vulns": []
@@ -1634,10 +1575,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.1"
       },
       "vulns": [
@@ -1657,40 +1595,28 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.1"
       },
       "vulns": [
@@ -1702,140 +1628,98 @@
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.13-r0"
       },
       "vulns": []
@@ -1850,40 +1734,28 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.8"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -1898,20 +1770,14 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
@@ -1927,100 +1793,76 @@
     {
       "query": {
         "commit": "4579d5538f06c5ef615a15bc67ebb9ac0523a973",
-        "package": {}
+        "package": { }
       },
       "vulns": []
     },
     {
       "query": {
         "commit": "9de7a0544457c6aba755ccb65abb41b0dc1db70d",
-        "package": {}
+        "package": { }
       },
       "vulns": []
     },
     {
       "query": {
         "commit": "5d60bd2eb4642b64d00c845e5ca9f1ea41fd6db6",
-        "package": {}
+        "package": { }
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "league/flysystem",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "league/flysystem", "ecosystem": "Packagist" },
         "version": "1.0.8"
       },
       "vulns": [
@@ -2036,110 +1878,77 @@
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "stdlib",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "stdlib", "ecosystem": "Go" },
         "version": "1.99.9"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "toolchain",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "toolchain", "ecosystem": "Go" },
         "version": "1.99.9"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.13-r0"
       },
       "vulns": []
@@ -2154,10 +1963,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -2172,40 +1978,28 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.1"
       },
       "vulns": [
@@ -2217,140 +2011,98 @@
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.13-r0"
       },
       "vulns": []
@@ -2365,40 +2117,28 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.8"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -2413,20 +2153,14 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "has-flag",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "has-flag", "ecosystem": "npm" },
         "version": "4.0.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "league/flysystem",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "league/flysystem", "ecosystem": "Packagist" },
         "version": "1.0.8"
       },
       "vulns": [
@@ -2442,30 +2176,21 @@
     },
     {
       "query": {
-        "package": {
-          "name": "stdlib",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "stdlib", "ecosystem": "Go" },
         "version": "1.99.9"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "toolchain",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "toolchain", "ecosystem": "Go" },
         "version": "1.99.9"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "wrappy",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "wrappy", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
@@ -2480,20 +2205,14 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "has-flag",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "has-flag", "ecosystem": "npm" },
         "version": "4.0.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "league/flysystem",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "league/flysystem", "ecosystem": "Packagist" },
         "version": "1.0.8"
       },
       "vulns": [
@@ -2509,30 +2228,21 @@
     },
     {
       "query": {
-        "package": {
-          "name": "stdlib",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "stdlib", "ecosystem": "Go" },
         "version": "1.99.9"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "toolchain",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "toolchain", "ecosystem": "Go" },
         "version": "1.99.9"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "wrappy",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "wrappy", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
@@ -2547,10 +2257,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "pcre3",
-          "ecosystem": "Ubuntu"
-        },
+        "package": { "name": "pcre3", "ecosystem": "Ubuntu" },
         "version": "2:8.39-12ubuntu0.1"
       },
       "vulns": [
@@ -2570,10 +2277,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "pcre3",
-          "ecosystem": "Ubuntu"
-        },
+        "package": { "name": "pcre3", "ecosystem": "Ubuntu" },
         "version": "2:8.39-12ubuntu0.1"
       },
       "vulns": [
@@ -2593,130 +2297,91 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "adduser",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "adduser", "ecosystem": "Debian" },
         "version": "3.115"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "apt",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "apt", "ecosystem": "Debian" },
         "version": "1.4.11"
       },
       "vulns": [
@@ -2744,42 +2409,29 @@
           "id": "DEBIAN-CVE-2026-109518",
           "modified": "<RFC3339 date with the year 2026>"
         },
-        {
-          "id": "DSA-4685-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-4808-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
+        { "id": "DLA-4880-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-4685-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-4808-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-6607-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "base-files",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "base-files", "ecosystem": "Debian" },
         "version": "9.9+deb9u13"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "base-passwd",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "base-passwd", "ecosystem": "Debian" },
         "version": "3.5.43"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "bash",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "bash", "ecosystem": "Debian" },
         "version": "4.4-5"
       },
       "vulns": [
@@ -2795,70 +2447,49 @@
     },
     {
       "query": {
-        "package": {
-          "name": "bsdutils",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "bsdutils", "ecosystem": "Debian" },
         "version": "1:2.29.2-1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "coreutils",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "coreutils", "ecosystem": "Debian" },
         "version": "8.26-3"
       },
       "vulns": [
@@ -2890,10 +2521,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "dash",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "dash", "ecosystem": "Debian" },
         "version": "0.5.8-2.4"
       },
       "vulns": [
@@ -2909,45 +2537,30 @@
     },
     {
       "query": {
-        "package": {
-          "name": "debconf",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "debconf", "ecosystem": "Debian" },
         "version": "1.5.61"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "debian-archive-keyring",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "debian-archive-keyring", "ecosystem": "Debian" },
         "version": "2017.5+deb9u2"
       },
       "vulns": [
-        {
-          "id": "DLA-3482-1",
-          "modified": "<RFC3339 date with the year 2023>"
-        }
+        { "id": "DLA-3482-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "debianutils",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "debianutils", "ecosystem": "Debian" },
         "version": "4.8.1.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "diffutils",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "diffutils", "ecosystem": "Debian" },
         "version": "1:3.5-3"
       },
       "vulns": [
@@ -2959,20 +2572,14 @@
     },
     {
       "query": {
-        "package": {
-          "name": "dirmngr",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "dirmngr", "ecosystem": "Debian" },
         "version": "2.1.18-8~deb9u4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "dpkg",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "dpkg", "ecosystem": "Debian" },
         "version": "1.18.25"
       },
       "vulns": [
@@ -2989,31 +2596,24 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
-          "id": "DLA-3022-1",
+          "id": "DEBIAN-CVE-2026-91094",
           "modified": "<RFC3339 date with the year 2026>"
         },
-        {
-          "id": "DSA-5147-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
+        { "id": "DLA-3022-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4673-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5147-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "e2fslibs",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "e2fslibs", "ecosystem": "Debian" },
         "version": "1.43.4-2+deb9u2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "e2fsprogs",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "e2fsprogs", "ecosystem": "Debian" },
         "version": "1.43.4-2+deb9u2"
       },
       "vulns": [
@@ -3029,32 +2629,20 @@
           "id": "DEBIAN-CVE-2022-1304",
           "modified": "<RFC3339 date with the year 2026>"
         },
-        {
-          "id": "DLA-3910-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-4535-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
+        { "id": "DLA-3910-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-4535-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "findutils",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "findutils", "ecosystem": "Debian" },
         "version": "4.6.0+git+20161106-2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "gcc-6-base",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "gcc-6-base", "ecosystem": "Debian" },
         "version": "6.3.0-18+deb9u1"
       },
       "vulns": []
@@ -3160,40 +2748,28 @@
     },
     {
       "query": {
-        "package": {
-          "name": "github.com/tianon/gosu",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "github.com/tianon/gosu", "ecosystem": "Go" },
         "version": "(devel)"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "gnupg",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "gnupg", "ecosystem": "Debian" },
         "version": "2.1.18-8~deb9u4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "gnupg-agent",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "gnupg-agent", "ecosystem": "Debian" },
         "version": "2.1.18-8~deb9u4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "golang.org/x/sys",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "golang.org/x/sys", "ecosystem": "Go" },
         "version": "v0.0.0-20210817142637-7d9622a276b7"
       },
       "vulns": [
@@ -3213,30 +2789,21 @@
     },
     {
       "query": {
-        "package": {
-          "name": "gpgv",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "gpgv", "ecosystem": "Debian" },
         "version": "2.1.18-8~deb9u4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "grep",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "grep", "ecosystem": "Debian" },
         "version": "2.27-2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "gzip",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "gzip", "ecosystem": "Debian" },
         "version": "1.6-5+deb9u1"
       },
       "vulns": [
@@ -3252,298 +2819,208 @@
           "id": "DEBIAN-CVE-2026-41992",
           "modified": "<RFC3339 date with the year 2026>"
         },
-        {
-          "id": "DSA-5122-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
+        { "id": "DSA-5122-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "hostname",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "hostname", "ecosystem": "Debian" },
         "version": "3.18+b1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "init-system-helpers",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "init-system-helpers", "ecosystem": "Debian" },
         "version": "1.48"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libacl1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libacl1", "ecosystem": "Debian" },
         "version": "2.2.52-3+b1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libapt-pkg5.0",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libapt-pkg5.0", "ecosystem": "Debian" },
         "version": "1.4.11"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libassuan0",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libassuan0", "ecosystem": "Debian" },
         "version": "2.4.3-2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libattr1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libattr1", "ecosystem": "Debian" },
         "version": "1:2.4.47-2+b2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libaudit-common",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libaudit-common", "ecosystem": "Debian" },
         "version": "1:2.6.7-2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libaudit1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libaudit1", "ecosystem": "Debian" },
         "version": "1:2.6.7-2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libblkid1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libblkid1", "ecosystem": "Debian" },
         "version": "2.29.2-1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libbsd0",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libbsd0", "ecosystem": "Debian" },
         "version": "0.8.3-1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libbz2-1.0",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libbz2-1.0", "ecosystem": "Debian" },
         "version": "1.0.6-8.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-bin",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libc-bin", "ecosystem": "Debian" },
         "version": "2.24-11+deb9u4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-l10n",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libc-l10n", "ecosystem": "Debian" },
         "version": "2.24-11+deb9u4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc6",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libc6", "ecosystem": "Debian" },
         "version": "2.24-11+deb9u4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcap-ng0",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libcap-ng0", "ecosystem": "Debian" },
         "version": "0.7.7-3+b1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcomerr2",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libcomerr2", "ecosystem": "Debian" },
         "version": "1.43.4-2+deb9u2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libdb5.3",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libdb5.3", "ecosystem": "Debian" },
         "version": "5.3.28-12+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libdebconfclient0",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libdebconfclient0", "ecosystem": "Debian" },
         "version": "0.227"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libedit2",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libedit2", "ecosystem": "Debian" },
         "version": "3.1-20160903-3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libfdisk1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libfdisk1", "ecosystem": "Debian" },
         "version": "2.29.2-1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libffi6",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libffi6", "ecosystem": "Debian" },
         "version": "3.2.1-6"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libgcc1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libgcc1", "ecosystem": "Debian" },
         "version": "1:6.3.0-18+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libgcrypt20",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libgcrypt20", "ecosystem": "Debian" },
         "version": "1.7.6-2+deb9u4"
       },
       "vulns": [
@@ -3586,505 +3063,356 @@
         {
           "id": "DEBIAN-CVE-2026-41990",
           "modified": "<RFC3339 date with the year 2026>"
-        }
+        },
+        { "id": "DSA-6294-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "libgdbm3",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libgdbm3", "ecosystem": "Debian" },
         "version": "1.8.3-14"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libgmp10",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libgmp10", "ecosystem": "Debian" },
         "version": "2:6.1.2+dfsg-1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libgnutls30",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libgnutls30", "ecosystem": "Debian" },
         "version": "3.5.8-5+deb9u6"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libgpg-error0",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libgpg-error0", "ecosystem": "Debian" },
         "version": "1.26-2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libgssapi-krb5-2",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libgssapi-krb5-2", "ecosystem": "Debian" },
         "version": "1.15-1+deb9u3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libhogweed4",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libhogweed4", "ecosystem": "Debian" },
         "version": "3.3-1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libicu57",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libicu57", "ecosystem": "Debian" },
         "version": "57.1-6+deb9u5"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libidn11",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libidn11", "ecosystem": "Debian" },
         "version": "1.33-1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libjson-perl",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libjson-perl", "ecosystem": "Debian" },
         "version": "2.90-1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libk5crypto3",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libk5crypto3", "ecosystem": "Debian" },
         "version": "1.15-1+deb9u3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libkeyutils1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libkeyutils1", "ecosystem": "Debian" },
         "version": "1.5.9-9"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libkrb5-3",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libkrb5-3", "ecosystem": "Debian" },
         "version": "1.15-1+deb9u3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libkrb5support0",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libkrb5support0", "ecosystem": "Debian" },
         "version": "1.15-1+deb9u3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libksba8",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libksba8", "ecosystem": "Debian" },
         "version": "1.3.5-2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libldap-2.4-2",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libldap-2.4-2", "ecosystem": "Debian" },
         "version": "2.4.44+dfsg-5+deb9u8"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libldap-common",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libldap-common", "ecosystem": "Debian" },
         "version": "2.4.44+dfsg-5+deb9u8"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libllvm6.0",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libllvm6.0", "ecosystem": "Debian" },
         "version": "1:6.0-1~bpo9+1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "liblz4-1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "liblz4-1", "ecosystem": "Debian" },
         "version": "0.0~r131-2+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "liblzma5",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "liblzma5", "ecosystem": "Debian" },
         "version": "5.2.2-1.2+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libmount1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libmount1", "ecosystem": "Debian" },
         "version": "2.29.2-1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libncurses5",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libncurses5", "ecosystem": "Debian" },
         "version": "6.0+20161126-1+deb9u2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libncursesw5",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libncursesw5", "ecosystem": "Debian" },
         "version": "6.0+20161126-1+deb9u2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libnettle6",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libnettle6", "ecosystem": "Debian" },
         "version": "3.3-1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libnpth0",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libnpth0", "ecosystem": "Debian" },
         "version": "1.3-1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libnss-wrapper",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libnss-wrapper", "ecosystem": "Debian" },
         "version": "1.1.3-1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libp11-kit0",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libp11-kit0", "ecosystem": "Debian" },
         "version": "0.23.3-2+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libpam-modules",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libpam-modules", "ecosystem": "Debian" },
         "version": "1.1.8-3.6"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libpam-modules-bin",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libpam-modules-bin", "ecosystem": "Debian" },
         "version": "1.1.8-3.6"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libpam-runtime",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libpam-runtime", "ecosystem": "Debian" },
         "version": "1.1.8-3.6"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libpam0g",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libpam0g", "ecosystem": "Debian" },
         "version": "1.1.8-3.6"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libpcre3",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libpcre3", "ecosystem": "Debian" },
         "version": "2:8.39-3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libperl5.24",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libperl5.24", "ecosystem": "Debian" },
         "version": "5.24.1-3+deb9u7"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libpq5",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libpq5", "ecosystem": "Debian" },
         "version": "14.2-1.pgdg90+1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libreadline7",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libreadline7", "ecosystem": "Debian" },
         "version": "7.0-3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libsasl2-2",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libsasl2-2", "ecosystem": "Debian" },
         "version": "2.1.27~101-g0780600+dfsg-3+deb9u2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libsasl2-modules-db",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libsasl2-modules-db", "ecosystem": "Debian" },
         "version": "2.1.27~101-g0780600+dfsg-3+deb9u2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libselinux1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libselinux1", "ecosystem": "Debian" },
         "version": "2.6-3+b3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libsemanage-common",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libsemanage-common", "ecosystem": "Debian" },
         "version": "2.6-2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libsemanage1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libsemanage1", "ecosystem": "Debian" },
         "version": "2.6-2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libsepol1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libsepol1", "ecosystem": "Debian" },
         "version": "2.6-2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libsmartcols1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libsmartcols1", "ecosystem": "Debian" },
         "version": "2.29.2-1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libsqlite3-0",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libsqlite3-0", "ecosystem": "Debian" },
         "version": "3.16.2-5+deb9u3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libss2",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libss2", "ecosystem": "Debian" },
         "version": "1.43.4-2+deb9u2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl1.1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libssl1.1", "ecosystem": "Debian" },
         "version": "1.1.0l-1~deb9u5"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libstdc++6",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libstdc++6", "ecosystem": "Debian" },
         "version": "6.3.0-18+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libsystemd0",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libsystemd0", "ecosystem": "Debian" },
         "version": "232-25+deb9u13"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libtasn1-6",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libtasn1-6", "ecosystem": "Debian" },
         "version": "4.10-1.1+deb9u1"
       },
       "vulns": [
@@ -4112,66 +3440,42 @@
           "id": "DEBIAN-CVE-2025-13151",
           "modified": "<RFC3339 date with the year 2026>"
         },
-        {
-          "id": "DLA-3263-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-4061-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5863-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
+        { "id": "DLA-3263-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4061-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5863-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "libtinfo5",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libtinfo5", "ecosystem": "Debian" },
         "version": "6.0+20161126-1+deb9u2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libudev1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libudev1", "ecosystem": "Debian" },
         "version": "232-25+deb9u13"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libustr-1.0-1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libustr-1.0-1", "ecosystem": "Debian" },
         "version": "1.0.4-6"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libuuid1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libuuid1", "ecosystem": "Debian" },
         "version": "2.29.2-1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libxml2",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libxml2", "ecosystem": "Debian" },
         "version": "2.9.4+dfsg1-2.2+deb9u6"
       },
       "vulns": [
@@ -4443,226 +3747,137 @@
           "id": "DEBIAN-CVE-2026-86144",
           "modified": "<RFC3339 date with the year 2026>"
         },
-        {
-          "id": "DLA-3012-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-3172-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-3405-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-3878-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-4064-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-4146-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-4251-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-4319-1",
-          "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "DSA-5142-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5271-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5391-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5949-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5990-1",
-          "modified": "<RFC3339 date with the year 2025>"
-        }
+        { "id": "DLA-3012-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3172-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3405-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3878-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4064-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4146-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4251-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4319-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4622-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5142-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5271-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5391-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5949-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5990-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "libxslt1.1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libxslt1.1", "ecosystem": "Debian" },
         "version": "1.1.29-2.1+deb9u2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libzstd1",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "libzstd1", "ecosystem": "Debian" },
         "version": "1.1.2-1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "locales",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "locales", "ecosystem": "Debian" },
         "version": "2.24-11+deb9u4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "login",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "login", "ecosystem": "Debian" },
         "version": "1:4.4-4.1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "lsb-base",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "lsb-base", "ecosystem": "Debian" },
         "version": "9.20161125"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "mawk",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "mawk", "ecosystem": "Debian" },
         "version": "1.3.3-17+b3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "mount",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "mount", "ecosystem": "Debian" },
         "version": "2.29.2-1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "multiarch-support",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "multiarch-support", "ecosystem": "Debian" },
         "version": "2.24-11+deb9u4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ncurses-base",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "ncurses-base", "ecosystem": "Debian" },
         "version": "6.0+20161126-1+deb9u2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ncurses-bin",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "ncurses-bin", "ecosystem": "Debian" },
         "version": "6.0+20161126-1+deb9u2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "netbase",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "netbase", "ecosystem": "Debian" },
         "version": "5.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "openssl",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "openssl", "ecosystem": "Debian" },
         "version": "1.1.0l-1~deb9u5"
       },
       "vulns": [
@@ -4951,6 +4166,30 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-107493",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-107494",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-107496",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-121481",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-121482",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-124709",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-14456",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -5024,6 +4263,10 @@
         },
         {
           "id": "DEBIAN-CVE-2026-35189",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-35190",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -5151,127 +4394,82 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-84785",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-84786",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-88822",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "DEBIAN-CVE-2026-88823",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-9076",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
-          "id": "DLA-3008-1",
+          "id": "DEBIAN-CVE-2026-95690",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
-          "id": "DLA-3325-1",
+          "id": "DEBIAN-CVE-2026-95691",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
-          "id": "DLA-3449-1",
+          "id": "DEBIAN-CVE-2026-95692",
           "modified": "<RFC3339 date with the year 2026>"
         },
-        {
-          "id": "DLA-3530-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-3942-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-3942-2",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-4176-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-4321-1",
-          "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "DLA-4490-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-4539-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-4539-3",
-          "modified": "<RFC3339 date with the year 2019>"
-        },
-        {
-          "id": "DSA-4661-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-4807-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-4855-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-4875-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-4963-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5103-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5139-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5169-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5343-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5417-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5532-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5764-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-6015-1",
-          "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "DSA-6113-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
+        { "id": "DLA-3008-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3325-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3449-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3530-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3942-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3942-2", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4176-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4321-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4490-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4624-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4630-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4795-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4859-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-4539-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-4539-3", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-4661-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-4807-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-4855-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-4875-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-4963-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5103-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5139-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5169-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5343-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5417-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5532-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5764-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-6015-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-6113-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-6201-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-6335-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-6465-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-6531-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "passwd",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "passwd", "ecosystem": "Debian" },
         "version": "1:4.4-4.1+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "pcre3",
-          "ecosystem": "Ubuntu"
-        },
+        "package": { "name": "pcre3", "ecosystem": "Ubuntu" },
         "version": "2:8.39-12ubuntu0.1"
       },
       "vulns": [
@@ -5283,10 +4481,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "perl",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "perl", "ecosystem": "Debian" },
         "version": "5.24.1-3+deb9u7"
       },
       "vulns": [
@@ -5403,6 +4598,10 @@
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
+          "id": "DEBIAN-CVE-2026-40558",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
           "id": "DEBIAN-CVE-2026-42496",
           "modified": "<RFC3339 date with the year 2026>"
         },
@@ -5450,185 +4649,115 @@
           "id": "DEBIAN-CVE-2026-9538",
           "modified": "<RFC3339 date with the year 2026>"
         },
-        {
-          "id": "DLA-3926-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5902-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
+        { "id": "DLA-3926-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4538-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4821-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5902-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "perl-base",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "perl-base", "ecosystem": "Debian" },
         "version": "5.24.1-3+deb9u7"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "perl-modules-5.24",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "perl-modules-5.24", "ecosystem": "Debian" },
         "version": "5.24.1-3+deb9u7"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "pgdg-keyring",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "pgdg-keyring", "ecosystem": "Debian" },
         "version": "2018.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "pinentry-curses",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "pinentry-curses", "ecosystem": "Debian" },
         "version": "1.0.0-2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "postgresql",
-          "ecosystem": "OSS-Fuzz"
-        },
+        "package": { "name": "postgresql", "ecosystem": "OSS-Fuzz" },
         "version": "11.15"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "postgresql-11",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "postgresql-11", "ecosystem": "Debian" },
         "version": "11.15-1.pgdg90+1"
       },
       "vulns": [
-        {
-          "id": "DLA-3072-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-3189-1",
-          "modified": "<RFC3339 date with the year 2022>"
-        },
-        {
-          "id": "DLA-3316-1",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "DLA-3422-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-3600-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-3651-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DLA-3764-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5135-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
+        { "id": "DLA-3072-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3189-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3316-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3422-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3600-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3651-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3764-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5135-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "postgresql-client-11",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "postgresql-client-11", "ecosystem": "Debian" },
         "version": "11.15-1.pgdg90+1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "postgresql-client-common",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "postgresql-client-common", "ecosystem": "Debian" },
         "version": "238.pgdg90+1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "postgresql-common",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "postgresql-common", "ecosystem": "Debian" },
         "version": "238.pgdg90+1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "readline-common",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "readline-common", "ecosystem": "Debian" },
         "version": "7.0-3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sed",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "sed", "ecosystem": "Debian" },
         "version": "4.4-1"
       },
       "vulns": [
@@ -5640,10 +4769,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "sensible-utils",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "sensible-utils", "ecosystem": "Debian" },
         "version": "0.0.9+deb9u1"
       },
       "vulns": [
@@ -5655,50 +4781,35 @@
     },
     {
       "query": {
-        "package": {
-          "name": "ssl-cert",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "ssl-cert", "ecosystem": "Debian" },
         "version": "1.0.39"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sysvinit-utils",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "sysvinit-utils", "ecosystem": "Debian" },
         "version": "2.88dsf-59.9"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "tar",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "tar", "ecosystem": "Debian" },
         "version": "1.29b-1.1+deb9u1"
       },
       "vulns": [
@@ -5738,88 +4849,44 @@
           "id": "DEBIAN-CVE-2026-5704",
           "modified": "<RFC3339 date with the year 2026>"
         },
-        {
-          "id": "DLA-3755-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
+        { "id": "DLA-3755-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "tzdata",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "tzdata", "ecosystem": "Debian" },
         "version": "2021a-0+deb9u3"
       },
       "vulns": [
-        {
-          "id": "DLA-3051-1",
-          "modified": "<RFC3339 date with the year 2022>"
-        },
-        {
-          "id": "DLA-3134-1",
-          "modified": "<RFC3339 date with the year 2022>"
-        },
-        {
-          "id": "DLA-3161-1",
-          "modified": "<RFC3339 date with the year 2022>"
-        },
-        {
-          "id": "DLA-3366-1",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "DLA-3412-1",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "DLA-3684-1",
-          "modified": "<RFC3339 date with the year 2023>"
-        },
-        {
-          "id": "DLA-3788-1",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "DLA-3972-1",
-          "modified": "<RFC3339 date with the year 2024>"
-        },
-        {
-          "id": "DLA-4085-1",
-          "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "DLA-4105-1",
-          "modified": "<RFC3339 date with the year 2025>"
-        },
-        {
-          "id": "DLA-4403-1",
-          "modified": "<RFC3339 date with the year 2025>"
-        }
+        { "id": "DLA-3051-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3134-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3161-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3366-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3412-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3684-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3788-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-3972-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4085-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4105-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4403-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4569-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4792-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4854-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4867-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "ucf",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "ucf", "ecosystem": "Debian" },
         "version": "3.0036"
       },
       "vulns": [
-        {
-          "id": "DLA-4016-1",
-          "modified": "<RFC3339 date with the year 2025>"
-        }
+        { "id": "DLA-4016-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "util-linux",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "util-linux", "ecosystem": "Debian" },
         "version": "2.29.2-1+deb9u1"
       },
       "vulns": [
@@ -5899,26 +4966,15 @@
           "id": "DEBIAN-CVE-2026-78410",
           "modified": "<RFC3339 date with the year 2026>"
         },
-        {
-          "id": "DLA-3782-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5055-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5650-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
+        { "id": "DLA-3782-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5055-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5650-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-6442-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "xz-utils",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "xz-utils", "ecosystem": "Debian" },
         "version": "5.2.2-1.2+deb9u1"
       },
       "vulns": [
@@ -5938,72 +4994,51 @@
           "id": "DEBIAN-CVE-2026-34743",
           "modified": "<RFC3339 date with the year 2026>"
         },
-        {
-          "id": "DSA-5123-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        },
-        {
-          "id": "DSA-5895-1",
-          "modified": "<RFC3339 date with the year 2026>"
-        }
+        { "id": "DLA-4690-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DLA-4783-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5123-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-5895-1", "modified": "<RFC3339 date with the year 2026>" },
+        { "id": "DSA-6549-1", "modified": "<RFC3339 date with the year 2026>" }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.10-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.10-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.10-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.12-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib1g",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "zlib1g", "ecosystem": "Debian" },
         "version": "1:1.2.8.dfsg-5+deb9u1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zstd",
-          "ecosystem": "Debian"
-        },
+        "package": { "name": "zstd", "ecosystem": "Debian" },
         "version": "1.1.2-1+deb9u1"
       },
       "vulns": []
@@ -6018,10 +5053,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.1"
       },
       "vulns": [
@@ -6041,10 +5073,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "stdlib",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "stdlib", "ecosystem": "Go" },
         "version": "1.24.4"
       },
       "vulns": [
@@ -6291,20 +5320,25 @@
         {
           "id": "GO-2026-6809",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6859",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     },
     {
       "query": {
-        "package": {
-          "name": "toolchain",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "toolchain", "ecosystem": "Go" },
         "version": "1.24.4"
       },
       "vulns": [
         {
           "id": "GO-2025-3828",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-4338",
           "modified": "<RFC3339 date with the year 2026>"
         },
         {
@@ -6354,6 +5388,50 @@
         {
           "id": "GO-2026-6602",
           "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6848",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6849",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6850",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6851",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6852",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6853",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6854",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6855",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6856",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6857",
+          "modified": "<RFC3339 date with the year 2026>"
+        },
+        {
+          "id": "GO-2026-6858",
+          "modified": "<RFC3339 date with the year 2026>"
         }
       ]
     }
@@ -6367,10 +5445,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.1"
       },
       "vulns": [
@@ -6390,80 +5465,56 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ast",
-          "ecosystem": "RubyGems"
-        },
+        "package": { "name": "ast", "ecosystem": "RubyGems" },
         "version": "2.4.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -6478,10 +5529,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -6496,20 +5544,14 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -6524,10 +5566,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -6542,10 +5581,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -6560,10 +5596,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -6578,10 +5611,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.1"
       },
       "vulns": [
@@ -6601,10 +5631,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -6619,140 +5646,98 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.10-r0"
       },
       "vulns": []
@@ -6767,140 +5752,98 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.10-r0"
       },
       "vulns": []
@@ -6915,80 +5858,56 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
@@ -7003,80 +5922,56 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
@@ -7091,140 +5986,98 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.10-r0"
       },
       "vulns": []
@@ -7239,140 +6092,98 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-baselayout-data",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-baselayout-data", "ecosystem": "Alpine" },
         "version": "3.4.0-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "alpine-keys",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "alpine-keys", "ecosystem": "Alpine" },
         "version": "2.4-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "apk-tools",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "apk-tools", "ecosystem": "Alpine" },
         "version": "2.12.10-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "busybox-binsh",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "busybox-binsh", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ca-certificates-bundle",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ca-certificates-bundle", "ecosystem": "Alpine" },
         "version": "20220614-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libc-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libc-utils", "ecosystem": "Alpine" },
         "version": "0.7.2-r3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libcrypto3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libcrypto3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "libssl3",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "libssl3", "ecosystem": "Alpine" },
         "version": "3.0.8-r0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "musl-utils",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "musl-utils", "ecosystem": "Alpine" },
         "version": "1.2.3-r4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "scanelf",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "scanelf", "ecosystem": "Alpine" },
         "version": "1.3.5-r1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "ssl_client",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "ssl_client", "ecosystem": "Alpine" },
         "version": "1.36.1-r27"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "zlib",
-          "ecosystem": "Alpine"
-        },
+        "package": { "name": "zlib", "ecosystem": "Alpine" },
         "version": "1.2.10-r0"
       },
       "vulns": []
@@ -7387,10 +6198,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "balanced-match",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "balanced-match", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
@@ -7405,10 +6213,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "ansi-html",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "ansi-html", "ecosystem": "npm" },
         "version": "0.0.1"
       },
       "vulns": [
@@ -7428,10 +6233,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "black",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "black", "ecosystem": "PyPI" },
         "version": "25.1.0"
       },
       "vulns": [
@@ -7455,10 +6257,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "certifi",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "certifi", "ecosystem": "PyPI" },
         "version": "2025.10.5"
       },
       "vulns": [
@@ -7474,10 +6273,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "certifi",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "certifi", "ecosystem": "PyPI" },
         "version": "2025.10.5"
       },
       "vulns": [
@@ -7493,70 +6289,49 @@
     },
     {
       "query": {
-        "package": {
-          "name": "chardet",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "chardet", "ecosystem": "PyPI" },
         "version": "3.0.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "chardet",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "chardet", "ecosystem": "PyPI" },
         "version": "3.0.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "click",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "click", "ecosystem": "PyPI" },
         "version": "8.3.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "click",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "click", "ecosystem": "PyPI" },
         "version": "8.3.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "click",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "click", "ecosystem": "PyPI" },
         "version": "8.3.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "click",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "click", "ecosystem": "PyPI" },
         "version": "8.3.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "django",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "django", "ecosystem": "PyPI" },
         "version": "1.11.29"
       },
       "vulns": [
@@ -7640,10 +6415,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "django",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "django", "ecosystem": "PyPI" },
         "version": "1.11.29"
       },
       "vulns": [
@@ -7727,10 +6499,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "django",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "django", "ecosystem": "PyPI" },
         "version": "2.2.24"
       },
       "vulns": [
@@ -7870,10 +6639,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "flask",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask", "ecosystem": "PyPI" },
         "version": "1.0"
       },
       "vulns": [
@@ -7897,10 +6663,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "flask",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask", "ecosystem": "PyPI" },
         "version": "1.0"
       },
       "vulns": [
@@ -7924,10 +6687,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "flask",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask", "ecosystem": "PyPI" },
         "version": "1.0"
       },
       "vulns": [
@@ -7951,10 +6711,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "flask",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask", "ecosystem": "PyPI" },
         "version": "1.0.0"
       },
       "vulns": [
@@ -7978,10 +6735,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "flask-cors",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask-cors", "ecosystem": "PyPI" },
         "version": "1.0.0"
       },
       "vulns": [
@@ -8037,10 +6791,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "idna",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "idna", "ecosystem": "PyPI" },
         "version": "2.7"
       },
       "vulns": [
@@ -8064,10 +6815,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "idna",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "idna", "ecosystem": "PyPI" },
         "version": "2.7"
       },
       "vulns": [
@@ -8091,140 +6839,98 @@
     },
     {
       "query": {
-        "package": {
-          "name": "itsdangerous",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "itsdangerous", "ecosystem": "PyPI" },
         "version": "2.2.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "itsdangerous",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "itsdangerous", "ecosystem": "PyPI" },
         "version": "2.2.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "itsdangerous",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "itsdangerous", "ecosystem": "PyPI" },
         "version": "2.2.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "jinja2",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "jinja2", "ecosystem": "PyPI" },
         "version": "3.1.6"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "jinja2",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "jinja2", "ecosystem": "PyPI" },
         "version": "3.1.6"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "jinja2",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "jinja2", "ecosystem": "PyPI" },
         "version": "3.1.6"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "markupsafe",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "markupsafe", "ecosystem": "PyPI" },
         "version": "3.0.3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "markupsafe",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "markupsafe", "ecosystem": "PyPI" },
         "version": "3.0.3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "markupsafe",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "markupsafe", "ecosystem": "PyPI" },
         "version": "3.0.3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "mypy-extensions",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "mypy-extensions", "ecosystem": "PyPI" },
         "version": "1.1.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "numpy",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "numpy", "ecosystem": "PyPI" },
         "version": "2.3.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "numpy",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "numpy", "ecosystem": "PyPI" },
         "version": "2.3.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "packaging",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "packaging", "ecosystem": "PyPI" },
         "version": "25.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "pandas",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "pandas", "ecosystem": "PyPI" },
         "version": "0.23.4"
       },
       "vulns": [
@@ -8236,60 +6942,42 @@
     },
     {
       "query": {
-        "package": {
-          "name": "pathspec",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "pathspec", "ecosystem": "PyPI" },
         "version": "0.12.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "platformdirs",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "platformdirs", "ecosystem": "PyPI" },
         "version": "4.4.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "pytz",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "pytz", "ecosystem": "PyPI" },
         "version": "2025.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "pytz",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "pytz", "ecosystem": "PyPI" },
         "version": "2025.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "pytz",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "pytz", "ecosystem": "PyPI" },
         "version": "2025.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "requests",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "requests", "ecosystem": "PyPI" },
         "version": "2.20.0"
       },
       "vulns": [
@@ -8329,10 +7017,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "requests",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "requests", "ecosystem": "PyPI" },
         "version": "2.20.0"
       },
       "vulns": [
@@ -8372,10 +7057,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "sqlparse",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "sqlparse", "ecosystem": "PyPI" },
         "version": "0.5.3"
       },
       "vulns": [
@@ -8427,30 +7109,21 @@
     },
     {
       "query": {
-        "package": {
-          "name": "tomli",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "tomli", "ecosystem": "PyPI" },
         "version": "2.2.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "typing-extensions",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "typing-extensions", "ecosystem": "PyPI" },
         "version": "4.15.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "urllib3",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "urllib3", "ecosystem": "PyPI" },
         "version": "1.24.3"
       },
       "vulns": [
@@ -8538,10 +7211,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "urllib3",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "urllib3", "ecosystem": "PyPI" },
         "version": "1.24.3"
       },
       "vulns": [
@@ -8629,10 +7299,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "werkzeug",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "werkzeug", "ecosystem": "PyPI" },
         "version": "3.1.3"
       },
       "vulns": [
@@ -8672,10 +7339,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "werkzeug",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "werkzeug", "ecosystem": "PyPI" },
         "version": "3.1.3"
       },
       "vulns": [
@@ -8715,10 +7379,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "werkzeug",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "werkzeug", "ecosystem": "PyPI" },
         "version": "3.1.3"
       },
       "vulns": [
@@ -8766,10 +7427,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "black",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "black", "ecosystem": "PyPI" },
         "version": "25.1.0"
       },
       "vulns": [
@@ -8793,10 +7451,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "certifi",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "certifi", "ecosystem": "PyPI" },
         "version": "2025.10.5"
       },
       "vulns": [
@@ -8812,10 +7467,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "certifi",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "certifi", "ecosystem": "PyPI" },
         "version": "2025.10.5"
       },
       "vulns": [
@@ -8831,70 +7483,49 @@
     },
     {
       "query": {
-        "package": {
-          "name": "chardet",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "chardet", "ecosystem": "PyPI" },
         "version": "3.0.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "chardet",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "chardet", "ecosystem": "PyPI" },
         "version": "3.0.4"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "click",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "click", "ecosystem": "PyPI" },
         "version": "8.3.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "click",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "click", "ecosystem": "PyPI" },
         "version": "8.3.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "click",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "click", "ecosystem": "PyPI" },
         "version": "8.3.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "click",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "click", "ecosystem": "PyPI" },
         "version": "8.3.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "django",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "django", "ecosystem": "PyPI" },
         "version": "1.11.29"
       },
       "vulns": [
@@ -8978,10 +7609,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "django",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "django", "ecosystem": "PyPI" },
         "version": "1.11.29"
       },
       "vulns": [
@@ -9065,10 +7693,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "django",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "django", "ecosystem": "PyPI" },
         "version": "2.2.24"
       },
       "vulns": [
@@ -9208,10 +7833,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "flask",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask", "ecosystem": "PyPI" },
         "version": "1.0"
       },
       "vulns": [
@@ -9235,10 +7857,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "flask",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask", "ecosystem": "PyPI" },
         "version": "1.0"
       },
       "vulns": [
@@ -9262,10 +7881,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "flask",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask", "ecosystem": "PyPI" },
         "version": "1.0"
       },
       "vulns": [
@@ -9289,10 +7905,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "flask",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask", "ecosystem": "PyPI" },
         "version": "1.0.0"
       },
       "vulns": [
@@ -9316,10 +7929,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "flask-cors",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "flask-cors", "ecosystem": "PyPI" },
         "version": "1.0.0"
       },
       "vulns": [
@@ -9375,10 +7985,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "idna",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "idna", "ecosystem": "PyPI" },
         "version": "2.7"
       },
       "vulns": [
@@ -9402,10 +8009,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "idna",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "idna", "ecosystem": "PyPI" },
         "version": "2.7"
       },
       "vulns": [
@@ -9429,140 +8033,98 @@
     },
     {
       "query": {
-        "package": {
-          "name": "itsdangerous",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "itsdangerous", "ecosystem": "PyPI" },
         "version": "2.2.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "itsdangerous",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "itsdangerous", "ecosystem": "PyPI" },
         "version": "2.2.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "itsdangerous",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "itsdangerous", "ecosystem": "PyPI" },
         "version": "2.2.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "jinja2",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "jinja2", "ecosystem": "PyPI" },
         "version": "3.1.6"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "jinja2",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "jinja2", "ecosystem": "PyPI" },
         "version": "3.1.6"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "jinja2",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "jinja2", "ecosystem": "PyPI" },
         "version": "3.1.6"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "markupsafe",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "markupsafe", "ecosystem": "PyPI" },
         "version": "3.0.3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "markupsafe",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "markupsafe", "ecosystem": "PyPI" },
         "version": "3.0.3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "markupsafe",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "markupsafe", "ecosystem": "PyPI" },
         "version": "3.0.3"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "mypy-extensions",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "mypy-extensions", "ecosystem": "PyPI" },
         "version": "1.1.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "numpy",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "numpy", "ecosystem": "PyPI" },
         "version": "2.3.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "numpy",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "numpy", "ecosystem": "PyPI" },
         "version": "2.3.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "packaging",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "packaging", "ecosystem": "PyPI" },
         "version": "25.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "pandas",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "pandas", "ecosystem": "PyPI" },
         "version": "0.23.4"
       },
       "vulns": [
@@ -9574,60 +8136,42 @@
     },
     {
       "query": {
-        "package": {
-          "name": "pathspec",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "pathspec", "ecosystem": "PyPI" },
         "version": "0.12.1"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "platformdirs",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "platformdirs", "ecosystem": "PyPI" },
         "version": "4.5.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "pytz",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "pytz", "ecosystem": "PyPI" },
         "version": "2025.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "pytz",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "pytz", "ecosystem": "PyPI" },
         "version": "2025.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "pytz",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "pytz", "ecosystem": "PyPI" },
         "version": "2025.2"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "requests",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "requests", "ecosystem": "PyPI" },
         "version": "2.20.0"
       },
       "vulns": [
@@ -9667,10 +8211,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "requests",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "requests", "ecosystem": "PyPI" },
         "version": "2.20.0"
       },
       "vulns": [
@@ -9710,10 +8251,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "sqlparse",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "sqlparse", "ecosystem": "PyPI" },
         "version": "0.5.3"
       },
       "vulns": [
@@ -9765,30 +8303,21 @@
     },
     {
       "query": {
-        "package": {
-          "name": "tomli",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "tomli", "ecosystem": "PyPI" },
         "version": "2.3.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "typing-extensions",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "typing-extensions", "ecosystem": "PyPI" },
         "version": "4.15.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "urllib3",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "urllib3", "ecosystem": "PyPI" },
         "version": "1.24.3"
       },
       "vulns": [
@@ -9876,10 +8405,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "urllib3",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "urllib3", "ecosystem": "PyPI" },
         "version": "1.24.3"
       },
       "vulns": [
@@ -9967,10 +8493,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "werkzeug",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "werkzeug", "ecosystem": "PyPI" },
         "version": "3.1.3"
       },
       "vulns": [
@@ -10010,10 +8533,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "werkzeug",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "werkzeug", "ecosystem": "PyPI" },
         "version": "3.1.3"
       },
       "vulns": [
@@ -10053,10 +8573,7 @@
     },
     {
       "query": {
-        "package": {
-          "name": "werkzeug",
-          "ecosystem": "PyPI"
-        },
+        "package": { "name": "werkzeug", "ecosystem": "PyPI" },
         "version": "3.1.3"
       },
       "vulns": [
@@ -10104,20 +8621,14 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "has-flag",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "has-flag", "ecosystem": "npm" },
         "version": "4.0.0"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "league/flysystem",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "league/flysystem", "ecosystem": "Packagist" },
         "version": "1.0.8"
       },
       "vulns": [
@@ -10133,30 +8644,21 @@
     },
     {
       "query": {
-        "package": {
-          "name": "stdlib",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "stdlib", "ecosystem": "Go" },
         "version": "1.99.9"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "toolchain",
-          "ecosystem": "Go"
-        },
+        "package": { "name": "toolchain", "ecosystem": "Go" },
         "version": "1.99.9"
       },
       "vulns": []
     },
     {
       "query": {
-        "package": {
-          "name": "wrappy",
-          "ecosystem": "npm"
-        },
+        "package": { "name": "wrappy", "ecosystem": "npm" },
         "version": "1.0.2"
       },
       "vulns": []
@@ -10171,10 +8673,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []
@@ -10189,10 +8688,7 @@
   "results": [
     {
       "query": {
-        "package": {
-          "name": "sentry/sdk",
-          "ecosystem": "Packagist"
-        },
+        "package": { "name": "sentry/sdk", "ecosystem": "Packagist" },
         "version": "2.0.4"
       },
       "vulns": []

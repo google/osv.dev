@@ -2,15 +2,16 @@ package worker
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"path"
+	"slices"
 	"strings"
 
 	"cloud.google.com/go/pubsub/v2"
-	"github.com/google/go-cmp/cmp"
 	"github.com/google/osv.dev/go/internal/gitter"
 	"github.com/google/osv.dev/go/internal/metrics"
 	"github.com/google/osv.dev/go/internal/models"
@@ -20,7 +21,7 @@ import (
 	"github.com/ossf/osv-schema/bindings/go/osvschema"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/testing/protocmp"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -116,11 +117,23 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 		enriched.Modified = enriched.GetWithdrawn()
 	}
 
+	var rawSHA256 []byte
+	if task.SHA256 != "" {
+		if decoded, err := hex.DecodeString(task.SHA256); err == nil {
+			rawSHA256 = decoded
+		}
+	}
+
 	if err := e.Stores.Vulnerability.Write(ctx, models.WriteRequest{
 		ID:              enriched.GetId(),
 		Source:          task.SourceID,
 		Path:            task.PathInSource,
 		Raw:             task.Vuln,
+		RawJSON:         task.RawJSON,
+		RawSHA256:       rawSHA256,
+		FetchedAt:       task.ReceivedTime,
+		GitCommitHash:   task.GitCommitHash,
+		GCSGeneration:   task.GCSGeneration,
 		Enriched:        enriched,
 		AffectedCommits: commits,
 	}); err != nil {
@@ -143,11 +156,40 @@ func (e *Engine) handleUpdate(ctx context.Context, task Task) error {
 	return nil
 }
 
+// semanticallyIgnoredFields are the top-level Vulnerability fields that are not
+// considered when deciding whether a vulnerability has changed.
+var semanticallyIgnoredFields = []protoreflect.Name{"modified", "published", "schema_version"}
+
+// isSemanticallyDifferent reports whether the two vulnerabilities differ in any
+// field other than semanticallyIgnoredFields.
+//
+// This intentionally uses proto.Equal rather than go-cmp with protocmp.Transform:
+// protocmp converts every message into nested maps, which for large records
+// (e.g. Ubuntu kernel USNs with big database_specific Structs) allocated
+// gigabytes and took tens of seconds per comparison, causing worker OOMs.
 func (e *Engine) isSemanticallyDifferent(vuln1, vuln2 *osvschema.Vulnerability) bool {
-	return !cmp.Equal(vuln1, vuln2,
-		protocmp.Transform(),
-		protocmp.IgnoreFields(&osvschema.Vulnerability{}, "modified", "published", "schema_version"),
-	)
+	return !proto.Equal(withoutSemanticallyIgnoredFields(vuln1), withoutSemanticallyIgnoredFields(vuln2))
+}
+
+// withoutSemanticallyIgnoredFields returns a shallow copy of vuln with the
+// semanticallyIgnoredFields cleared. Nested messages and lists are shared with
+// vuln rather than copied, so the result must only be read, never modified.
+func withoutSemanticallyIgnoredFields(vuln *osvschema.Vulnerability) *osvschema.Vulnerability {
+	if vuln == nil {
+		return nil
+	}
+	src := vuln.ProtoReflect()
+	dst := (&osvschema.Vulnerability{}).ProtoReflect()
+	src.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
+		if !slices.Contains(semanticallyIgnoredFields, fd.Name()) {
+			dst.Set(fd, v)
+		}
+
+		return true
+	})
+	dst.SetUnknown(src.GetUnknown())
+
+	return dst.Interface().(*osvschema.Vulnerability)
 }
 
 func (e *Engine) handleDelete(ctx context.Context, task Task) error {

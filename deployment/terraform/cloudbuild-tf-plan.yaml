@@ -20,7 +20,7 @@ steps:
   dir:  deployment/terraform/environments/oss-vdb-test
   id:   oss-vdb-test init
 - name: gcr.io/oss-vdb/terraform
-  args: ['plan', '-no-color']
+  args: ['plan', '-lock=false', '-no-color']
   dir:  deployment/terraform/environments/oss-vdb-test
   id:   oss-vdb-test plan
 
@@ -30,11 +30,14 @@ steps:
   dir:  deployment/terraform/environments/oss-vdb
   id:   oss-vdb init
 - name: gcr.io/oss-vdb/terraform
-  args: ['plan', '-no-color']
+  args: ['plan', '-lock=false', '-no-color', '-var=impersonate_service_account=']
   dir:  deployment/terraform/environments/oss-vdb
   id:   oss-vdb plan
 
 
-# Also set in Cloud Build:
+# Also set in Cloud Build.
+# Runs with the least-privilege custom role `terraformPlanReader` (control-plane reads only).
+# If a PR adding a new GCP resource type hits 403, update `terraformPlanReader` per deployment/README.md.
 serviceAccount: 'projects/oss-vdb/serviceAccounts/terraform-plan@oss-vdb.iam.gserviceaccount.com'
-logsBucket: gs://oss-vdb-tf/plan-logs
+options:
+  logging: CLOUD_LOGGING_ONLY

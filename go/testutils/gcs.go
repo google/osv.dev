@@ -27,22 +27,28 @@ var crc32Table = crc32.MakeTable(crc32.Castagnoli)
 
 // MockStorage implements osv.CloudStorage for testing.
 type MockStorage struct {
-	mu          sync.RWMutex
-	objects     map[string]*mockObject // object path -> object data
-	WriteError  error                  // Global error to return on WriteObject
-	WriteErrors map[string]error       // Per-path error to return on WriteObject
-	ReadError   error                  // Global error to return on ReadObject and ReadObjectAttrs
+	mu           sync.RWMutex
+	objects      map[string]*mockObject // object path -> object data
+	WriteError   error                  // Global error to return on WriteObject
+	WriteErrors  map[string]error       // Per-path error to return on WriteObject
+	DeleteErrors map[string]error       // Per-path error to return on DeleteObject
+	ReadError    error                  // Global error to return on ReadObject and ReadObjectAttrs
 }
 
 // NewMockStorage creates a new mock storage client.
 func NewMockStorage() *MockStorage {
 	return &MockStorage{
-		objects:     make(map[string]*mockObject),
-		WriteErrors: make(map[string]error),
+		objects:      make(map[string]*mockObject),
+		WriteErrors:  make(map[string]error),
+		DeleteErrors: make(map[string]error),
 	}
 }
 
-func (c *MockStorage) ReadObject(_ context.Context, path string) ([]byte, error) {
+func (c *MockStorage) ReadObject(ctx context.Context, path string) ([]byte, error) {
+	return c.ReadObjectGeneration(ctx, path, 0)
+}
+
+func (c *MockStorage) ReadObjectGeneration(_ context.Context, path string, generation int64) ([]byte, error) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -51,7 +57,7 @@ func (c *MockStorage) ReadObject(_ context.Context, path string) ([]byte, error)
 	}
 
 	obj, ok := c.objects[path]
-	if !ok {
+	if !ok || (generation > 0 && obj.generation != generation) {
 		return nil, clients.ErrNotFound
 	}
 
@@ -170,6 +176,37 @@ func (c *MockStorage) Objects(_ context.Context, prefix string) iter.Seq2[*clien
 				return
 			}
 		}
+	}
+}
+
+func (c *MockStorage) DeleteObject(_ context.Context, path string, opts *clients.DeleteOptions) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if err, ok := c.DeleteErrors[path]; ok {
+		return err
+	}
+
+	obj, ok := c.objects[path]
+	if !ok {
+		return clients.ErrNotFound
+	}
+	if opts != nil && opts.IfGenerationMatches != nil && obj.generation != *opts.IfGenerationMatches {
+		return clients.ErrPreconditionFailed
+	}
+	delete(c.objects, path)
+
+	return nil
+}
+
+// SetUpdated overrides the last-updated time of an existing object, for tests
+// that depend on object age. It is a no-op if the object does not exist.
+func (c *MockStorage) SetUpdated(path string, updated time.Time) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if obj, ok := c.objects[path]; ok {
+		obj.updated = updated
 	}
 }
 

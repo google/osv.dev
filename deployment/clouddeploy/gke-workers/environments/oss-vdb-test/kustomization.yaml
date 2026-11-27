@@ -12,6 +12,7 @@ patches:
 - path: importer-deleter.yaml
 - path: importer-reconciler.yaml
 - path: exporter.yaml
+- path: exporter-deleter.yaml
 - path: alpine-cve-convert.yaml
 - path: cve5-to-osv.yaml
 - path: debian-cve-convert.yaml
@@ -31,3 +32,5 @@ patches:
 - path: gitter.yaml
 - path: vanir-signatures.yaml
 - path: ubuntu-binary-mapper.yaml
+- path: pg-tunnel.yaml
+- path: pg-tunnel-read-pool.yaml

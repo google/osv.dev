@@ -68,6 +68,11 @@ output "affected_commits_backups_bucket_name" {
   description = "The name of the AffectedCommits backups bucket"
 }
 
+output "migrator_service_account_email" {
+  value       = google_service_account.migrator_sa.email
+  description = "The email of the database migrations (osv-db-migrate) service account"
+}
+
 output "postgres_instance_name" {
   value       = google_sql_database_instance.postgres.name
   description = "The name of the primary Cloud SQL PostgreSQL instance"
@@ -75,6 +80,7 @@ output "postgres_instance_name" {
     google_sql_database.osv,
     google_sql_user.worker,
     google_sql_user.deployment,
+    google_sql_user.migrator,
   ]
 }
 
@@ -91,5 +97,10 @@ output "postgres_private_ip_address" {
 output "postgres_connection_name" {
   value       = google_sql_database_instance.postgres.connection_name
   description = "The connection name of the primary Cloud SQL PostgreSQL instance"
+}
+
+output "datastore_database_id" {
+  value       = google_firestore_database.datastore.id
+  description = "The ID of the Datastore database"
 }
 

@@ -5,21 +5,21 @@
     {
       "query": {
         "commit": "4579d5538f06c5ef615a15bc67ebb9ac0523a973",
-        "package": {}
+        "package": { }
       },
       "vulns": []
     },
     {
       "query": {
         "commit": "9de7a0544457c6aba755ccb65abb41b0dc1db70d",
-        "package": {}
+        "package": { }
       },
       "vulns": []
     },
     {
       "query": {
         "commit": "5d60bd2eb4642b64d00c845e5ca9f1ea41fd6db6",
-        "package": {}
+        "package": { }
       },
       "vulns": []
     }
@@ -34,21 +34,21 @@
     {
       "query": {
         "commit": "4579d5538f06c5ef615a15bc67ebb9ac0523a973",
-        "package": {}
+        "package": { }
       },
       "vulns": []
     },
     {
       "query": {
         "commit": "9de7a0544457c6aba755ccb65abb41b0dc1db70d",
-        "package": {}
+        "package": { }
       },
       "vulns": []
     },
     {
       "query": {
         "commit": "5d60bd2eb4642b64d00c845e5ca9f1ea41fd6db6",
-        "package": {}
+        "package": { }
       },
       "vulns": []
     }

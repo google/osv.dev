@@ -73,3 +73,42 @@ variable "indexer_subscription" {
   default     = "indexer-work-sub"
 }
 
+variable "vulnerabilities_export_bucket" {
+  type        = string
+  description = "Name of bucket storing exported vulnerability protos and JSONs."
+}
+
+variable "failed_tasks_topic_name" {
+  type        = string
+  description = "Name of the failed-tasks Pub/Sub topic."
+}
+
+variable "datastore_database_id" {
+  type        = string
+  description = "The resource ID of the Datastore database."
+}
+
+variable "website_ingress" {
+  type        = string
+  description = "Optional Cloud Run ingress setting for osv-website."
+  default     = null
+}
+
+variable "deployment_service_account_email" {
+  type        = string
+  description = "Optional email of the CI/CD deployment service account granted Cloud Run deploy permissions."
+  default     = ""
+}
+
+variable "frontend_deployer_service_account_emails" {
+  type        = list(string)
+  description = "Service account emails permitted to actAs the Cloud Run frontend service account during deployments."
+  default     = []
+}
+
+variable "public_buckets" {
+  type        = bool
+  description = "Whether to grant allUsers public read access on public OSV feed, log, indexer config, and sitemap buckets."
+  default     = false
+}
+

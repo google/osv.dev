@@ -1,4 +1,4 @@
-FROM golang:1.27.1-alpine@sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414 AS GO_BUILD
+FROM golang:1.27.4-alpine@sha256:70bd7ddea8b6cbe5d6943cde279d6b67feb10cc924fb9100d1d8757c1575b280 AS GO_BUILD
 
 ARG GOOSE_VERSION=3.28.0
 ARG CLOUD_SQL_PROXY_VERSION=2.26.0
@@ -9,7 +9,7 @@ RUN GOBIN=$(pwd) go install \
 RUN GOBIN=$(pwd) go install \
   github.com/GoogleCloudPlatform/cloud-sql-proxy/v2@v${CLOUD_SQL_PROXY_VERSION}
 
-FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:786a1537df13c54289a46507b22a411f6c71154ae0293d12adce4b9358acca63
+FROM gcr.io/google.com/cloudsdktool/google-cloud-cli:alpine@sha256:31e27958892650f753ecf6fab1c4aebc4f0bfdc55c6364da8902c62b852791cf
 
 COPY --from=GO_BUILD /build/goose /usr/bin/goose
 COPY --from=GO_BUILD /build/cloud-sql-proxy /usr/bin/cloud-sql-proxy

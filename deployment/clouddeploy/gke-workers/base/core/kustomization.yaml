@@ -1,10 +1,12 @@
 resources:
 - backup.yaml
 - exporter.yaml
+- exporter-deleter.yaml
 - gitter.yaml
 - importer.yaml
 - importer-deleter.yaml
 - importer-reconciler.yaml
+- pg-tunnel.yaml
 - record-checker.yaml
 - recoverer.yaml
 - scaler.yaml

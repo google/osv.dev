@@ -117,3 +117,9 @@ message CommitDiffsResponse {
     int32 num_commits = 4;
     repeated CommitDiff commits = 5;
 }
+
+message CommitPackRequest {
+    string url = 1;
+    repeated string commits = 2; // 40-char (or 64-char) hex commit hashes
+    string ref_id = 3;
+}

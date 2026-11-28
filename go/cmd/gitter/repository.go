@@ -206,7 +206,7 @@ func (r *Repository) buildCommitGraph(ctx context.Context, cache *pb.RepositoryC
 	// --all: all branches
 	// --full-history + --sparse: full-history alone still prunes TREESAME commit so we combine that with --sparse to actually get the full history of a repository
 	// Redirecting to a file is faster than git binary's own --output flag or streaming into memory.
-	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "log", "--all", "--full-history", "--sparse", "--format="+gitLogGraphFormat)
+	cmd := prepareCmd(ctx, r.repoPath, "git", "log", "--all", "--full-history", "--sparse", "--format="+gitLogGraphFormat)
 	cmd.Stdout = tmpFile
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -367,10 +367,10 @@ func (r *Repository) calculatePatchIDsWorker(ctx context.Context, chunk []int) e
 	// `git show --stdin --patch --first-parent --no-color`:
 	// --patch to show diffs in a format that can be directly piped into `git patch-id`
 	// --first-parent: when there are multiple parents (e.g. a merge commit), full diff with respect to first parent (usually the main / master branch)
-	cmdShow := prepareCmd(ctx, r.repoPath, nil, "git", "show", "--stdin", "--patch", "--first-parent", "--no-color")
+	cmdShow := prepareCmd(ctx, r.repoPath, "git", "show", "--stdin", "--patch", "--first-parent", "--no-color")
 	// `git patch-id --stable`:
 	// --stable ensures that reordering file diffs does not affect the patch ID
-	cmdPatchID := prepareCmd(ctx, r.repoPath, nil, "git", "patch-id", "--stable")
+	cmdPatchID := prepareCmd(ctx, r.repoPath, "git", "patch-id", "--stable")
 
 	// Pipe the git show with git patch-id
 	in, err := cmdShow.StdinPipe()
@@ -1025,14 +1025,14 @@ func (r *Repository) GetLocalTags(ctx context.Context) (map[string]SHA1, error) 
 	repoLock.RLock()
 	defer repoLock.RUnlock()
 
-	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "show-ref", "--tags", "--dereference")
+	cmd := prepareCmd(ctx, r.repoPath, "git", "show-ref", "--tags", "--dereference")
 
 	return r.runAndParseTags(ctx, cmd)
 }
 
 // GetRemoteTags uses git ls-remote to get tags from remote git repository
 func (r *Repository) GetRemoteTags(ctx context.Context) (map[string]SHA1, error) {
-	cmd := prepareCmd(ctx, "", []string{"GIT_TERMINAL_PROMPT=0"}, "git", "ls-remote", "--tags", "--quiet", "--", r.URL)
+	cmd := prepareCmd(ctx, "", "git", "ls-remote", "--tags", "--quiet", "--", r.URL)
 
 	return r.runAndParseTags(ctx, cmd)
 }
@@ -1062,7 +1062,7 @@ func (r *Repository) resolveCommit(ctx context.Context, ref string) (string, err
 	if strings.TrimSpace(ref) == "" {
 		return "", errors.New("ref cannot be empty")
 	}
-	out, err := runCmd(ctx, r.repoPath, nil, "git", "rev-parse", "--verify", "--quiet", ref+"^{commit}")
+	out, err := runCmd(ctx, r.repoPath, "git", "rev-parse", "--verify", "--quiet", ref+"^{commit}")
 	if err != nil {
 		return "", fmt.Errorf("failed to run git rev-parse on %q: %w", ref, err)
 	}
@@ -1116,7 +1116,7 @@ func (r *Repository) ListFileDiffs(ctx context.Context, lastSyncCommit, targetBr
 	// --find-renames: detect renames
 	// --no-commit-id: don't print the commit id on a separate line
 	// --name-status: only show status (A|C|D|M|R|T|U|X|B) and the file path(s)
-	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "diff-tree", "-r", "--find-renames", "--no-commit-id", "--name-status", fromCommit, latestCommit)
+	cmd := prepareCmd(ctx, r.repoPath, "git", "diff-tree", "-r", "--find-renames", "--no-commit-id", "--name-status", fromCommit, latestCommit)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return "", nil, fmt.Errorf("git diff-tree failed: %w, output: %s", err, out)
@@ -1231,7 +1231,7 @@ func (r *Repository) GetFileContent(ctx context.Context, ref, path string) ([]by
 		return nil, fmt.Errorf("commit %q not found or invalid: %w", ref, err)
 	}
 
-	cmd := prepareCmd(ctx, r.repoPath, nil, "git", "cat-file", "blob", commit+":"+path)
+	cmd := prepareCmd(ctx, r.repoPath, "git", "cat-file", "blob", commit+":"+path)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return nil, fmt.Errorf("git cat-file failed for %s:%s: %w, output: %s", commit, path, err, out)
@@ -1263,7 +1263,7 @@ func (r *Repository) ListCommits(ctx context.Context, targetBranch, lastSyncedCo
 	if targetBranch == "" {
 		// If targetBranch is empty, default to origin/HEAD, but still need to find the actual branch name
 		ref = "origin/HEAD"
-		if out, err := runCmd(ctx, r.repoPath, nil, "git", "symbolic-ref", "--short", "refs/remotes/origin/HEAD"); err == nil {
+		if out, err := runCmd(ctx, r.repoPath, "git", "symbolic-ref", "--short", "refs/remotes/origin/HEAD"); err == nil {
 			resolvedBranch = strings.TrimPrefix(strings.TrimSpace(string(out)), "origin/")
 		}
 	} else {
@@ -1292,7 +1292,7 @@ func (r *Repository) ListCommits(ctx context.Context, targetBranch, lastSyncedCo
 			return resolvedBranch, toCommit, []*CommitDiff{}, nil
 		}
 		// Validates last synced commit is an ancestor of the target HEAD commit
-		_, err := runCmd(ctx, r.repoPath, nil, "git", "merge-base", "--is-ancestor", lastSyncedCommit, toCommit)
+		_, err := runCmd(ctx, r.repoPath, "git", "merge-base", "--is-ancestor", lastSyncedCommit, toCommit)
 		if err == nil {
 			fromCommit = lastSyncedCommit
 		} else {
@@ -1371,7 +1371,7 @@ func (r *Repository) ListCommits(ctx context.Context, targetBranch, lastSyncedCo
 	// Safeguard for early returns / context cancellation
 	defer tmpFile.Close()
 
-	cmd := prepareCmd(ctx, r.repoPath, nil, "git", args...)
+	cmd := prepareCmd(ctx, r.repoPath, "git", args...)
 	cmd.Stdout = tmpFile
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
